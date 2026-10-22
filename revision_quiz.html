@@ -1,0 +1,442 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>Révision — Représentation de l'information &amp; AlgoPython · Gymnase — Frédéric Jaccard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);margin:0;padding:32px 16px;min-height:100vh;box-sizing:border-box;
+  font-family:'Quattrocento Sans','Segoe UI',system-ui,sans-serif;color:var(--ink)}
+button{font:inherit;cursor:pointer}
+.app{max-width:640px;margin:0 auto;padding:8px 4px}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:2px}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.14em;font-size:12px;text-transform:uppercase;margin-bottom:4px}
+h1{font-size:20px;font-weight:700}
+.btns{display:flex;gap:8px;flex-shrink:0;padding-top:2px}
+.iconBtn{min-width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+  color:var(--primary);font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px}
+.iconBtn:hover{border-color:var(--primary)}
+.sub{font-size:14px;color:var(--muted);margin-bottom:16px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:13px}
+.chip.on{background:var(--primary);border-color:var(--primary);color:var(--bg)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:6px}
+.bar>i{display:block;height:100%;background:var(--primary);transition:width .25s ease}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:14px}
+.card{border:1px solid var(--line);border-radius:12px;padding:20px;background:#FFFFFF}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:2px 8px;background:var(--primaryLight);color:var(--primary);margin-bottom:12px;font-weight:700}
+.qt{font-size:17px;line-height:1.5;margin-bottom:16px}
+.qt code, .qt .cx{font-family:'Courier New',monospace;font-size:.92em;background:var(--card);padding:1px 5px;border-radius:4px}
+pre.code{font-family:'Courier New',monospace;font-size:14px;line-height:1.6;background:var(--card);border-left:3px solid var(--primary);border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 16px;white-space:pre-wrap}
+.choices{display:flex;flex-direction:column;gap:8px}
+.ch{text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:10px 14px;font-size:15px;transition:border-color .15s}
+.ch:hover{border-color:var(--primary)}
+.ch pre{font-family:'Courier New',monospace;font-size:13px;margin:0;white-space:pre-wrap}
+.ch:disabled{cursor:default}
+.ch.ok{border-color:var(--primary);background:var(--primaryLight)}
+.ch.ko{border-color:var(--error);background:var(--accentLight)}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1;font:inherit;font-size:15px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink)}
+.btn{background:var(--primary);color:var(--bg);border:none;border-radius:10px;padding:10px 18px;font-size:15px;font-weight:700}
+.fb{margin-top:16px;border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.55}
+.fb.good{background:var(--primaryLight);border:1px solid var(--primary)}
+.fb.bad{background:var(--accentLight);border:1px solid var(--error)}
+.fb b.t{display:block;margin-bottom:4px;font-weight:700}
+.fb .les{margin-top:8px;font-size:13px;color:var(--muted)}
+.fb .les b{color:var(--primary)}
+.next{margin-top:16px;display:flex;justify-content:flex-end}
+footer{margin-top:28px;text-align:center;font-size:13px;color:var(--muted)}
+@media(max-width:640px){
+  body{padding:20px 12px}
+  h1{font-size:17px}
+}
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="app">
+<div class="topbar">
+  <div>
+    <div class="kicker" id="kicker">RÉVISION</div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="btns">
+    <button class="iconBtn" id="langBtn" title="English">EN</button>
+    <button class="iconBtn" id="fsBtn" title="Plein écran">⛶</button>
+  </div>
+</div>
+<div class="sub" id="sub"></div>
+<div class="filters" id="filters"></div>
+<div class="bar"><i id="fill"></i></div>
+<div class="meta"><span id="mleft"></span><span id="mright"></span></div>
+<div class="card" id="card"></div>
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+</div>
+
+<script>
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+const I18N={
+ fr:{back:"← Toutes les applications",
+  kicker:"RÉVISION",
+  title:"Représentation de l'information & AlgoPython",
+  sub:"Questions générées à l'infini · réponse et explication après chaque question",
+  all:"Tout mélanger",
+  chips:{L1:"Binaire",L2:"Hexadécimal",L3:"Couleurs",L4:"Tailles",L5:"Images",L6:"Caractères",ALGO:"AlgoPython"},
+  tags:{L1:"Binaire",L2:"Hexadécimal",L3:"Couleurs",L4:"Tailles de fichiers",L5:"Images",L6:"Caractères",ALGO:"AlgoPython"},
+  question:n=>`Question ${n}`,
+  score:(s,d)=>`Score : ${s} / ${d}`,
+  placeholder:"Votre réponse…",
+  validate:"Valider",
+  next:"Question suivante →",
+  correct:"✓ Correct !",
+  wrong:"✗ Pas tout à fait…",
+  goodAnswer:c=>`Bonne réponse : <b>${c}</b>`,
+  wasAnswer:a=>`La bonne réponse était <b>${a}</b>.`,
+  langBtn:"EN",
+  fsTitle:"Plein écran"
+ },
+ en:{back:"← All applications",
+  kicker:"REVISION",
+  title:"Representing information & AlgoPython",
+  sub:"Infinitely generated questions · answer and explanation after each question",
+  all:"Shuffle all",
+  chips:{L1:"Binary",L2:"Hexadecimal",L3:"Colors",L4:"Sizes",L5:"Images",L6:"Characters",ALGO:"AlgoPython"},
+  tags:{L1:"Binary",L2:"Hexadecimal",L3:"Colors",L4:"File sizes",L5:"Images",L6:"Characters",ALGO:"AlgoPython"},
+  question:n=>`Question ${n}`,
+  score:(s,d)=>`Score: ${s} / ${d}`,
+  placeholder:"Your answer…",
+  validate:"Check",
+  next:"Next question →",
+  correct:"✓ Correct!",
+  wrong:"✗ Not quite…",
+  goodAnswer:c=>`Correct answer: <b>${c}</b>`,
+  wasAnswer:a=>`The correct answer was <b>${a}</b>.`,
+  langBtn:"FR",
+  fsTitle:"Fullscreen"
+ }
+};
+const T=()=>I18N[lang];
+
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const mcq=(lesson,html,good,wrongs,explain)=>{
+  const set=[...new Set(wrongs.filter(w=>String(w)!==String(good)))].slice(0,3);
+  const choices=shuffle([good,...set]);
+  return {lesson,html,kind:"mcq",choices,correct:choices.indexOf(good),explain};
+};
+const num=(lesson,html,answer,explain)=>({lesson,html,kind:"num",answer,explain});
+const fmt=n=>{const sep=lang==="fr"?"\u2009":",";return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,sep);};
+const hexC=(r,g,b)=>"#"+[r,g,b].map(x=>x.toString(16).toUpperCase().padStart(2,"0")).join("");
+const powSum=v=>{let out=[],p=0;while(v>0){if(v&1)out.unshift(2**p);v>>=1;p++;}return out.join(" + ");};
+</script>
+<script>
+function buildGens(){
+ const fr=lang==="fr";
+ return [
+ // Leçon 1 — binaire
+ ()=>{const n=ri(4,6),v=ri(1,2**n-2),b=v.toString(2).padStart(n,"0");
+   const rev=parseInt(b.split("").reverse().join(""),2);
+   return mcq("L1",
+     fr?`Convertissez en décimal : <code>${b}₂</code>`:`Convert to decimal: <code>${b}₂</code>`,
+     v,[v+1,v-1,v+2,v*2,rev],
+     fr?`On additionne les puissances de 2 aux positions des 1 : <code>${b}₂</code> = ${powSum(v)} = <b>${v}</b>.`
+       :`Add the powers of 2 at the positions of the 1s: <code>${b}₂</code> = ${powSum(v)} = <b>${v}</b>.`);},
+ ()=>{const v=ri(10,60),b=v.toString(2);
+   return mcq("L1",
+     fr?`Convertissez <code>${v}</code> en binaire.`:`Convert <code>${v}</code> to binary.`,
+     b+"₂",[(v+1).toString(2)+"₂",(v-1).toString(2)+"₂",(v+2).toString(2)+"₂",(v*2).toString(2)+"₂",b.split("").reverse().join("")+"₂"],
+     fr?`${v} = ${powSum(v)}, donc <code>${b}₂</code>. On peut vérifier en reconvertissant.`
+       :`${v} = ${powSum(v)}, so <code>${b}₂</code>. You can check by converting back.`);},
+ ()=>{const n=ri(3,8);
+   return mcq("L1",
+     fr?`Combien de valeurs différentes peut-on représenter avec <code>${n} bits</code> ?`:`How many different values can be represented with <code>${n} bits</code>?`,
+     2**n,[2**(n-1),2**(n+1),2*n,n**2,2**n+1],
+     fr?`Chaque bit double les possibilités : 2<sup>${n}</sup> = <b>${2**n}</b> valeurs.`
+       :`Each bit doubles the possibilities: 2<sup>${n}</sup> = <b>${2**n}</b> values.`);},
+ ()=>{const n=ri(3,8);
+   return mcq("L1",
+     fr?`Quel est le plus grand nombre représentable sur <code>${n} bits</code> ?`:`What is the largest number representable on <code>${n} bits</code>?`,
+     2**n-1,[2**n,2**n-2,2**(n-1)],
+     fr?`Tous les bits à 1 : ${"1".repeat(n)}₂ = 2<sup>${n}</sup> − 1 = <b>${2**n-1}</b>.`
+       :`All bits set to 1: ${"1".repeat(n)}₂ = 2<sup>${n}</sup> − 1 = <b>${2**n-1}</b>.`);},
+ // Leçon 2 — hexadécimal
+ ()=>{const v=ri(1,254),b=v.toString(2).padStart(8,"0"),h=v.toString(16).toUpperCase().padStart(2,"0");
+   const sw=parseInt(b.slice(4)+b.slice(0,4),2).toString(16).toUpperCase().padStart(2,"0");
+   const alth=x=>x.toString(16).toUpperCase().padStart(2,"0");
+   return mcq("L2",
+     fr?`Convertissez <code>${b}₂</code> en hexadécimal.`:`Convert <code>${b}₂</code> to hexadecimal.`,
+     h+"₁₆",[sw+"₁₆",alth((v+1)%256)+"₁₆",alth((v-1+256)%256)+"₁₆",alth(255-v)+"₁₆",alth(v^1)+"₁₆"],
+     fr?`On coupe en deux quartets : <code>${b.slice(0,4)}</code> = ${h[0]} et <code>${b.slice(4)}</code> = ${h[1]} → <b>${h}₁₆</b>.`
+       :`Split into two nibbles: <code>${b.slice(0,4)}</code> = ${h[0]} and <code>${b.slice(4)}</code> = ${h[1]} → <b>${h}₁₆</b>.`);},
+ ()=>{const v=ri(16,255),h=v.toString(16).toUpperCase().padStart(2,"0"),b=v.toString(2).padStart(8,"0");
+   const alt=x=>x.toString(2).padStart(8,"0"),sw=b.slice(4)+b.slice(0,4),rev=b.split("").reverse().join("");
+   return mcq("L2",
+     fr?`Convertissez <code>${h}₁₆</code> en binaire (8 bits).`:`Convert <code>${h}₁₆</code> to binary (8 bits).`,
+     b+"₂",[alt(v^1)+"₂",alt((v+1)%256)+"₂",alt(255-v)+"₂",alt((v+2)%256)+"₂",sw+"₂",rev+"₂"],
+     `${h[0]} = <code>${b.slice(0,4)}</code> ${fr?"et":"and"} ${h[1]} = <code>${b.slice(4)}</code> → <code>${b}₂</code>.`);},
+ ()=>{const N=pick([16,24,32,40]);
+   return mcq("L2",
+     fr?`Combien de symboles hexadécimaux faut-il pour écrire <code>${N} bits</code> ?`:`How many hexadecimal symbols are needed to write <code>${N} bits</code>?`,
+     N/4,[N/8,N/2,N],
+     fr?`Un symbole hexadécimal code exactement 4 bits : ${N} ÷ 4 = <b>${N/4}</b> symboles.`
+       :`One hexadecimal symbol encodes exactly 4 bits: ${N} ÷ 4 = <b>${N/4}</b> symbols.`);},
+ // Leçon 3 — couleurs
+ ()=>{const t=fr?
+     [["#FF0000","rouge"],["#00FF00","vert"],["#0000FF","bleu"],["#FFFF00","jaune"],["#FF00FF","magenta"],["#00FFFF","cyan"],["#000000","noir"],["#FFFFFF","blanc"]]:
+     [["#FF0000","red"],["#00FF00","green"],["#0000FF","blue"],["#FFFF00","yellow"],["#FF00FF","magenta"],["#00FFFF","cyan"],["#000000","black"],["#FFFFFF","white"]];
+   const c=pick(t),others=shuffle(t.filter(x=>x[0]!==c[0])).slice(0,3).map(x=>x[1]);
+   return mcq("L3",
+     fr?`De quelle couleur s'agit-il : <code>${c[0]}</code> ?`:`Which color is this: <code>${c[0]}</code>?`,
+     c[1],others,
+     fr?`Les trois paires sont rouge, vert, bleu : <code>${c[0].slice(1,3)} ${c[0].slice(3,5)} ${c[0].slice(5,7)}</code>. FF = canal au maximum, 00 = canal éteint. Les couleurs se mélangent en synthèse additive.`
+       :`The three pairs are red, green, blue: <code>${c[0].slice(1,3)} ${c[0].slice(3,5)} ${c[0].slice(5,7)}</code>. FF = channel at maximum, 00 = channel off. Colors mix by additive synthesis.`);},
+ ()=>{let r,g,b;do{r=pick([0,31,64,128,192,255]);g=pick([0,31,64,128,192,255]);b=pick([0,31,64,128,192,255]);}while(new Set([r,g,b]).size<2);
+   const hx=hexC(r,g,b);
+   return mcq("L3",
+     fr?`Convertissez <code>${hx}</code> en décimal, sous la forme rgb( , , ).`:`Convert <code>${hx}</code> to decimal, in the form rgb( , , ).`,
+     `rgb(${r}, ${g}, ${b})`,
+     [`rgb(${255-r}, ${g}, ${b})`,`rgb(${r}, ${255-g}, ${b})`,`rgb(${r}, ${g}, ${255-b})`,`rgb(${g}, ${r}, ${b})`],
+     fr?`On convertit chaque paire : ${hx.slice(1,3)}₁₆ = ${r}, ${hx.slice(3,5)}₁₆ = ${g}, ${hx.slice(5,7)}₁₆ = ${b}. Par exemple ${r.toString(16).toUpperCase().padStart(2,"0")}₁₆ = ${Math.floor(r/16)} × 16 + ${r%16} = ${r}.`
+       :`Convert each pair: ${hx.slice(1,3)}₁₆ = ${r}, ${hx.slice(3,5)}₁₆ = ${g}, ${hx.slice(5,7)}₁₆ = ${b}. For example ${r.toString(16).toUpperCase().padStart(2,"0")}₁₆ = ${Math.floor(r/16)} × 16 + ${r%16} = ${r}.`);},
+ ()=>{let r,g,b;do{r=pick([0,128,255,16,32,64]);g=pick([0,128,255,16,32,64]);b=pick([0,128,255,16,32,64]);}while(new Set([r,g,b]).size<2);
+   const hx=hexC(r,g,b);
+   return mcq("L3",
+     fr?`Encodez la couleur <code>rgb(${r}, ${g}, ${b})</code> en notation #RRGGBB.`:`Encode the color <code>rgb(${r}, ${g}, ${b})</code> in #RRGGBB notation.`,
+     hx,[hexC(255-r,g,b),hexC(r,255-g,b),hexC(r,g,255-b),hexC(g,r,b)],
+     fr?`${r} → ${r.toString(16).toUpperCase().padStart(2,"0")}, ${g} → ${g.toString(16).toUpperCase().padStart(2,"0")}, ${b} → ${b.toString(16).toUpperCase().padStart(2,"0")} : <b>${hx}</b>. (Rappel : 128 = 8 × 16 + 0 → 80, 255 → FF.)`
+       :`${r} → ${r.toString(16).toUpperCase().padStart(2,"0")}, ${g} → ${g.toString(16).toUpperCase().padStart(2,"0")}, ${b} → ${b.toString(16).toUpperCase().padStart(2,"0")} : <b>${hx}</b>. (Reminder: 128 = 8 × 16 + 0 → 80, 255 → FF.)`);},
+ // Leçon 4 — tailles
+ ()=>{const g=pick([2,4,8,16,32,64,128]);
+   return num("L4",
+     fr?`Convertissez <code>${g} Go</code> en ko (système décimal). Écrivez juste le nombre.`:`Convert <code>${g} GB</code> to kB (decimal system). Just write the number.`,
+     g*1000000,
+     fr?`En décimal : 1 Go = 10⁹ octets et 1 ko = 10³ octets, donc ${g} Go = ${g} × 10⁶ ko = <b>${fmt(g*1000000)} ko</b>.`
+       :`In decimal: 1 GB = 10⁹ bytes and 1 kB = 10³ bytes, so ${g} GB = ${g} × 10⁶ kB = <b>${fmt(g*1000000)} kB</b>.`);},
+ ()=>{const m=ri(1,8);
+   return num("L4",
+     fr?`Convertissez <code>${m} Mio</code> en octets (binaire : 1 Mio = 1024 × 1024 octets).`:`Convert <code>${m} MiB</code> to bytes (binary: 1 MiB = 1024 × 1024 bytes).`,
+     m*1048576,
+     `${m} × 1024 × 1024 = <b>${fmt(m*1048576)} ${fr?"octets":"bytes"}</b>.`);},
+ ()=>{const k=ri(2,12);
+   return num("L4",
+     fr?`Une image non compressée pèse <code>${fmt(k*8000000)} bits</code>. Quelle est sa taille en Mo (décimal) ?`:`An uncompressed image weighs <code>${fmt(k*8000000)} bits</code>. What is its size in MB (decimal)?`,
+     k,
+     fr?`D'abord en octets : ${fmt(k*8000000)} ÷ 8 = ${fmt(k*1000000)} octets. Puis en Mo (1 Mo = 10⁶ octets) : <b>${k} Mo</b>.`
+       :`First in bytes: ${fmt(k*8000000)} ÷ 8 = ${fmt(k*1000000)} bytes. Then in MB (1 MB = 10⁶ bytes): <b>${k} MB</b>.`);},
+ // Leçon 5 — images
+ ()=>{const n=pick([8,16,32]);
+   return num("L5",
+     fr?`Une image en noir et blanc pur (1 bit par pixel) de <code>${n} × ${n} pixels</code> : combien d'octets au total ?`:`A pure black-and-white image (1 bit per pixel) of <code>${n} × ${n} pixels</code>: how many bytes in total?`,
+     n*n/8,
+     fr?`${n} × ${n} = ${n*n} bits, puis ${n*n} ÷ 8 = <b>${n*n/8} octets</b>.`
+       :`${n} × ${n} = ${n*n} bits, then ${n*n} ÷ 8 = <b>${n*n/8} bytes</b>.`);},
+ ()=>mcq("L5",
+   fr?"Dans quel cas la <b>compression RLE</b> est-elle inefficace, voire pire que le stockage normal ?":"In which case is <b>RLE compression</b> ineffective, or even worse than normal storage?",
+   fr?"Quand presque tous les pixels voisins sont différents (une photo)":"When almost all neighboring pixels are different (a photo)",
+   fr?["Quand l'image contient de longues zones d'une même couleur","Quand l'image est en noir et blanc","Quand l'image est très petite"]
+     :["When the image contains long areas of the same color","When the image is black and white","When the image is very small"],
+   fr?"RLE écrit « nombre × couleur ». Si chaque pixel diffère du précédent, on écrit « 1 × couleur » partout : le fichier <b>double</b> de taille au lieu de rétrécir."
+     :"RLE writes “count × color”. If every pixel differs from the previous one, it writes “1 × color” everywhere: the file <b>doubles</b> in size instead of shrinking."),
+ ()=>{const v=ri(1,254),h=v.toString(16).toUpperCase().padStart(2,"0"),b=v.toString(2).padStart(8,"0");
+   const alt=x=>x.toString(2).padStart(8,"0"),sw=b.slice(4)+b.slice(0,4),rev=b.split("").reverse().join("");
+   return mcq("L5",
+     fr?`Une ligne de 8 pixels (1 = pixel noir) est codée <code>${h}₁₆</code>. Quelle suite de bits lui correspond ?`:`A row of 8 pixels (1 = black pixel) is encoded <code>${h}₁₆</code>. Which bit sequence corresponds to it?`,
+     b,[alt(v^1),alt((v+1)%256),alt(255-v),alt((v+2)%256),sw,rev],
+     fr?`${h[0]}₁₆ = <code>${b.slice(0,4)}</code> et ${h[1]}₁₆ = <code>${b.slice(4)}</code> → <code>${b}</code>. Chaque 1 est un pixel noir, chaque 0 un pixel blanc.`
+       :`${h[0]}₁₆ = <code>${b.slice(0,4)}</code> and ${h[1]}₁₆ = <code>${b.slice(4)}</code> → <code>${b}</code>. Each 1 is a black pixel, each 0 a white pixel.`);},
+ // Leçon 6 — caractères
+ ()=>{const d=ri(1,7),L=String.fromCharCode(65+d);
+   return num("L6",
+     fr?`En ASCII, la lettre <code>A</code> a le code <code>65</code>. Quel est le code de la lettre <code>${L}</code> ?`:`In ASCII, the letter <code>A</code> has code <code>65</code>. What is the code of the letter <code>${L}</code>?`,
+     65+d,
+     fr?`Les lettres se suivent : A = 65, B = 66, … donc ${L} = 65 + ${d} = <b>${65+d}</b>.`
+       :`The letters are consecutive: A = 65, B = 66, … so ${L} = 65 + ${d} = <b>${65+d}</b>.`);},
+ ()=>{const c=pick("abcdefghijklmnopqrstuvwxyz".split("")),U=c.toUpperCase();
+   return num("L6",
+     fr?`En ASCII, la lettre <code>${c}</code> a le code <code>${c.charCodeAt(0)}</code>. Quel est le code de <code>${U}</code> (majuscule) ?`:`In ASCII, the letter <code>${c}</code> has code <code>${c.charCodeAt(0)}</code>. What is the code of <code>${U}</code> (uppercase)?`,
+     c.charCodeAt(0)-32,
+     fr?`L'écart minuscule/majuscule vaut toujours 32 : ${c.charCodeAt(0)} − 32 = <b>${c.charCodeAt(0)-32}</b>.`
+       :`The lowercase/uppercase gap is always 32: ${c.charCodeAt(0)} − 32 = <b>${c.charCodeAt(0)-32}</b>.`);},
+ ()=>mcq("L6",
+   fr?"Les <b>128 premiers caractères</b> d'Unicode sont identiques à quelle table ?":"The <b>first 128 characters</b> of Unicode are identical to which table?",
+   fr?"La table ASCII":"The ASCII table",
+   fr?["La table UTF-16","La table Morse","La table EBCDIC"]:["The UTF-16 table","The Morse table","The EBCDIC table"],
+   fr?"Unicode a été conçu pour rester compatible : ses 128 premiers caractères reprennent exactement la table <b>ASCII</b>, et UTF-8 les code sur un seul octet."
+     :"Unicode was designed to stay compatible: its first 128 characters exactly match the <b>ASCII</b> table, and UTF-8 encodes them on a single byte."),
+ // AlgoPython
+ ()=>{const n=ri(3,7),m=pick(["Bravo","Goal","LHC","CVC","Super"]);
+   return num("ALGO",
+     (fr?`Combien de fois au total le mot « ${m} » s'affiche-t-il ?`:`How many times in total is the word “${m}” displayed?`)+`<pre class="code">for k in range(${n}):\n    print("${m}")</pre>`,
+     n,
+     fr?`La boucle répète le <code>print</code> ${n} fois : « ${m} » s'affiche <b>${n} fois</b>.`
+       :`The loop repeats the <code>print</code> ${n} times: “${m}” is displayed <b>${n} times</b>.`);},
+ ()=>{const n=ri(3,6),m=pick(["Bravo","Goal","LHC","CVC","Super"]);
+   return num("ALGO",
+     (fr?`Combien de fois au total le mot « ${m} » s'affiche-t-il ?`:`How many times in total is the word “${m}” displayed?`)+`<pre class="code">for k in range(${n}):\n    print("${m}")\nprint("${m}")</pre>`,
+     n+1,
+     fr?`${n} fois dans la boucle, plus 1 fois après — le dernier <code>print</code> n'est <b>pas indenté</b>, il ne fait pas partie de la boucle. Total : <b>${n+1} fois</b>.`
+       :`${n} times in the loop, plus 1 time after — the last <code>print</code> is <b>not indented</b>, so it is not part of the loop. Total: <b>${n+1} times</b>.`);},
+ ()=>{const a=ri(2,4),b=ri(2,5),m=pick(["Bravo","Goal","LHC","CVC","Super"]);
+   return num("ALGO",
+     (fr?`Combien de fois au total le mot « ${m} » s'affiche-t-il ?`:`How many times in total is the word “${m}” displayed?`)+`<pre class="code">for i in range(${a}):\n    for j in range(${b}):\n        print("${m}")</pre>`,
+     a*b,
+     fr?`Pour chacun des ${a} tours de la boucle extérieure, la boucle intérieure affiche ${b} fois : ${a} × ${b} = <b>${a*b} fois</b>.`
+       :`For each of the ${a} turns of the outer loop, the inner loop prints ${b} times: ${a} × ${b} = <b>${a*b} times</b>.`);},
+ ()=>{const seq=shuffle(fr?
+     [[90,"un quart de tour à droite"],[-90,"un quart de tour à gauche"],[180,"un demi-tour"]]:
+     [[90,"a quarter turn to the right"],[-90,"a quarter turn to the left"],[180,"a U-turn"]]).slice(0,2);
+   let cap=0;for(const[a]of seq)cap=(cap+a+360)%360;
+   const dir=fr?{0:"vers la droite",90:"vers le bas",180:"vers la gauche",270:"vers le haut"}
+               :{0:"to the right",90:"downwards",180:"to the left",270:"upwards"};
+   const steps=seq.map(([a,t],i)=>{const c=(seq.slice(0,i+1).reduce((s,[x])=>s+x,0)+360)%360;return `${t} → ${dir[c]}`;}).join(", ");
+   return mcq("ALGO",
+     fr?`Au départ, la tortue regarde <b>vers la droite</b>. Elle fait ${seq.map(s=>s[1]).join(", puis ")}. Dans quelle direction regarde-t-elle à la fin ?`
+       :`At the start, the turtle faces <b>to the right</b>. It makes ${seq.map(s=>s[1]).join(", then ")}. Which direction does it face at the end?`,
+     dir[cap],Object.values(dir).filter(d=>d!==dir[cap]),
+     fr?`On suit pas à pas : départ vers la droite, puis ${steps}. Réponse : <b>${dir[cap]}</b>.`
+       :`Follow step by step: start facing right, then ${steps}. Answer: <b>${dir[cap]}</b>.`);},
+ ()=>{const n=pick([4,6]),nom=fr?(n===4?"un carré":"un hexagone"):(n===4?"a square":"a hexagon"),ang=n===4?90:60,cote=ri(3,6);
+   return {lesson:"ALGO",kind:"mcq",
+     html:(fr?`Ce programme devrait dessiner ${nom} de côté ${cote}, mais une ligne a été effacée. Quelle ligne complète le programme ?`
+             :`This program should draw ${nom} with side ${cote}, but one line has been erased. Which line completes the program?`)
+        +`<pre class="code">for k in range(${n}):\n    tourner(${ang})\n    ?????</pre>`,
+     choices:shuffle([`    avancer(${cote})`,`avancer(${cote})`,`    avancer(${ang})`,`    tourner(${cote})`]),
+     explain:fr?`Il manque <code>avancer(${cote})</code>, <b>indenté</b> comme <code>tourner(${ang})</code> pour faire partie de la boucle. Sans indentation, il ne s'exécuterait qu'une seule fois à la fin.`
+               :`The missing line is <code>avancer(${cote})</code>, <b>indented</b> like <code>tourner(${ang})</code> so it belongs to the loop. Without indentation, it would run only once at the end.`,
+     codeChoices:true,
+     correctText:`    avancer(${cote})`};},
+ ()=>mcq("ALGO",
+   fr?"Quelle instruction trace un <b>quart de cercle de rayon 3</b> ?":"Which instruction draws a <b>quarter circle of radius 3</b>?",
+   "arc(3, 90)",["arc(90, 3)","arc(3, 180)","tourner(90)"],
+   fr?"<code>arc(rayon, angle)</code> : le rayon d'abord, l'angle ensuite. Un quart de cercle = 90°, donc <code>arc(3, 90)</code>."
+     :"<code>arc(radius, angle)</code>: radius first, then angle. A quarter circle = 90°, so <code>arc(3, 90)</code>."),
+ ];
+}
+</script>
+<script>
+function fixGen(q){
+  if(q.codeChoices){q.correct=q.choices.indexOf(q.correctText);delete q.correctText;}
+  return q;
+}
+
+const state={pool:[],idx:0,score:0,done:0,answered:false};
+function newPool(filter){
+  const gens=buildGens().filter(g=>{const l=fixGen(g()).lesson;return filter==="ALL"||l===filter;});
+  return shuffle(gens.map(g=>()=>fixGen(g())));
+}
+let filter="ALL";
+function start(f){filter=f;state.pool=newPool(f);state.idx=0;state.score=0;state.done=0;next();}
+function next(){
+  state.answered=false;
+  if(state.idx>=state.pool.length){state.pool=state.pool.concat(newPool(filter));}
+  const q=state.pool[state.idx++]();
+  render(q);updateBar();
+}
+function updateBar(){
+  document.getElementById("fill").style.width=Math.min(100,state.done*10)+"%";
+  document.getElementById("mleft").textContent=T().question(state.done+1);
+  document.getElementById("mright").textContent=T().score(state.score,state.done);
+}
+function render(q){
+  const card=document.getElementById("card");
+  let h=`<span class="tag">${T().tags[q.lesson]}</span><div class="qt">${q.html}</div>`;
+  if(q.kind==="mcq"){
+    h+=`<div class="choices">`+q.choices.map((c,i)=>
+      `<button class="ch" data-i="${i}">${q.codeChoices?`<pre>${c.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</pre>`:c}</button>`).join("")+`</div>`;
+  }else{
+    h+=`<div class="inrow"><input id="ans" type="number" inputmode="numeric" placeholder="${T().placeholder}" autocomplete="off"><button class="btn" id="val">${T().validate}</button></div>`;
+  }
+  h+=`<div id="fb"></div><div class="next" id="nx" style="display:none"><button class="btn" id="btnNext">${T().next}</button></div>`;
+  card.innerHTML=h;
+  if(q.kind==="mcq"){
+    card.querySelectorAll(".ch").forEach(b=>b.onclick=()=>{
+      if(state.answered)return;state.answered=true;
+      const i=+b.dataset.i,ok=i===q.correct;
+      card.querySelectorAll(".ch").forEach((x,j)=>{x.disabled=true;if(j===q.correct)x.classList.add("ok");else if(j===i)x.classList.add("ko");});
+      finish(q,ok,q.kind==="mcq"?T().goodAnswer(q.codeChoices?"":q.choices[q.correct]):"");
+    });
+  }else{
+    const inp=document.getElementById("ans");inp.focus();
+    const go=()=>{if(state.answered)return;const v=inp.value.trim();if(v==="")return;state.answered=true;
+      const ok=Number(v.replace(/[\s\u2009,]/g,""))===q.answer;inp.disabled=true;document.getElementById("val").disabled=true;
+      finish(q,ok,T().wasAnswer(fmt(q.answer)));};
+    document.getElementById("val").onclick=go;
+    inp.onkeydown=e=>{if(e.key==="Enter")go();};
+  }
+  document.getElementById("btnNext").onclick=next;
+}
+function finish(q,ok,extra){
+  state.done++;if(ok)state.score++;
+  document.getElementById("fb").innerHTML=
+   `<div class="fb ${ok?"good":"bad"}"><b class="t">${ok?T().correct:T().wrong}</b>${ok?"":extra+" "}${q.explain}
+</div>`;
+  document.getElementById("nx").style.display="flex";
+  updateBar();
+}
+
+// --- UI : filtres, langue, plein écran ---
+const FILTERS=["ALL","L1","L2","L3","L4","L5","L6","ALGO"];
+function buildFilters(){
+  const box=document.getElementById("filters");
+  box.innerHTML="";
+  FILTERS.forEach(f=>{
+    const b=document.createElement("button");
+    b.className="chip"+(f===filter?" on":"");
+    b.dataset.f=f;
+    b.textContent=f==="ALL"?T().all:T().chips[f];
+    b.onclick=()=>{filter=f;buildFilters();start(f);};
+    box.appendChild(b);
+  });
+}
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.getElementById("kicker").textContent=T().kicker;
+  document.getElementById("title").textContent=T().title;
+  document.getElementById("sub").textContent=T().sub;
+  document.getElementById("langBtn").textContent=T().langBtn;
+  document.getElementById("fsBtn").title=T().fsTitle;
+  document.title=T().title;
+  buildFilters();
+  start(filter);
+}
+document.getElementById("langBtn").onclick=()=>{lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){};applyLang();};
+
+const fsBtn=document.getElementById("fsBtn");
+function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
+fsBtn.onclick=()=>{
+  const el=document.documentElement;
+  if(isFs()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
+  else{const req=el.requestFullscreen||el.webkitRequestFullscreen;if(req)req.call(el);}
+};
+function fsChange(){fsBtn.style.background=isFs()?"var(--primaryLight)":"var(--card)";}
+document.addEventListener("fullscreenchange",fsChange);
+document.addEventListener("webkitfullscreenchange",fsChange);
+
+applyLang();
+</script>
+
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body></html>

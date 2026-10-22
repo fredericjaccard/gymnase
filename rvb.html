@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>La représentation de l’information · Gymnase — Frédéric Jaccard</title>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:720px;margin:0 auto}
+
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary);margin:0}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.stage{display:flex;justify-content:center}
+canvas{display:block;width:100%;max-width:640px;height:auto;background:#0b0b0b;border-radius:14px;border:1px solid var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:16px}
+.lig{display:grid;grid-template-columns:20px 64px 1fr 52px 52px 82px;grid-template-areas:"past nom slider dec hex bin";gap:10px;align-items:center;padding:8px 0}
+.lig>:nth-child(1){grid-area:past}
+.lig>:nth-child(2){grid-area:nom}
+.lig>:nth-child(3){grid-area:slider}
+.lig>:nth-child(4){grid-area:dec}
+.lig>:nth-child(5){grid-area:hex}
+.lig>:nth-child(6){grid-area:bin}
+.pastille{width:16px;height:16px;border-radius:50%}
+.pastille.grande{width:26px;height:26px;border:1px solid var(--line)}
+.nom{font-weight:700;min-width:64px}
+input[type=range]{width:100%;height:24px;cursor:pointer}
+.val{display:flex;flex-direction:column;align-items:center}
+.val i{font-style:normal;font-size:11px;color:var(--muted)}
+.val b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.melange{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap;font-size:15px}
+.melange b{color:var(--ink);font-variant-numeric:tabular-nums}
+#mel_rgb{color:var(--muted);font-variant-numeric:tabular-nums}
+.note{margin-top:14px;font-size:14px;color:var(--muted);line-height:1.55;max-width:640px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+@media(max-width:600px){
+  body{padding:10px}
+  .lig{grid-template-columns:24px 1fr 1fr 1fr;grid-template-areas:"past nom dec hex bin" "slider slider slider slider slider";gap:6px 8px;padding:10px 0}
+  input[type=range]{height:44px}
+  .val b{font-size:14px}
+  .note{font-size:13px}
+}
+
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button"></button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<div class="stage"><canvas id="cv" width="640" height="480"></canvas></div>
+<div class="card">
+  <div class="lig">
+    <span class="pastille" style="background:#ff0000"></span>
+    <span class="nom" id="n_r"></span>
+    <input type="range" id="s_r" min="0" max="255" value="255" aria-label="Rouge" style="accent-color:#ff0000">
+    <span class="val"><i class="cdec"></i><b id="d_r"></b></span>
+    <span class="val"><i class="chex"></i><b id="h_r"></b></span>
+    <span class="val bin"><i class="cbin"></i><b id="b_r"></b></span>
+  </div>
+  <div class="lig">
+    <span class="pastille" style="background:#00ff00"></span>
+    <span class="nom" id="n_g"></span>
+    <input type="range" id="s_g" min="0" max="255" value="255" aria-label="Vert" style="accent-color:#00cc00">
+    <span class="val"><i class="cdec"></i><b id="d_g"></b></span>
+    <span class="val"><i class="chex"></i><b id="h_g"></b></span>
+    <span class="val bin"><i class="cbin"></i><b id="b_g"></b></span>
+  </div>
+  <div class="lig">
+    <span class="pastille" style="background:#0000ff"></span>
+    <span class="nom" id="n_b"></span>
+    <input type="range" id="s_b" min="0" max="255" value="255" aria-label="Bleu" style="accent-color:#0000ff">
+    <span class="val"><i class="cdec"></i><b id="d_b"></b></span>
+    <span class="val"><i class="chex"></i><b id="h_b"></b></span>
+    <span class="val bin"><i class="cbin"></i><b id="b_b"></b></span>
+  </div>
+  <div class="melange">
+    <span class="pastille grande" id="past"></span>
+    <span id="t_mel"></span>
+    <b id="mel_hex"></b>
+    <span id="mel_rgb"></span>
+  </div>
+</div>
+<div class="note" id="note"></div>
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+const cv=$("cv"), ctx=cv.getContext("2d");
+let r=255, g=255, b=255;
+const I18N = {
+  fr:{back:"← Toutes les applications", kicker:"La représentation de l’information",
+    title:"Synthèse additive RVB",
+    instruction:"Réglez l'intensité de chaque projecteur avec les curseurs. Les superpositions sur la scène noire et les codes décimal, hexadécimal et binaire se mettent à jour en direct.",
+    fs:"Plein écran", fsExit:"Quitter",
+    r:"Rouge", g:"Vert", b:"Bleu", dec:"Déc", hex:"Hex", bin:"Bin",
+    mel:"Lumière résultante",
+    note:"Rouge + vert = jaune, rouge + bleu = magenta, vert + bleu = cyan — et les trois ensemble donnent le blanc. C'est la synthèse additive des lumières (écrans, projecteurs)." },
+  en:{back:"← All applications", kicker:"Representing information",
+    title:"RGB additive synthesis",
+    instruction:"Adjust the intensity of each spotlight with the sliders. The overlaps on the black stage and the decimal, hexadecimal and binary codes update live.",
+    fs:"Fullscreen", fsExit:"Exit",
+    r:"Red", g:"Green", b:"Blue", dec:"Dec", hex:"Hex", bin:"Bin",
+    mel:"Resulting light",
+    note:"Red + green = yellow, red + blue = magenta, green + blue = cyan — and all three together give white. This is the additive synthesis of light (screens, projectors)." }
+};
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+const T = () => I18N[lang];
+function toHex(v){var s=v.toString(16);return (s.length<2?'0':'')+s.toUpperCase()}
+function toBin(v){var s=v.toString(2);while(s.length<8)s='0'+s;return s}
+function bin8(v){var s=toBin(v);return s.slice(0,4)+' '+s.slice(4)}
+function lum(x,y,z){return 0.299*x+0.587*y+0.114*z}
+function txt(x,y,s,c,taille){
+  ctx.font='700 '+taille+'px "Quattrocento Sans",-apple-system,"Segoe UI",Roboto,sans-serif';
+  ctx.textAlign='center';ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=5;
+  ctx.fillStyle=c;ctx.fillText(s,x,y);ctx.shadowBlur=0;
+}
+function lumiere(x,y,rad,col,v){
+  if(v<=0)return;
+  var a=v/255;
+  var gr=ctx.createRadialGradient(x,y,0,x,y,rad);
+  gr.addColorStop(0,'rgba('+col[0]+','+col[1]+','+col[2]+','+(a).toFixed(3)+')');
+  gr.addColorStop(0.7,'rgba('+col[0]+','+col[1]+','+col[2]+','+(0.97*a).toFixed(3)+')');
+  gr.addColorStop(1,'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+  ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,rad,0,6.2832);ctx.fill();
+}
+function coulTxt(x,y,z){return lum(x,y,z)>150?'#111111':'#ffffff'}
+function dessiner(){
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle='#0b0b0b';ctx.fillRect(0,0,640,480);
+  ctx.globalCompositeOperation='lighter';
+  lumiere(320,170,165,[255,0,0],r);
+  lumiere(237.5,312.5,165,[0,255,0],g);
+  lumiere(402.5,312.5,165,[0,0,255],b);
+  ctx.globalCompositeOperation='source-over';
+  var t=T();
+  txt(320,155,t.r,'#ffffff',19);   txt(320,178,'#'+toHex(r)+'0000','#ffffff',14);
+  txt(237.5,297,t.g,'#ffffff',19); txt(237.5,320,'#00'+toHex(g)+'00','#ffffff',14);
+  txt(402.5,297,t.b,'#ffffff',19); txt(402.5,320,'#0000'+toHex(b),'#ffffff',14);
+  txt(265,200,'#'+toHex(r)+toHex(g)+'00',coulTxt(r,g,0),14);
+  txt(375,200,'#'+toHex(r)+'00'+toHex(b),coulTxt(r,0,b),14);
+  txt(322,352,'#00'+toHex(g)+toHex(b),coulTxt(0,g,b),14);
+  txt(320,262,'#'+toHex(r)+toHex(g)+toHex(b),coulTxt(r,g,b),16);
+}
+function applyLang(){
+  var t=T();
+  document.documentElement.lang = lang;
+  $("kicker").textContent=t.kicker;
+  $("title").textContent=t.title;
+  $("instruction").textContent=t.instruction;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("fsLabel").textContent = document.fullscreenElement ? t.fsExit : t.fs;
+  $("n_r").textContent=t.r; $("n_g").textContent=t.g; $("n_b").textContent=t.b;
+  var els=document.querySelectorAll(".cdec"); for(var i=0;i<els.length;i++)els[i].textContent=t.dec;
+  els=document.querySelectorAll(".chex"); for(i=0;i<els.length;i++)els[i].textContent=t.hex;
+  els=document.querySelectorAll(".cbin"); for(i=0;i<els.length;i++)els[i].textContent=t.bin;
+  $("t_mel").textContent=t.mel;
+  $("note").textContent=t.note;
+  dessiner();
+}
+function maj(){
+  function set3(id,v){
+    $("d_"+id).textContent=v;
+    $("h_"+id).textContent=toHex(v);
+    $("b_"+id).textContent=bin8(v);
+  }
+  set3("r",r); set3("g",g); set3("b",b);
+  $("past").style.background='rgb('+r+','+g+','+b+')';
+  $("mel_hex").textContent='#'+toHex(r)+toHex(g)+toHex(b);
+  $("mel_rgb").textContent='('+r+', '+g+', '+b+')';
+  dessiner();
+}
+$("langBtn").onclick = () => { lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
+$("fsBtn").onclick = () => {
+  if(isFs()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
+  else{var el=document.documentElement,req=el.requestFullscreen||el.webkitRequestFullscreen;if(req)req.call(el);}
+};
+function fsUpd(){$("fsLabel").textContent = isFs() ? T().fsExit : T().fs;}
+document.addEventListener("fullscreenchange", fsUpd);
+document.addEventListener("webkitfullscreenchange", fsUpd);
+$("s_r").addEventListener("input",function(){r=+this.value;maj();});
+$("s_g").addEventListener("input",function(){g=+this.value;maj();});
+$("s_b").addEventListener("input",function(){b=+this.value;maj();});
+applyLang(); maj();
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(dessiner); }
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>

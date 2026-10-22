@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>La cuisine littérale — Algorithmique · Gymnase — Frédéric Jaccard</title>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.workzone{display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start}
+@media(max-width:860px){.workzone{grid-template-columns:1fr}}
+.board{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.levelRow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center}
+.levelRow label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.lvlBtn{width:36px;height:36px;padding:0;border-radius:50%;position:relative}
+.lvlBtn.active{background:var(--accentLight);border-color:var(--accent);color:var(--accent)}
+.lvlBtn.locked{opacity:.35;cursor:not-allowed}
+.lvlBtn.solved::after{content:"★";font-size:11px;position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:var(--accent)}
+.nextBtn{display:none;background:var(--accent);border-color:var(--accent);color:#fff;margin:0 auto}
+.nextBtn.show{display:inline-block}
+.nextBtn:hover{background:#b85806}
+/* scène */
+#scene{background:#fff;border:2px solid var(--line);border-radius:12px;min-height:190px;display:flex;align-items:center;justify-content:center;padding:18px;font-size:64px;text-align:center;line-height:1.3}
+#sceneText{font-size:20px;color:var(--ink);max-width:90%}
+#sceneEmoji{display:block;font-size:56px;margin-bottom:8px}
+.msg{border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;display:none}
+.msg.show{display:block}
+.msg.ok{background:var(--primaryLight);color:var(--primary);border:2px solid var(--primary)}
+.msg.err{background:var(--accentLight);color:var(--accent);border:2px solid var(--accent)}
+/* étapes */
+.panel{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:15px;color:var(--primary);text-transform:uppercase;letter-spacing:.1em}
+.steps{display:flex;flex-direction:column;gap:8px}
+.stepBtn{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:2px solid var(--line);
+  border-radius:10px;padding:10px 12px;font-size:14.5px;color:var(--ink);cursor:pointer;font-weight:400}
+.stepBtn:hover{border-color:var(--primary);background:var(--primaryLight)}
+.stepBtn .num{width:22px;height:22px;border-radius:50%;background:var(--line);color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.stepBtn.used{opacity:.35;pointer-events:none}
+.prog{min-height:64px;background:#fff;border:2px dashed var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.progEmpty{font-size:13px;color:var(--muted);align-self:center;margin:auto}
+.chip{display:flex;align-items:center;gap:8px;background:var(--primaryLight);border:1.5px solid var(--primary);
+  border-radius:8px;padding:6px 10px;font-size:14px;color:var(--primary);cursor:pointer}
+.chip.current{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip .n{font-weight:700;font-size:12px;background:#fff;color:var(--primary);border-radius:50%;width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;flex:none}
+.chip.current .n{color:var(--accent)}
+.runRow{display:flex;gap:8px}
+.goBtn{background:var(--primary);color:#fff;flex:1;font-size:16px;padding:10px 0}
+.goBtn:hover{background:#0e4a3b}
+.hint{font-size:13px;color:var(--muted);line-height:1.45}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn">English</button>
+    <button id="fsBtn"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="workzone">
+  <div class="board">
+    <div class="levelRow" id="levelRow"><label id="levelLabel"></label></div>
+    <button class="nextBtn" id="nextBtn"></button>
+    <div id="scene"></div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="panel">
+    <h2 id="stepsTitle"></h2>
+    <div class="steps" id="steps"></div>
+    <h2 id="progTitle"></h2>
+    <div class="prog" id="prog"></div>
+    <div class="runRow">
+      <button class="goBtn" id="runBtn"></button>
+      <button id="clearBtn"></button>
+    </div>
+    <p class="hint" id="hint"></p>
+  </div>
+</div>
+
+<canvas id="fireworks"></canvas>
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- données ---------- */
+// Chaque recette : étapes (dans le BON ordre), avec pour chaque étape un emoji et un texte d'exécution.
+// La machine exécute le programme de l'élève à la lettre ; le résultat dépend de l'ordre réel.
+const RECIPES = [
+  { // tartine
+    name:{fr:"La tartine", en:"The toast"},
+    steps:[
+      {id:"pain", emoji:"🍞", fr:"Prendre une tranche de pain", en:"Take a slice of bread"},
+      {id:"grille",emoji:"🔥",fr:"Faire griller le pain",       en:"Toast the bread"},
+      {id:"beurre",emoji:"🧈",fr:"Beurrer la tartine",          en:"Butter the toast"},
+      {id:"conf", emoji:"🍓", fr:"Mettre la confiture",         en:"Add the jam"}
+    ]
+  },
+  { // œuf à la coque
+    name:{fr:"L'œuf à la coque", en:"The boiled egg"},
+    steps:[
+      {id:"eau",  emoji:"🔥", fr:"Faire bouillir l'eau",        en:"Boil the water"},
+      {id:"oeuf", emoji:"🥚", fr:"Mettre l'œuf dans l'eau",     en:"Put the egg in the water"},
+      {id:"cuire",emoji:"⏲️", fr:"Cuire 3 minutes",             en:"Cook for 3 minutes"},
+      {id:"sortir",emoji:"🥄",fr:"Sortir l'œuf de l'eau",       en:"Take the egg out"},
+      {id:"casser",emoji:"🔨",fr:"Casser la coquille",          en:"Crack the shell"}
+    ]
+  },
+  { // pâtes
+    name:{fr:"Les pâtes", en:"Pasta"},
+    steps:[
+      {id:"eau",  emoji:"💧", fr:"Mettre l'eau dans la casserole", en:"Put water in the pot"},
+      {id:"sel",  emoji:"🧂", fr:"Saler l'eau",                 en:"Salt the water"},
+      {id:"bouillir",emoji:"🔥", fr:"Faire bouillir l'eau",     en:"Bring to the boil"},
+      {id:"pates",emoji:"🍜", fr:"Mettre les pâtes",            en:"Put the pasta in"},
+      {id:"cuire",emoji:"⏲️", fr:"Cuire 8 minutes",             en:"Cook for 8 minutes"},
+      {id:"egout",emoji:"🥣", fr:"Égoutter les pâtes",          en:"Drain the pasta"}
+    ]
+  },
+  { // fondue au fromage
+    name:{fr:"La fondue au fromage", en:"Cheese fondue"},
+    steps:[
+      {id:"caq",  emoji:"🧄", fr:"Frotter le caquelon avec l'ail",     en:"Rub the pot with garlic"},
+      {id:"vin",  emoji:"🥂", fr:"Verser le vin blanc",                en:"Pour the white wine"},
+      {id:"chauf",emoji:"🔥", fr:"Faire chauffer le vin",              en:"Heat the wine"},
+      {id:"from", emoji:"🧀", fr:"Ajouter le fromage râpé",            en:"Add the grated cheese"},
+      {id:"mel",  emoji:"🥄", fr:"Remuer jusqu'à ce que ce soit lisse", en:"Stir until smooth"},
+      {id:"pain", emoji:"🍞", fr:"Tremper le pain",                    en:"Dip the bread"}
+    ]
+  }
+];
+
+const I18N = {
+  fr:{back:"← Toutes les applications",
+    kicker:"Algorithmique",
+    title:"La cuisine littérale",
+    fs:"Plein écran", fsExit:"Quitter",
+    instruction:"La machine cuisine <b>exactement</b> ce que vous lui demandez, dans l'ordre où vous le demandez. Construisez la recette en cliquant sur les étapes, puis lancez la machine : si l'ordre est bon, le plat est réussi ; sinon… regardez bien ce qui se passe !",
+    level:"Recette",
+    next:"Recette suivante →",
+    locked:"Réussissez d'abord les recettes précédentes !",
+    stepsTitle:"Les étapes possibles",
+    progTitle:"Votre recette",
+    progEmpty:"Cliquez sur les étapes pour construire votre recette…",
+    run:"Lancer la machine", clear:"Tout effacer",
+    hint:"Cliquez sur une étape de votre recette pour la retirer. La machine exécutera vos instructions dans l'ordre exact, de haut en bas — sans réfléchir à votre place.",
+    win:"Parfait ! La recette est réussie — chaque instruction au bon moment. Essayez la recette suivante !",
+    winLast:"Bravo ! Toutes les recettes sont réussies — vous savez donner des ordres à une machine !",
+    fail:"La machine a fait exactement ce que vous avez demandé… mais ce n'est pas ce que vous pensiez. Observez le résultat, corrigez l'ordre et réessayez.",
+    running:"La machine exécute votre recette…",
+    startScene:"🍽️ Prêt à cuisiner ! Assemblez votre recette à droite."
+  },
+  en:{back:"← All applications",
+    kicker:"ALGORITHMS",
+    title:"The Literal Kitchen",
+    fs:"Fullscreen", fsExit:"Exit",
+    instruction:"The machine cooks <b>exactly</b> what you ask, in the exact order you ask it. Build the recipe by clicking the steps, then start the machine: if the order is right, the dish is a success; otherwise… watch carefully what happens!",
+    level:"Recipe",
+    next:"Next recipe →",
+    locked:"Complete the previous recipes first!",
+    stepsTitle:"Available steps",
+    progTitle:"Your recipe",
+    progEmpty:"Click the steps to build your recipe…",
+    run:"Start the machine", clear:"Clear all",
+    hint:"Click a step in your recipe to remove it. The machine will run your instructions in the exact order, top to bottom — without thinking for you.",
+    win:"Perfect! The recipe is a success — every instruction at the right moment. Try the next recipe!",
+    winLast:"Well done! All recipes succeeded — you know how to give orders to a machine!",
+    fail:"The machine did exactly what you asked… but that is not what you meant. Look at the result, fix the order and try again.",
+    running:"The machine is running your recipe…",
+    startScene:"🍽️ Ready to cook! Assemble your recipe on the right."
+  }
+};
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+const T = () => I18N[lang];
+
+/* ---------- état ---------- */
+let levelIdx = 0, solved = new Set();
+let program = [];          // ids d'étapes
+let running = false;
+
+/* ---------- niveaux ---------- */
+function renderLevelButtons(){
+  const row = $("levelRow");
+  row.querySelectorAll("button").forEach(b=>b.remove());
+  const maxUnlocked = Math.max(0, ...[...solved].map(x=>x+1));
+  RECIPES.forEach((_,i)=>{
+    const b = document.createElement("button");
+    const locked = i > maxUnlocked;
+    b.className = "lvlBtn" + (i===levelIdx?" active":"") + (solved.has(i)?" solved":"") + (locked?" locked":"");
+    b.textContent = i+1;
+    b.onclick = ()=>{
+      if(locked){ showMsg("err", T().locked); return; }
+      stopRun(); levelIdx=i; program=[]; buildLevel(); renderProgram(); hideMsg(); updateNextBtn();
+    };
+    row.appendChild(b);
+  });
+}
+function updateNextBtn(){
+  $("nextBtn").classList.toggle("show", solved.has(levelIdx) && levelIdx < RECIPES.length-1);
+}
+$("nextBtn").onclick = ()=>{
+  if(levelIdx < RECIPES.length-1){
+    stopRun(); levelIdx++; program=[]; buildLevel(); renderProgram(); hideMsg();
+    renderLevelButtons(); updateNextBtn();
+  }
+};
+
+/* ---------- construction ---------- */
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function buildLevel(){
+  const rec = RECIPES[levelIdx];
+  const wrap = $("steps");
+  wrap.innerHTML = "";
+  shuffled(rec.steps).forEach(st=>{
+    const b = document.createElement("button");
+    b.className = "stepBtn";
+    b.dataset.step = st.id;
+    b.innerHTML = `<span>${st.emoji}</span><span>${st[lang]}</span>`;
+    b.onclick = ()=>{ if(running) return; program.push(st.id); b.classList.add("used"); renderProgram(); hideMsg(); };
+    wrap.appendChild(b);
+  });
+  $("scene").innerHTML = `<span id="sceneText"><span id="sceneEmoji">🍽️</span>${lang==="fr"?"Prêt à cuisiner !":"Ready to cook!"}</span>`;
+}
+function renderProgram(current=-1){
+  const rec = RECIPES[levelIdx];
+  const p = $("prog");
+  p.innerHTML = "";
+  if(program.length===0){
+    const s = document.createElement("span");
+    s.className = "progEmpty"; s.textContent = T().progEmpty;
+    p.appendChild(s);
+    return;
+  }
+  program.forEach((id,i)=>{
+    const st = rec.steps.find(x=>x.id===id);
+    const chip = document.createElement("div");
+    chip.className = "chip" + (i===current?" current":"");
+    chip.innerHTML = `<span class="n">${i+1}</span><span>${st.emoji} ${st[lang]}</span>`;
+    chip.onclick = ()=>{
+      if(running) return;
+      program.splice(i,1);
+      document.querySelectorAll(".stepBtn").forEach(b=>{
+        if(b.dataset.step===id) b.classList.remove("used");
+      });
+      renderProgram();
+    };
+    p.appendChild(chip);
+  });
+}
+
+/* ---------- exécution ---------- */
+function showMsg(kind,text){ const m=$("msg"); m.className="msg show "+kind; m.textContent=text; }
+function hideMsg(){ $("msg").className="msg"; }
+function stopRun(){ running=false; }
+
+function isCorrect(){
+  const rec = RECIPES[levelIdx];
+  return program.length===rec.steps.length && program.every((id,i)=>rec.steps[i].id===id);
+}
+
+async function runRecipe(){
+  if(program.length===0 || running) return;
+  running = true;
+  const rec = RECIPES[levelIdx];
+  hideMsg();
+  showMsg("ok", T().running);
+  const scene = $("scene");
+  for(let i=0;i<program.length;i++){
+    renderProgram(i);
+    const st = rec.steps.find(x=>x.id===program[i]);
+    scene.innerHTML = `<span id="sceneText"><span id="sceneEmoji">${st.emoji}</span>${st[lang]}</span>`;
+    await new Promise(r=>setTimeout(r, 900));
+  }
+  renderProgram();
+  running = false;
+  if(isCorrect()){
+    solved.add(levelIdx); renderLevelButtons(); updateNextBtn();
+    const last = levelIdx === RECIPES.length-1;
+    const finalEmoji = ["🍞","🥚","🍜","🫕"][levelIdx] || "🍽️";
+    scene.innerHTML = `<span id="sceneText"><span id="sceneEmoji">${finalEmoji}✨</span>${lang==="fr"?"C'est prêt, bon appétit !":"It's ready, enjoy!"}</span>`;
+    showMsg("ok", last ? T().winLast : T().win);
+    if(last && !fwRunning) setTimeout(fireworks, 500);
+  }else{
+    scene.innerHTML = `<span id="sceneText"><span id="sceneEmoji">🤢</span>${lang==="fr"?"Le plat est raté…":"The dish is ruined…"}</span>`;
+    showMsg("err", T().fail);
+  }
+}
+
+$("runBtn").onclick = runRecipe;
+$("clearBtn").onclick = ()=>{
+  if(running) return;
+  program=[]; document.querySelectorAll(".stepBtn").forEach(b=>b.classList.remove("used"));
+  renderProgram(); buildLevel(); hideMsg();
+};
+
+/* ---------- feu d'artifice (recette du constructeur NAND) ---------- */
+let fwRunning = false;
+function fireworks(){
+  const cv = document.getElementById("fireworks"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  cv.style.display = "block";
+  fwRunning = true;
+  const COLORS = ["#155E4C","#D96A08","#3E8E7E","#F0A04B","#7FB69E","#C84B31"];
+  const rockets = [], sparks = [];
+  const launch = () => {
+    rockets.push({
+      x: cv.width * (0.15 + Math.random() * 0.7), y: cv.height,
+      vx: (Math.random() - 0.5) * 2, vy: -(10 + Math.random() * 4),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  };
+  const explode = r => {
+    for(let i = 0; i < 90; i++){
+      const ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+      sparks.push({ x: r.x, y: r.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+                    life: 60 + Math.random() * 40, color: r.color });
+    }
+  };
+  let frame = 0;
+  const tick = () => {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    frame++;
+    if(frame < 260 && frame % 16 === 0) launch();
+    for(let i = rockets.length - 1; i >= 0; i--){
+      const r = rockets[i];
+      r.x += r.vx; r.y += r.vy; r.vy += 0.18;
+      ctx.beginPath(); ctx.arc(r.x, r.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = r.color; ctx.fill();
+      if(r.vy >= -1.5){ explode(r); rockets.splice(i, 1); }
+    }
+    for(let i = sparks.length - 1; i >= 0; i--){
+      const s = sparks[i];
+      s.x += s.vx; s.y += s.vy; s.vy += 0.05; s.vx *= 0.985; s.life--;
+      ctx.globalAlpha = Math.max(0, s.life / 80);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.fill();
+      if(s.life <= 0) sparks.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    if(frame < 600 || rockets.length || sparks.length) requestAnimationFrame(tick);
+    else { cv.style.display = "none"; fwRunning = false; }
+  };
+  tick();
+}
+
+/* ---------- i18n + fullscreen ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  document.title = T().title + " — Algorithmique";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("instruction").innerHTML = T().instruction;
+  $("levelLabel").textContent = T().level;
+  $("nextBtn").textContent = T().next;
+  $("stepsTitle").textContent = T().stepsTitle;
+  $("progTitle").textContent = T().progTitle;
+  $("runBtn").textContent = T().run;
+  $("clearBtn").textContent = T().clear;
+  $("hint").textContent = T().hint;
+  buildLevel(); renderProgram(); renderLevelButtons(); updateNextBtn();
+}
+$("langBtn").onclick = ()=>{ lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = ()=>{
+  const el = document.documentElement;
+  if(isFs()){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+  else{
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+buildLevel();
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>

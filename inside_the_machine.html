@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>Inside the Machine — Architecture des ordinateurs · Gymnase — Frédéric Jaccard</title>
+<style>
+  :root{
+    --bg:#FBFAF6; --ink:#20241F; --muted:#6E726B;
+    --primary:#155E4C; --primary-light:#E3F0EA;
+    --accent:#D96A08; --accent-light:#FDEBD8;
+    --line:#D8D5CB; --card:#F7F6F2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Quattrocento Sans","Segoe UI",system-ui,sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  header{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:14px 24px; border-bottom:1px solid var(--line);
+  }
+  header .titles{flex:1; min-width:220px}
+  .kicker{
+    color:var(--accent); font-weight:700; font-size:13px;
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+  h1{font-size:26px; color:var(--primary); line-height:1.15}
+  .controls{display:flex; gap:10px}
+  button.ctl{
+    font:inherit; font-weight:700; font-size:14px; cursor:pointer;
+    padding:9px 16px; border-radius:8px;
+    border:2px solid var(--primary); background:#fff; color:var(--primary);
+    transition:background .15s,color .15s;
+  }
+  button.ctl:hover{background:var(--primary); color:#fff}
+  button.ctl.active{background:var(--primary); color:#fff}
+  main{
+    flex:1; display:grid; grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);
+    gap:24px; padding:24px; max-width:1240px; width:100%; margin:0 auto;
+  }
+  @media (max-width:880px){ main{grid-template-columns:1fr} }
+  .stage-col{display:flex; flex-direction:column; gap:12px}
+  .stage-instruction{
+    font-size:15px; color:var(--ink); background:var(--primary-light);
+    border-radius:10px; padding:12px 16px; line-height:1.5;
+  }
+  .stage{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:14px; display:flex; align-items:center; justify-content:center;
+  }
+  svg{width:100%; height:auto; max-height:70vh; display:block}
+  .comp{cursor:pointer}
+  .comp rect.body{
+    fill:#fff; stroke:var(--primary); stroke-width:2.5;
+    transition:fill .15s, stroke .15s;
+  }
+  .comp:hover rect.body{fill:var(--primary-light)}
+  .comp.selected rect.body{fill:var(--primary-light); stroke:var(--accent); stroke-width:4}
+  .comp text{fill:var(--ink); font-weight:700; pointer-events:none}
+  .comp .sub{fill:var(--muted); font-weight:400}
+  .wire{stroke:var(--line); stroke-width:5; fill:none; stroke-linecap:round}
+  .wire.hot{stroke:var(--accent); stroke-dasharray:10 8; animation:flow 1s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-18}}
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:14px;
+  }
+  .panel h2{color:var(--primary); font-size:21px}
+  .panel .analogy{
+    background:var(--accent-light); border-left:4px solid var(--accent);
+    padding:10px 14px; border-radius:0 8px 8px 0; font-size:15px;
+  }
+  .panel p{font-size:15px; line-height:1.55}
+  .panel .hint{color:var(--muted); font-size:15px; font-style:italic}
+  .quizbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .badge{
+    font-weight:700; font-size:14px; color:var(--primary);
+    background:var(--primary-light); border-radius:999px; padding:6px 14px;
+  }
+  .answers{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  button.ans{
+    font:inherit; font-weight:700; font-size:15px; cursor:pointer;
+    padding:12px 10px; border-radius:8px; text-align:center;
+    border:2px solid var(--line); background:#fff; color:var(--ink);
+    transition:border-color .15s, background .15s;
+  }
+  button.ans:hover:not(:disabled){border-color:var(--primary)}
+  button.ans:disabled{cursor:default}
+  button.ans.good{border-color:var(--primary); background:var(--primary-light); color:var(--primary)}
+  button.ans.bad{border-color:var(--accent); background:var(--accent-light); color:var(--accent)}
+  .feedback{font-size:15px; min-height:22px; font-weight:700}
+  .feedback.ok{color:var(--primary)}
+  .feedback.ko{color:var(--accent)}
+  .score{font-size:15px; color:var(--muted)}
+  .score b{color:var(--ink)}
+  footer{
+    padding:12px 24px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:13px; text-align:center;
+  }
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div class="titles">
+    <div class="kicker" id="kicker">Architecture des ordinateurs — Leçon 1</div>
+    <h1 id="title">Inside the Machine — vue globale</h1>
+  </div>
+  <div class="controls">
+    <button class="ctl" id="langBtn">English</button>
+    <button class="ctl" id="fsBtn">⛶ <span id="fsLabel">Plein écran</span></button>
+    <button class="ctl" id="quizBtn">Mode quiz</button>
+  </div>
+</header>
+
+<main>
+  <div class="stage-col">
+  <p class="stage-instruction" id="stageInstruction"></p>
+  <div class="stage">
+    <svg viewBox="0 0 760 560" id="machine" aria-label="Schéma d'un ordinateur">
+      <!-- bus / wires -->
+      <path class="wire" id="w-cpu-ram"   d="M 460 190 L 470 190 L 470 165 L 480 165"/>
+      <path class="wire" id="w-cpu-disk"  d="M 460 232 L 472 232 L 472 271 L 480 271"/>
+      <path class="wire" id="w-cpu-gpu"   d="M 300 212 L 200 212 L 200 202"/>
+      <path class="wire" id="w-cpu-kb"    d="M 330 252 L 330 300 L 160 300 L 160 380"/>
+      <path class="wire" id="w-cpu-mouse" d="M 430 252 L 430 320 L 600 320 L 600 380"/>
+      <path class="wire" id="w-gpu-mon"   d="M 250 140 L 250 74 L 290 74"/>
+      <!-- motherboard frame -->
+      <rect x="60" y="10" width="620" height="480" rx="18" fill="none"
+            stroke="#D8D5CB" stroke-width="2" stroke-dasharray="6 6"/>
+
+      <!-- CPU -->
+      <g class="comp" data-id="cpu" transform="translate(300,172)">
+        <rect class="body" x="0" y="0" width="160" height="80" rx="10"/>
+        <rect x="30" y="-14" width="100" height="14" rx="4" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <text x="80" y="36" text-anchor="middle" font-size="22">CPU</text>
+        <text class="sub" x="80" y="60" text-anchor="middle" font-size="13" data-i18n-sub="cpu">processeur</text>
+      </g>
+      <!-- RAM -->
+      <g class="comp" data-id="ram" transform="translate(480,140)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <rect x="20" y="62" width="120" height="10" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <text x="80" y="28" text-anchor="middle" font-size="22">RAM</text>
+        <text class="sub" x="80" y="50" text-anchor="middle" font-size="13" data-i18n-sub="ram">mémoire vive</text>
+      </g>
+      <!-- Disque -->
+      <g class="comp" data-id="disk" transform="translate(480,240)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <circle cx="40" cy="31" r="18" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <circle cx="40" cy="31" r="4" fill="#155E4C"/>
+        <text x="102" y="28" text-anchor="middle" font-size="20" data-i18n="disk">Disque</text>
+        <text class="sub" x="102" y="50" text-anchor="middle" font-size="13" data-i18n-sub="disk">stockage</text>
+      </g>
+      <!-- Carte graphique -->
+      <g class="comp" data-id="gpu" transform="translate(120,140)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <text x="80" y="28" text-anchor="middle" font-size="18" data-i18n="gpu">Carte graphique</text>
+        <text class="sub" x="80" y="50" text-anchor="middle" font-size="13" data-i18n-sub="gpu">images</text>
+      </g>
+      <!-- Écran -->
+      <g class="comp" data-id="screen" transform="translate(290,24)">
+        <rect class="body" x="0" y="0" width="180" height="100" rx="10"/>
+        <rect x="72" y="100" width="36" height="14" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+        <rect x="48" y="114" width="84" height="10" rx="4" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+        <text x="90" y="44" text-anchor="middle" font-size="20" data-i18n="screen">Écran</text>
+        <text class="sub" x="90" y="68" text-anchor="middle" font-size="13" data-i18n-sub="screen">sortie</text>
+      </g>
+      <!-- Clavier -->
+      <g class="comp" data-id="keyboard" transform="translate(80,380)">
+        <rect class="body" x="0" y="0" width="160" height="52" rx="10"/>
+        <g fill="#E3F0EA">
+          <rect x="14" y="12" width="18" height="12" rx="2"/><rect x="38" y="12" width="18" height="12" rx="2"/>
+          <rect x="62" y="12" width="18" height="12" rx="2"/><rect x="86" y="12" width="18" height="12" rx="2"/>
+          <rect x="110" y="12" width="18" height="12" rx="2"/><rect x="30" y="30" width="100" height="12" rx="2"/>
+        </g>
+        <text x="80" y="-12" text-anchor="middle" font-size="18" data-i18n="keyboard">Clavier</text>
+      </g>
+      <!-- Souris -->
+      <g class="comp" data-id="mouse" transform="translate(560,380)">
+        <rect class="body" x="0" y="0" width="80" height="52" rx="26"/>
+        <line x1="40" y1="0" x2="40" y2="20" stroke="#155E4C" stroke-width="2.5"/>
+        <text x="40" y="76" text-anchor="middle" font-size="18" data-i18n="mouse">Souris</text>
+      </g>
+    </svg>
+  </div>
+  </div>
+
+  <aside class="panel" id="panel"><!-- rempli par JS --></aside>
+</main>
+
+<footer id="footer">Cliquez sur un composant pour découvrir son rôle. — Frédéric Jaccard</footer>
+
+<script>
+const I18N = {
+  fr: {back:"← Toutes les applications",
+    kicker:"Architecture des ordinateurs",
+    title:"Inside the Machine — vue globale",
+    quizBtn:"Mode quiz", exploreBtn:"Mode exploration",
+    fs:"Plein écran", fsExit:"Quitter",
+    footer:"Frédéric Jaccard",
+    hint:"Cliquez sur un composant du schéma (CPU, RAM, disque, carte graphique, écran, clavier, souris) pour découvrir son rôle et une analogie. Quand vous les connaissez tous, lancez le mode quiz pour tester vos connaissances !",
+    panelTitle:"Explorez la machine",
+    panelIdle:"Sélectionnez un composant pour voir sa description ici.",
+    analogy:"Analogie",
+    quizTitle:"Mode quiz — où va cette donnée ?",
+    quizPrompt:"Cliquez sur le bon composant du schéma, ou utilisez les boutons ci-dessous.",
+    good:"Correct !", bad:"Pas tout à fait…",
+    score:"Score", next:"Question suivante",
+    done:"Quiz terminé ! Score final : ",
+    restart:"Recommencer le quiz",
+    disk:"Disque", gpu:"Carte graphique", screen:"Écran", keyboard:"Clavier", mouse:"Souris",
+    subs:{cpu:"processeur",ram:"mémoire vive",disk:"stockage",gpu:"images",screen:"sortie"},
+    comps:{
+      cpu:{name:"Le processeur (CPU)",role:"C'est le chef d'orchestre : il exécute les calculs et les instructions des programmes, une étape à la fois, au rythme de l'horloge. Il contient l'ALU (qui calcule) et les registres (qui retiennent).",analogy:"Le cuisinier qui suit la recette pas à pas."},
+      ram:{name:"La mémoire vive (RAM)",role:"Elle garde les données et les programmes en cours d'utilisation, pour un accès très rapide. Mais elle est volatile : tout disparaît quand on éteint l'ordinateur.",analogy:"Le plan de travail de la cuisine : tout est à portée de main, mais on le vide après le repas."},
+      disk:{name:"Le disque (stockage)",role:"Il conserve fichiers et programmes de façon permanente, même sans courant. Beaucoup plus grand que la RAM, mais beaucoup plus lent.",analogy:"Le placard où l'on range les ingrédients entre deux repas."},
+      gpu:{name:"La carte graphique",role:"Elle transforme les données en images à afficher et allège le travail du processeur pour tout ce qui est visuel (jeux, vidéos, 3D).",analogy:"Le peintre qui transforme les instructions en tableau."},
+      screen:{name:"L'écran",role:"Un périphérique de sortie : il affiche le résultat des calculs. Il ne calcule rien, il ne mémorise rien.",analogy:"L'assiette dressée qu'on apporte à table."},
+      keyboard:{name:"Le clavier",role:"Un périphérique d'entrée : chaque touche pressée envoie un signal codé (en binaire !) vers le processeur.",analogy:"Le client qui passe sa commande."},
+      mouse:{name:"La souris",role:"Un périphérique d'entrée : elle envoie sa position et ses clics au processeur, qui décide quoi en faire.",analogy:"Le doigt qui pointe sur le menu."}
+    },
+    quiz:[
+      {q:"Tu appuies sur une touche. Quel composant envoie le signal ?", a:"keyboard"},
+      {q:"Quel composant effectue le calcul 3 + 4 ?", a:"cpu"},
+      {q:"Un texte non enregistré se trouve où — et sera perdu à l'extinction ?", a:"ram"},
+      {q:"Où ta photo de vacances est-elle conservée même ordinateur éteint ?", a:"disk"},
+      {q:"Quel composant prépare l'image avant l'affichage ?", a:"gpu"},
+      {q:"Où le résultat final est-il montré à l'utilisateur ?", a:"screen"},
+      {q:"Tu déplaces le pointeur. Quel composant vient d'envoyer une information ?", a:"mouse"}
+    ]
+  },
+  en: {back:"← All applications",
+    kicker:"Computer architecture",
+    title:"Inside the Machine — the big picture",
+    quizBtn:"Quiz mode", exploreBtn:"Explore mode",
+    fs:"Fullscreen", fsExit:"Exit",
+    footer:"Frédéric Jaccard",
+    hint:"Click a component in the diagram (CPU, RAM, drive, graphics card, screen, keyboard, mouse) to discover its role and an analogy. Once you know them all, start the quiz mode to test your knowledge!",
+    panelTitle:"Explore the machine",
+    panelIdle:"Select a component to see its description here.",
+    analogy:"Analogy",
+    quizTitle:"Quiz mode — where does this data go?",
+    quizPrompt:"Click the right component in the diagram, or use the buttons below.",
+    good:"Correct!", bad:"Not quite…",
+    score:"Score", next:"Next question",
+    done:"Quiz complete! Final score: ",
+    restart:"Restart the quiz",
+    disk:"Drive", gpu:"Graphics card", screen:"Screen", keyboard:"Keyboard", mouse:"Mouse",
+    subs:{cpu:"processor",ram:"working memory",disk:"storage",gpu:"images",screen:"output"},
+    comps:{
+      cpu:{name:"The processor (CPU)",role:"The conductor: it executes calculations and program instructions, one step at a time, at the rhythm of the clock. It contains the ALU (which computes) and the registers (which remember).",analogy:"The cook following the recipe step by step."},
+      ram:{name:"Main memory (RAM)",role:"It holds the data and programs currently in use, for very fast access. But it is volatile: everything vanishes when the power goes off.",analogy:"The kitchen worktop: everything within reach, but cleared after the meal."},
+      disk:{name:"The drive (storage)",role:"It keeps files and programs permanently, even without power. Much larger than RAM, but much slower.",analogy:"The cupboard where ingredients are stored between meals."},
+      gpu:{name:"The graphics card",role:"It turns data into images to display, and relieves the processor of everything visual (games, videos, 3D).",analogy:"The painter turning instructions into a picture."},
+      screen:{name:"The screen",role:"An output device: it displays the result of computations. It computes nothing, remembers nothing.",analogy:"The plated dish brought to the table."},
+      keyboard:{name:"The keyboard",role:"An input device: each key pressed sends a coded signal (in binary!) to the processor.",analogy:"The customer placing an order."},
+      mouse:{name:"The mouse",role:"An input device: it sends its position and clicks to the processor, which decides what to do with them.",analogy:"The finger pointing at the menu."}
+    },
+    quiz:[
+      {q:"You press a key. Which component sends the signal?", a:"keyboard"},
+      {q:"Which component computes 3 + 4?", a:"cpu"},
+      {q:"An unsaved text lives where — and is lost at shutdown?", a:"ram"},
+      {q:"Where is your holiday photo kept even with the power off?", a:"disk"},
+      {q:"Which component prepares the image before display?", a:"gpu"},
+      {q:"Where is the final result shown to the user?", a:"screen"},
+      {q:"You move the pointer. Which component just sent information?", a:"mouse"}
+    ]
+  }
+};
+
+const ORDER = ["cpu","ram","disk","gpu","screen","keyboard","mouse"];
+const NAMES = {fr:{back:"← Toutes les applications",cpu:"CPU",ram:"RAM",disk:"Disque",gpu:"Carte graphique",screen:"Écran",keyboard:"Clavier",mouse:"Souris"},
+               en:{cpu:"CPU",ram:"RAM",disk:"Drive",gpu:"Graphics card",screen:"Screen",keyboard:"Keyboard",mouse:"Mouse"}};
+
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+let mode = "explore";
+let selected = null;
+let qi = 0, score = 0, locked = false;
+
+const $ = id => document.getElementById(id);
+const T = () => I18N[lang];
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+  $("quizBtn").textContent = mode === "quiz" ? T().exploreBtn : T().quizBtn;
+  $("footer").innerHTML = '<a href="index.html">'+T().back+'</a> · <a href="https://www.fredericjaccard.com">'+T().footer+'</a>';
+  $("stageInstruction").textContent = T().hint;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = T()[el.dataset.i18n] ?? el.textContent);
+  document.querySelectorAll("[data-i18n-sub]").forEach(el => el.textContent = T().subs[el.dataset.i18nSub] ?? el.textContent);
+  renderPanel();
+}
+
+const WIRES = {
+  cpu:["w-cpu-ram","w-cpu-disk","w-cpu-gpu","w-cpu-kb","w-cpu-mouse"],
+  ram:["w-cpu-ram"],
+  disk:["w-cpu-disk"],
+  gpu:["w-cpu-gpu","w-gpu-mon"],
+  screen:["w-gpu-mon"],
+  keyboard:["w-cpu-kb"],
+  mouse:["w-cpu-mouse"]
+};
+
+function select(id, updatePanel = true){
+  selected = id;
+  const wires = WIRES[id] || [];
+  document.querySelectorAll(".comp").forEach(g => g.classList.toggle("selected", g.dataset.id === id));
+  document.querySelectorAll(".wire").forEach(w => w.classList.toggle("hot", wires.includes(w.id)));
+  if(updatePanel) renderPanel();
+}
+
+function renderPanel(){
+  const panel = $("panel");
+  if(mode === "quiz"){ renderQuiz(); return; }
+  if(!selected){
+    panel.innerHTML = `<h2>${T().panelTitle}</h2><p class="hint">${T().panelIdle}</p>`;
+    return;
+  }
+  const c = T().comps[selected];
+  panel.innerHTML = `
+    <h2>${c.name}</h2>
+    <p>${c.role}</p>
+    <div class="analogy"><b>${T().analogy} :</b> ${c.analogy}</div>`;
+}
+
+function renderQuiz(){
+  const panel = $("panel");
+  if(qi >= T().quiz.length){
+    panel.innerHTML = `
+      <h2>${T().quizTitle}</h2>
+      <p style="font-size:17px"><b>${T().done}${score} / ${T().quiz.length}</b></p>
+      <div class="quizbar"><button class="ctl" id="restartBtn">${T().restart}</button></div>`;
+    $("restartBtn").onclick = startQuiz;
+    return;
+  }
+  const q = T().quiz[qi];
+  panel.innerHTML = `
+    <div class="quizbar"><h2>${T().quizTitle}</h2><span class="badge">${qi+1} / ${T().quiz.length}</span></div>
+    <p style="font-size:17px"><b>${q.q}</b></p>
+    <p class="hint">${T().quizPrompt}</p>
+    <div class="answers">${ORDER.map(id => `<button class="ans" data-id="${id}">${NAMES[lang][id]}</button>`).join("")}</div>
+    <div class="feedback" id="fb"></div>
+    <div class="quizbar">
+      <span class="score">${T().score} : <b>${score}</b></span>
+      <button class="ctl" id="nextBtn" style="visibility:hidden">${T().next}</button>
+    </div>`;
+  locked = false;
+  panel.querySelectorAll(".ans").forEach(b => b.onclick = () => answerQuiz(b.dataset.id, b));
+}
+
+function answerQuiz(id, btn){
+  if(locked || mode !== "quiz") return;
+  locked = true;
+  const good = T().quiz[qi].a;
+  const fb = $("fb");
+  document.querySelectorAll(".ans").forEach(b => {
+    b.disabled = true;
+    if(b.dataset.id === good) b.classList.add("good");
+    else if(b.dataset.id === id) b.classList.add("bad");
+  });
+  select(good, false);
+  if(id === good){ score++; fb.textContent = T().good; fb.className = "feedback ok"; }
+  else { fb.textContent = `${T().bad} → ${NAMES[lang][good]}`; fb.className = "feedback ko"; }
+  const sc = document.querySelector(".score b");
+  if(sc) sc.textContent = score;
+  const nb = $("nextBtn");
+  nb.style.visibility = "visible";
+  nb.onclick = () => { qi++; renderQuiz(); };
+}
+
+function startQuiz(){
+  qi = 0; score = 0; mode = "quiz";
+  $("quizBtn").textContent = T().exploreBtn;
+  renderQuiz();
+}
+
+document.querySelectorAll(".comp").forEach(g => {
+  g.addEventListener("click", () => {
+    if(mode === "quiz") answerQuiz(g.dataset.id, null);
+    else select(g.dataset.id);
+  });
+});
+
+$("langBtn").onclick = () => { lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+$("quizBtn").onclick = () => {
+  if(mode === "quiz"){ mode = "explore"; selected = null;
+    document.querySelectorAll(".comp").forEach(g=>g.classList.remove("selected"));
+    document.querySelectorAll(".wire").forEach(w=>w.classList.remove("hot"));
+    $("quizBtn").textContent = T().quizBtn; renderPanel();
+  } else startQuiz();
+};
+$("fsBtn").onclick = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+};
+document.addEventListener("fullscreenchange", () => {
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+});
+
+applyLang();
+</script>
+</body>
+</html>

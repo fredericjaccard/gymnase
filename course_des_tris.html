@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>La course des tris — Algorithmique II · Gymnase — Frédéric Jaccard</title>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1200px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+button:disabled{opacity:.4;cursor:default}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.controls{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:18px;
+  display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.ctlGroup{display:flex;align-items:center;gap:8px}
+.ctlGroup label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.segBtn{border:2px solid var(--line);background:#fff;color:var(--ink)}
+.segBtn.active{border-color:var(--accent);background:var(--accentLight);color:var(--accent)}
+input[type=range]{accent-color:var(--primary);width:110px}
+.pmBtn{padding:2px 12px;font-size:16px;line-height:1.2;border-radius:8px}
+.ctlVal{font-size:14px;font-weight:700;color:var(--primary);min-width:26px;text-align:center}
+.sizeWarn{display:none;font-size:12px;color:var(--accent);font-weight:700}
+.sizeWarn.show{display:inline}
+.infoBtn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:12px;font-weight:700;border-radius:50%;border-width:1.5px;margin-left:10px;vertical-align:middle;padding:0;line-height:1}
+.modalOverlay{display:none;position:fixed;inset:0;background:rgba(32,36,31,.45);z-index:50;align-items:center;justify-content:center;padding:20px}
+.modalOverlay.show{display:flex}
+.modal{background:var(--bg);border:2px solid var(--primary);border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow-y:auto;padding:22px 26px;position:relative}
+.modal h2{color:var(--primary);font-size:20px;margin-bottom:2px}
+.modal .complex{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:12px}
+.modal p{font-size:14.5px;line-height:1.5;margin-bottom:9px}
+.modal ul{font-size:14.5px;line-height:1.5;margin:0 0 9px 20px}
+.modalClose{position:absolute;top:12px;right:12px;padding:4px 12px;font-size:14px}
+.goBtn{background:var(--primary);color:#fff;font-size:16px;padding:10px 26px}
+.goBtn:hover{background:#0e4a3b}
+.tracks{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:900px){.tracks{grid-template-columns:1fr 1fr}}
+.track{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .3s}
+.track.done{border-color:var(--primary)}
+.track.winner{border-color:var(--accent);background:var(--accentLight)}
+.trackHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.trackName{font-size:16px;font-weight:700;color:var(--primary)}
+.stats{display:flex;gap:14px;font-size:13px;color:var(--muted)}
+.stats b{color:var(--ink);font-size:15px}
+.stats b.cmp{color:var(--accent)}
+.badge{display:none;font-size:12px;font-weight:700;color:#fff;background:var(--primary);border-radius:20px;padding:2px 10px}
+.track.done .badge{display:inline-block}
+.track.winner .badge{background:var(--accent)}
+.chart{display:flex;align-items:flex-end;gap:1px;height:150px;padding-top:4px}
+.bar{flex:1;max-width:34px;background:var(--primary);border-radius:2px 2px 0 0;opacity:.75;transition:height .05s}
+.bar.cmp{background:var(--accent);opacity:1}
+.bar.set{background:var(--accent);opacity:1}
+.bar.sorted{background:var(--primary);opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0 4px;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+/* ---- mobile ---- */
+@media(max-width:640px){
+  body{padding:12px}
+  h1{font-size:21px}
+  .controls{gap:10px;padding:12px}
+  .ctlGroup{flex-wrap:wrap}
+  .segBtn{padding:6px 11px;font-size:13px}
+  .goBtn{padding:9px 18px;font-size:15px}
+  input[type=range]{width:90px}
+  .trackHead{flex-wrap:wrap;gap:4px}
+  .chart{height:110px}
+}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.resultBanner{display:none;margin:0 0 14px;background:var(--accentLight);border:2px solid var(--accent);
+  border-radius:14px;padding:10px 16px;font-size:15px;font-weight:700;color:var(--accent)}
+.resultBanner.show{display:block}
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn">English</button>
+    <button id="fsBtn"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="controls">
+  <div class="ctlGroup" id="typeGroup">
+    <label id="listLabel"></label>
+    <button class="segBtn active" data-type="random" id="btnRandom"></button>
+    <button class="segBtn" data-type="sorted" id="btnSorted"></button>
+    <button class="segBtn" data-type="reversed" id="btnReversed"></button>
+  </div>
+  <div class="ctlGroup">
+    <label id="sizeLabel"></label>
+    <button class="pmBtn" id="sizeMinus">−</button>
+    <input type="range" id="sizeRange" min="1" max="500" value="30">
+    <button class="pmBtn" id="sizePlus">+</button>
+    <span class="ctlVal" id="sizeVal">30</span>
+    <span class="sizeWarn" id="sizeWarn"></span>
+  </div>
+  <div class="ctlGroup" id="presetGroup">
+    <label id="sizePresetsLabel"></label>
+    <button class="segBtn" data-size="5">5</button>
+    <button class="segBtn" data-size="10">10</button>
+    <button class="segBtn active" data-size="30">30</button>
+    <button class="segBtn" data-size="50">50</button>
+    <button class="segBtn" data-size="100">100</button>
+    <button class="segBtn" data-size="250">250</button>
+    <button class="segBtn" data-size="500">500</button>
+  </div>
+  <div class="ctlGroup">
+    <label id="speedLabel"></label>
+    <input type="range" id="speedRange" min="1" max="20" value="8">
+  </div>
+  <div class="ctlGroup">
+    <button class="goBtn" id="goBtn"></button>
+    <button id="resetBtn"></button>
+  </div>
+</div>
+
+<div class="resultBanner" id="resultBanner"></div>
+<div class="tracks" id="tracks"></div>
+
+<div class="legend">
+  <span><i class="sw" style="background:var(--primary);opacity:.75"></i><span id="legIdle"></span></span>
+  <span><i class="sw" style="background:var(--accent)"></i><span id="legCmp"></span></span>
+  <span><i class="sw" style="background:var(--primary)"></i><span id="legDone"></span></span>
+</div>
+
+<div class="modalOverlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modalClose" id="modalClose">✕</button>
+    <h2 id="modalTitle"></h2>
+    <div class="complex" id="modalComplex"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+  fr:{back:"← Toutes les applications",
+    kicker:"Algorithmique",
+    title:"La course des tris",
+    fs:"Plein écran", fsExit:"Quitter",
+    instruction:"Cinq algorithmes trient la <b>même liste</b>, en même temps, une action à la fois. Choisissez le type de liste et sa taille, lancez la course, et observez les <b>compteurs de comparaisons</b> : c'est là que tout se joue ! Essayez ensuite une liste <b>déjà triée</b> ou <b>inversée</b>…",
+    listLabel:"Liste", sizeLabel:"Taille de la liste", speedLabel:"Vitesse",
+    random:"Aléatoire", sorted:"Déjà triée", reversed:"Inversée",
+    start:"Lancer la course", pause:"Pause", resume:"Reprendre", reset:"Recommencer",
+    cmp:"comparaisons", swaps:"mouvements",
+    finished:"Terminé", winner:"Vainqueur",
+    legIdle:"valeur en attente", legCmp:"comparaison ou échange en cours", legDone:"tri terminé",
+    sizePresets:"Tailles présélectionnées",
+    sizeWarn:"⚠️ les tris lents peuvent prendre plus d'une minute",
+    result:(name,cmp,tie)=>tie ? `Égalité ! ${name} gagnent avec ${cmp} comparaisons chacun !` : `${name} gagne la course avec ${cmp} comparaisons !`,
+    infoTitle:"Comment ça marche ?",
+    infos:{
+      bulles:{
+        name:"Tri à bulles",
+        complex:"Comparaisons : toujours n·(n−1)/2 — complexité n²",
+        body:`<p>On parcourt la liste en comparant <b>deux voisins</b> à la fois : s'ils sont dans le mauvais ordre, on les échange. À chaque passage, la plus grande valeur restante « remonte » comme une bulle jusqu'à sa place, tout à droite.</p>
+        <p><b>Meilleur cas :</b> aucun — même une liste déjà triée subit toutes ses comparaisons (n²/2), il ne s'arrête jamais plus tôt.</p>
+        <p><b>Pire cas :</b> identique, toujours n·(n−1)/2 comparaisons. C'est le tri le plus régulier… et le plus lent, car il échange sans arrêt, souvent pour rien.</p>
+        <p><b>Idée à retenir :</b> beaucoup de comparaisons ET beaucoup de mouvements. Simple à comprendre, mais à éviter dès que la liste grandit.</p>`
+      },
+      selection:{
+        name:"Tri par sélection",
+        complex:"Comparaisons : toujours n·(n−1)/2 — complexité n²",
+        body:`<p>On cherche le <b>plus petit élément</b> de la partie pas encore triée, puis on l'échange directement avec la première place libre. Et on recommence : le minimum suivant va en deuxième position, etc.</p>
+        <p><b>Meilleur cas :</b> aucun — il compare toujours tout, même si la liste est déjà triée.</p>
+        <p><b>Pire cas :</b> identique, toujours n·(n−1)/2 comparaisons.</p>
+        <p><b>Idée à retenir :</b> autant de comparaisons que le tri à bulles, mais très peu de mouvements (au plus n−1 échanges) : il <b>regarde beaucoup, déplace peu</b>.</p>`
+      },
+      insertion:{
+        name:"Tri par insertion",
+        complex:"De n−1 à n·(n−1)/2 comparaisons — complexité n², mais excellent sur les listes presque triées",
+        body:`<p>Comme quand on trie des cartes en main : on prend les éléments <b>un par un</b> et on les insère à leur place dans la partie déjà triée, en décalant les plus grands vers la droite.</p>
+        <p><b>Meilleur cas :</b> liste déjà triée — seulement n−1 comparaisons (une par élément : il s'arrête dès qu'il voit que c'est en ordre). C'est le seul tri lent qui <b>profite</b> d'une liste presque triée.</p>
+        <p><b>Pire cas :</b> liste inversée — n·(n−1)/2 comparaisons, comme bulles et sélection.</p>
+        <p><b>Idée à retenir :</b> en pratique, souvent le meilleur des tris « simples ».</p>`
+      },
+      fusion:{
+        name:"Tri fusion",
+        complex:"Toujours ≈ n·log₂(n) comparaisons — complexité n·log n",
+        body:`<p><b>Diviser pour régner</b> : on coupe la liste en deux, encore et encore, jusqu'à des listes d'un seul élément (forcément triées). Puis on <b>fusionne</b> les paires : fusionner deux listes déjà triées est facile — à chaque étape, on prend le plus petit des deux premiers éléments.</p>
+        <p><b>Meilleur cas et pire cas :</b> identiques — le découpage est toujours le même, ≈ n·log₂(n) comparaisons quoi qu'il arrive.</p>
+        <p><b>Idée à retenir :</b> pour 500 éléments, ≈ 4 500 comparaisons contre ≈ 125 000 pour les tris lents. Prix à payer : il a besoin d'une liste temporaire pour fusionner.</p>`
+      },
+      rapide:{
+        name:"Tri rapide",
+        complex:"≈ n·log₂(n) comparaisons en moyenne, n·(n−1)/2 dans le pire cas",
+        body:`<p>On choisit un <b>pivot</b> (ici : le premier élément), puis on sépare la liste : les plus petits à gauche, les plus grands à droite. Le pivot est alors définitivement à sa place, et on recommence sur chaque moitié.</p>
+        <p><b>Bon cas :</b> des pivots qui coupent la liste en deux parts équilibrées — ≈ n·log₂(n) comparaisons, souvent le plus rapide en pratique.</p>
+        <p><b>Pire cas :</b> liste déjà triée (ou inversée) — le pivot est à chaque fois le minimum (ou le maximum), les parts sont totalement déséquilibrées, et on retombe sur n·(n−1)/2 comparaisons, comme les tris lents.</p>
+        <p><b>Idée à retenir :</b> en pratique, on choisit le pivot <b>au hasard</b> pour rendre le pire cas presque impossible.</p>`
+      }
+    },
+    algos:[
+      {id:"bulles",    name:"Tri à bulles"},
+      {id:"selection", name:"Tri par sélection"},
+      {id:"insertion", name:"Tri par insertion"},
+      {id:"fusion",    name:"Tri fusion"},
+      {id:"rapide",    name:"Tri rapide"}
+    ]
+  },
+  en:{back:"← All applications",
+    kicker:"ALGORITHMS",
+    title:"The Sorting Race",
+    fs:"Fullscreen", fsExit:"Exit",
+    instruction:"Five algorithms sort the <b>same list</b>, at the same time, one action at a time. Pick the list type and size, start the race, and watch the <b>comparison counters</b>: that's where everything is decided! Then try a list that is <b>already sorted</b> or <b>reversed</b>…",
+    listLabel:"List", sizeLabel:"List size", speedLabel:"Speed",
+    random:"Random", sorted:"Already sorted", reversed:"Reversed",
+    start:"Start the race", pause:"Pause", resume:"Resume", reset:"Reset",
+    cmp:"comparisons", swaps:"moves",
+    finished:"Finished", winner:"Winner",
+    legIdle:"waiting value", legCmp:"comparison or swap in progress", legDone:"sorted",
+    sizePresets:"Preset sizes",
+    sizeWarn:"⚠️ slow sorts may take over a minute",
+    result:(name,cmp,tie)=>tie ? `Tie! ${name} win with ${cmp} comparisons each!` : `${name} wins the race with ${cmp} comparisons!`,
+    infoTitle:"How does it work?",
+    infos:{
+      bulles:{
+        name:"Bubble sort",
+        complex:"Comparisons: always n·(n−1)/2 — complexity n²",
+        body:`<p>We scan the list comparing <b>two neighbours</b> at a time: if they are in the wrong order, we swap them. After each pass, the largest remaining value "bubbles up" to its final place at the right end.</p>
+        <p><b>Best case:</b> none — even an already sorted list undergoes all its comparisons (n²/2); it never stops early.</p>
+        <p><b>Worst case:</b> identical, always n·(n−1)/2 comparisons. The most predictable sort… and the slowest, because it swaps constantly, often for nothing.</p>
+        <p><b>Key idea:</b> many comparisons AND many moves. Easy to understand, but avoid it as soon as the list grows.</p>`
+      },
+      selection:{
+        name:"Selection sort",
+        complex:"Comparisons: always n·(n−1)/2 — complexity n²",
+        body:`<p>Find the <b>smallest element</b> of the not-yet-sorted part, then swap it directly with the first free slot. Repeat: the next minimum goes to the second position, and so on.</p>
+        <p><b>Best case:</b> none — it always compares everything, even if the list is already sorted.</p>
+        <p><b>Worst case:</b> identical, always n·(n−1)/2 comparisons.</p>
+        <p><b>Key idea:</b> as many comparisons as bubble sort, but very few moves (at most n−1 swaps): it <b>looks a lot, moves little</b>.</p>`
+      },
+      insertion:{
+        name:"Insertion sort",
+        complex:"From n−1 to n·(n−1)/2 comparisons — complexity n², but excellent on nearly sorted lists",
+        body:`<p>Like sorting cards in your hand: take the elements <b>one by one</b> and insert each in its place in the already-sorted part, shifting the larger ones to the right.</p>
+        <p><b>Best case:</b> already sorted list — only n−1 comparisons (one per element: it stops as soon as it sees the order is fine). It is the only slow sort that <b>benefits</b> from a nearly sorted list.</p>
+        <p><b>Worst case:</b> reversed list — n·(n−1)/2 comparisons, like bubble and selection.</p>
+        <p><b>Key idea:</b> in practice, often the best of the "simple" sorts.</p>`
+      },
+      fusion:{
+        name:"Merge sort",
+        complex:"Always ≈ n·log₂(n) comparisons — complexity n·log n",
+        body:`<p><b>Divide and conquer</b>: split the list in two, again and again, until you get single-element lists (which are trivially sorted). Then <b>merge</b> the pairs: merging two already-sorted lists is easy — at each step, take the smaller of the two front elements.</p>
+        <p><b>Best and worst case:</b> identical — the splitting is always the same, ≈ n·log₂(n) comparisons no matter what.</p>
+        <p><b>Key idea:</b> for 500 elements, ≈ 4,500 comparisons versus ≈ 125,000 for the slow sorts. The price to pay: it needs a temporary list to merge.</p>`
+      },
+      rapide:{
+        name:"Quicksort",
+        complex:"≈ n·log₂(n) comparisons on average, n·(n−1)/2 in the worst case",
+        body:`<p>Pick a <b>pivot</b> (here: the first element), then split the list: smaller values to the left, larger ones to the right. The pivot is now definitely in its final place, and you repeat on each half.</p>
+        <p><b>Good case:</b> pivots that cut the list into balanced parts — ≈ n·log₂(n) comparisons; often the fastest in practice.</p>
+        <p><b>Worst case:</b> already sorted (or reversed) list — the pivot is the minimum (or the maximum) every time, the parts are totally unbalanced, and you fall back to n·(n−1)/2 comparisons, like the slow sorts.</p>
+        <p><b>Key idea:</b> in practice, the pivot is chosen <b>at random</b> to make the worst case almost impossible.</p>`
+      }
+    },
+    algos:[
+      {id:"bulles",    name:"Bubble sort"},
+      {id:"selection", name:"Selection sort"},
+      {id:"insertion", name:"Insertion sort"},
+      {id:"fusion",    name:"Merge sort"},
+      {id:"rapide",    name:"Quicksort"}
+    ]
+  }
+};
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+const T = () => I18N[lang];
+
+/* ---------- list generation ---------- */
+let listType = "random";
+function makeList(n){
+  const a = Array.from({length:n},(_,i)=>Math.round(5 + 95*(i+1)/n));
+  if(listType==="sorted") return a;
+  if(listType==="reversed") return a.slice().reverse();
+  for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+/* ---------- step generators : ["cmp",i,j] | ["swap",i,j] | ["set",i,v] ---------- */
+function stepsBulles(src){
+  const a=src.slice(), st=[];
+  for(let end=a.length-1;end>0;end--)
+    for(let i=0;i<end;i++){
+      st.push(["cmp",i,i+1]);
+      if(a[i]>a[i+1]){ [a[i],a[i+1]]=[a[i+1],a[i]]; st.push(["swap",i,i+1]); }
+    }
+  return st;
+}
+function stepsSelection(src){
+  const a=src.slice(), st=[];
+  for(let i=0;i<a.length-1;i++){
+    let m=i;
+    for(let j=i+1;j<a.length;j++){ st.push(["cmp",m,j]); if(a[j]<a[m]) m=j; }
+    if(m!==i){ [a[i],a[m]]=[a[m],a[i]]; st.push(["swap",i,m]); }
+  }
+  return st;
+}
+function stepsInsertion(src){
+  const a=src.slice(), st=[];
+  for(let i=1;i<a.length;i++){
+    const key=a[i]; let j=i-1;
+    while(j>=0){ st.push(["cmp",j,j+1]); if(a[j]>key){ a[j+1]=a[j]; st.push(["set",j+1,a[j]]); j--; } else break; }
+    a[j+1]=key; st.push(["set",j+1,key]);
+  }
+  return st;
+}
+function stepsFusion(src){
+  const a=src.slice(), st=[];
+  function sort(lo,hi){
+    if(hi-lo<=1) return;
+    const mid=(lo+hi)>>1;
+    sort(lo,mid); sort(mid,hi);
+    const tmp=[]; let i=lo,j=mid;
+    while(i<mid&&j<hi){
+      st.push(["cmp",i,j]);
+      if(a[i]<=a[j]) tmp.push(a[i++]); else tmp.push(a[j++]);
+    }
+    while(i<mid) tmp.push(a[i++]);
+    while(j<hi) tmp.push(a[j++]);
+    for(let k=0;k<tmp.length;k++){ a[lo+k]=tmp[k]; st.push(["set",lo+k,tmp[k]]); }
+  }
+  sort(0,a.length);
+  return st;
+}
+function stepsRapide(src){
+  const a=src.slice(), st=[];
+  function qs(lo,hi){
+    if(lo>=hi) return;
+    const p=a[lo];                                 // pivot = premier élément (comme en classe)
+    const small=[], big=[];
+    for(let i=lo+1;i<=hi;i++){
+      st.push(["cmp",lo,i]);
+      if(a[i]<p) small.push(a[i]); else big.push(a[i]);
+    }
+    let k=lo;
+    for(const v of small){ a[k]=v; st.push(["set",k,v]); k++; }
+    a[k]=p; st.push(["set",k,p]);
+    const mid=k; k++;
+    for(const v of big){ a[k]=v; st.push(["set",k,v]); k++; }
+    qs(lo,mid-1); qs(mid+1,hi);
+  }
+  qs(0,a.length-1);
+  return st;
+}
+const GENS = {bulles:stepsBulles, selection:stepsSelection, insertion:stepsInsertion, fusion:stepsFusion, rapide:stepsRapide};
+
+/* ---------- tris "à la volée" pour les grandes listes (évite de pré-calculer ~10^6 pas) ---------- */
+function makeLive(id, arr){
+  const a = arr.slice();
+  if(id==="bulles"){
+    let end=a.length-1, i=0;
+    return function(){
+      if(end<=0) return null;
+      const s=[["cmp",i,i+1]];
+      if(a[i]>a[i+1]){ [a[i],a[i+1]]=[a[i+1],a[i]]; s.push(["swap",i,i+1]); }
+      i++; if(i>=end){ i=0; end--; }
+      return s;
+    };
+  }
+  if(id==="selection"){
+    let i=0, m=0, j=1;
+    return function(){
+      if(i>=a.length-1) return null;
+      const s=[["cmp",m,j]];
+      if(a[j]<a[m]) m=j;
+      j++;
+      if(j>=a.length){ if(m!==i){ [a[i],a[m]]=[a[m],a[i]]; s.push(["swap",i,m]); } i++; m=i; j=i+1; }
+      return s;
+    };
+  }
+  // insertion
+  let i=1, j=null, key=null;
+  return function(){
+    if(i>=a.length) return null;
+    if(j===null){ key=a[i]; j=i-1; }
+    if(j>=0 && a[j]>key){
+      const s=[["cmp",j,j+1]];
+      a[j+1]=a[j]; s.push(["set",j+1,a[j]]); j--;
+      return s;
+    }
+    const s=[];
+    if(j>=0) s.push(["cmp",j,j+1]);
+    a[j+1]=key; s.push(["set",j+1,key]);
+    i++; j=null;
+    return s;
+  };
+}
+
+/* ---------- race state ---------- */
+let tracks = [];        // per-algo runtime state
+let running = false, timer = null, baseList = [];
+
+function buildTracks(){
+  const wrap = $("tracks"); wrap.innerHTML = "";
+  tracks = T().algos.map(algo=>{
+    const div = document.createElement("div");
+    div.className = "track"; div.id = "track-"+algo.id;
+    div.innerHTML = `
+      <div class="trackHead">
+        <span class="trackName">${algo.name} <button class="infoBtn" data-info="${algo.id}" title="?">?</button></span>
+        <span class="badge" data-badge></span>
+        <span class="stats">
+          <span><b class="cmp" data-cmp>0</b> ${T().cmp}</span>
+          <span><b data-swp>0</b> ${T().swaps}</span>
+        </span>
+      </div>
+      <div class="chart" data-chart></div>`;
+    wrap.appendChild(div);
+    return {id:algo.id, el:div, steps:[], pos:0, cmp:0, swp:0, done:false, bars:[], arr:[]};
+  });
+  renderTracks();
+}
+
+function renderTracks(){
+  tracks.forEach(t=>{
+    const chart = t.el.querySelector("[data-chart]");
+    chart.innerHTML = "";
+    t.bars = t.arr.map(v=>{
+      const b = document.createElement("div");
+      b.className = "bar"; b.style.height = v+"%";
+      chart.appendChild(b);
+      return b;
+    });
+  });
+}
+
+function resetRace(){
+  stopTimer(); running = false;
+  $("goBtn").textContent = T().start;
+  $("resultBanner").classList.remove("show");
+  const n = +$("sizeRange").value;
+  baseList = makeList(n);
+  const live = n > 250;  // grandes listes : tris lents calculés à la volée
+  tracks.forEach(t=>{
+    t.live = live && t.id!=="fusion" && t.id!=="rapide" ? makeLive(t.id, baseList) : null;
+    t.steps = t.live ? null : GENS[t.id](baseList);
+    t.pos = 0; t.cmp = 0; t.swp = 0; t.done = false;
+    t.ticksIdle = 0;
+    t.arr = baseList.slice();
+    t.el.classList.remove("done","winner");
+    t.el.querySelector("[data-cmp]").textContent = "0";
+    t.el.querySelector("[data-swp]").textContent = "0";
+    t.el.querySelector("[data-badge]").textContent = "";
+  });
+  renderTracks();
+}
+
+function applySteps(t, list){
+  t.bars.forEach(b=>b.classList.remove("cmp","set"));
+  for(const [op,i,j] of list){
+    if(op==="cmp"){
+      t.cmp++;
+      t.bars[i].classList.add("cmp"); t.bars[j].classList.add("cmp");
+    }else if(op==="swap"){
+      t.swp++;
+      [t.arr[i],t.arr[j]]=[t.arr[j],t.arr[i]];
+      t.bars[i].style.height = t.arr[i]+"%"; t.bars[j].style.height = t.arr[j]+"%";
+      t.bars[i].classList.add("set"); t.bars[j].classList.add("set");
+    }else{ // set
+      t.swp++;
+      t.arr[i]=j;
+      t.bars[i].style.height = j+"%";
+      t.bars[i].classList.add("set");
+    }
+  }
+  t.el.querySelector("[data-cmp]").textContent = t.cmp;
+  t.el.querySelector("[data-swp]").textContent = t.swp;
+}
+
+function stepOnce(t){
+  if(t.done){ return; }
+  if(t.live){
+    const s = t.live();
+    if(s===null){ finishTrack(t); return; }
+    applySteps(t, s);
+    return;
+  }
+  if(t.pos >= t.steps.length){ finishTrack(t); return; }
+  applySteps(t, [t.steps[t.pos++]]);
+  if(t.pos >= t.steps.length) finishTrack(t);
+}
+
+function finishTrack(t){
+  if(t.done) return;
+  t.done = true;
+  t.el.classList.add("done");
+  t.el.querySelector("[data-badge]").textContent = T().finished;
+  if(tracks.every(x=>x.done)) endRace();
+}
+
+function paintSorted(t){ t.bars.forEach(b=>{ b.classList.remove("cmp","set"); b.classList.add("sorted"); }); }
+
+function endRace(){
+  stopTimer(); running = false;
+  $("goBtn").textContent = T().start;
+  tracks.forEach(t=>{ t.bars.forEach(b=>{ b.classList.remove("cmp","set"); b.classList.add("sorted"); }); });
+  const min = Math.min(...tracks.map(t=>t.cmp));
+  const winners = tracks.filter(t=>t.cmp===min);
+  winners.forEach(t=>{
+    t.el.classList.add("winner");
+    t.el.querySelector("[data-badge]").textContent = T().winner;
+  });
+  const names = winners.map(t=>T().algos.find(a=>a.id===t.id).name);
+  const rb = $("resultBanner");
+  rb.textContent = T().result(names.join(", "), min, winners.length>1);
+  rb.classList.add("show");
+}
+
+// Vitesse -> (délai ms entre ticks, actions par tick) : écart très marqué
+// Vitesse max ≈ 1900 actions/s -> 60 éléments en ~5 s, 1000 éléments : bulles ≈ 8-9 min
+// (fusion et rapide finissent en quelques secondes — la démonstration de l'explosion n²)
+const SPEEDS = [
+  [600,1],[450,1],[320,1],[220,1],[150,1],[100,1],[70,1],[50,1],[35,1],[25,1],
+  [16,1],[16,2],[16,3],[16,5],[16,8],[16,12],[16,18],[16,30],[16,60],[16,120]
+];
+function tick(){
+  const [delay,per] = SPEEDS[+$("speedRange").value-1];
+  for(let s=0;s<per;s++) tracks.forEach(t=>{ if(!t.done) stepOnce(t); });
+  // un tri terminé reste surligné encore 8 ticks (bien visible), puis passe en vert
+  tracks.forEach(t=>{
+    if(t.done && t.ticksIdle<8){ t.ticksIdle++; if(t.ticksIdle===8) paintSorted(t); }
+  });
+  if(tracks.every(t=>t.done)) endRace();
+}
+function startTimer(){
+  stopTimer();
+  const [delay] = SPEEDS[+$("speedRange").value-1];
+  timer = setInterval(tick, delay);
+}
+function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
+
+/* ---------- UI events ---------- */
+$("goBtn").onclick = ()=>{
+  if(tracks.every(t=>t.done)){ resetRace(); running=true; $("goBtn").textContent=T().pause; startTimer(); return; }
+  if(running){ running=false; stopTimer(); $("goBtn").textContent=T().resume; }
+  else{ running=true; $("goBtn").textContent=T().pause; startTimer(); }
+};
+$("resetBtn").onclick = resetRace;
+document.querySelectorAll("#typeGroup .segBtn").forEach(b=>{
+  b.onclick = ()=>{
+    listType = b.dataset.type;
+    document.querySelectorAll("#typeGroup .segBtn").forEach(x=>x.classList.toggle("active",x===b));
+    resetRace();
+  };
+});
+function setSize(n){
+  $("sizeRange").value = n;
+  $("sizeVal").textContent = n;
+  $("sizeWarn").classList.toggle("show", n >= 250);
+  document.querySelectorAll("#presetGroup .segBtn").forEach(b=>
+    b.classList.toggle("active", +b.dataset.size === n));
+  resetRace();
+}
+$("sizeRange").oninput = ()=>{ setSize(+$("sizeRange").value); };
+$("sizeMinus").onclick = ()=>{ const r=$("sizeRange"); if(+r.value>+r.min) setSize(+r.value-1); };
+$("sizePlus").onclick  = ()=>{ const r=$("sizeRange"); if(+r.value<+r.max) setSize(+r.value+1); };
+document.querySelectorAll("#presetGroup .segBtn").forEach(b=>{
+  b.onclick = ()=> setSize(+b.dataset.size);
+});
+$("speedRange").oninput = ()=>{ if(running) startTimer(); };
+
+/* ---------- info modal ---------- */
+function openInfo(id){
+  const info = T().infos[id];
+  $("modalTitle").textContent = info.name;
+  $("modalComplex").textContent = info.complex;
+  $("modalBody").innerHTML = info.body;
+  $("modalOverlay").classList.add("show");
+}
+$("tracks").addEventListener("click", e=>{
+  const b = e.target.closest("[data-info]");
+  if(b) openInfo(b.dataset.info);
+});
+$("modalClose").onclick = ()=> $("modalOverlay").classList.remove("show");
+$("modalOverlay").onclick = e=>{ if(e.target===$("modalOverlay")) $("modalOverlay").classList.remove("show"); };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("modalOverlay").classList.remove("show"); });
+
+/* ---------- i18n + fullscreen (charte) ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  document.title = T().title + " — Algorithmique II";
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+  $("instruction").innerHTML = T().instruction;
+  $("listLabel").textContent = T().listLabel;
+  $("sizeLabel").textContent = T().sizeLabel;
+  $("speedLabel").textContent = T().speedLabel;
+  $("sizeWarn").textContent = T().sizeWarn;
+  $("sizePresetsLabel").textContent = T().sizePresets;
+  $("btnRandom").textContent = T().random;
+  $("btnSorted").textContent = T().sorted;
+  $("btnReversed").textContent = T().reversed;
+  $("goBtn").textContent = running ? T().pause : (tracks.length && tracks.some(t=>t.pos>0) && !tracks.every(t=>t.done) ? T().resume : T().start);
+  $("resetBtn").textContent = T().reset;
+  $("legIdle").textContent = T().legIdle;
+  $("legCmp").textContent = T().legCmp;
+  $("legDone").textContent = T().legDone;
+  if(tracks.length===0) buildTracks();
+  else{
+    tracks.forEach((t,k)=>{
+      t.el.querySelector(".trackName").innerHTML = `${T().algos[k].name} <button class="infoBtn" data-info="${t.id}" title="?">?</button>`;
+      const stats = t.el.querySelector(".stats");
+      stats.innerHTML = `<span><b class="cmp" data-cmp>${t.cmp}</b> ${T().cmp}</span>
+                         <span><b data-swp>${t.swp}</b> ${T().swaps}</span>`;
+      if(t.done) t.el.querySelector("[data-badge]").textContent =
+        t.el.classList.contains("winner") ? T().winner : T().finished;
+    });
+  }
+  resetRace();
+}
+$("langBtn").onclick = ()=>{ lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+function isFs(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function toggleFs(){
+  const el = document.documentElement;
+  if(isFs()){
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }else{
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+}
+$("fsBtn").onclick = toggleFs;
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>

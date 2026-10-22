@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>Le voyage d'une donnée — Architecture des ordinateurs · Gymnase — Frédéric Jaccard</title>
+<style>
+  :root{
+    --bg:#FBFAF6; --ink:#20241F; --muted:#6E726B;
+    --primary:#155E4C; --primary-light:#E3F0EA;
+    --accent:#D96A08; --accent-light:#FDEBD8;
+    --line:#D8D5CB; --card:#F7F6F2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Quattrocento Sans","Segoe UI",system-ui,sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  header{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:14px 24px; border-bottom:1px solid var(--line);
+  }
+  header .titles{flex:1; min-width:220px}
+  .kicker{color:var(--accent); font-weight:700; font-size:13px; letter-spacing:.08em; text-transform:uppercase}
+  h1{font-size:26px; color:var(--primary); line-height:1.15}
+  .controls{display:flex; gap:10px}
+  button.ctl{
+    font:inherit; font-weight:700; font-size:14px; cursor:pointer;
+    padding:9px 16px; border-radius:8px;
+    border:2px solid var(--primary); background:#fff; color:var(--primary);
+    transition:background .15s,color .15s;
+  }
+  button.ctl:hover:not(:disabled){background:var(--primary); color:#fff}
+  button.ctl:disabled{opacity:.35; cursor:default}
+  button.ctl.big{font-size:16px; padding:12px 22px}
+  main{flex:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:22px 24px; max-width:1100px; width:100%; margin:0 auto}
+  .scenario{
+    width:100%; background:var(--accent-light); border-left:5px solid var(--accent);
+    border-radius:0 10px 10px 0; padding:14px 18px; font-size:16px; line-height:1.5;
+  }
+  .scenario b{color:var(--accent)}
+  .stepbar{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center;
+    font-size:13px; font-weight:700; color:var(--muted);
+  }
+  .stepbar .node{
+    padding:6px 12px; border-radius:999px; border:2px solid var(--line);
+    background:#fff; color:var(--muted); transition:all .2s;
+  }
+  .stepbar .node.done{border-color:var(--primary); color:var(--primary); background:var(--primary-light)}
+  .stepbar .node.now{border-color:var(--accent); color:var(--accent); background:var(--accent-light)}
+  .stepbar .arr{color:var(--line); font-weight:400}
+  .stage{
+    width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:10px; display:flex; align-items:center; justify-content:center;
+  }
+  svg{width:100%; height:auto; max-height:52vh; display:block}
+  .comp rect.body{fill:#fff; stroke:var(--primary); stroke-width:2.5; transition:fill .2s, stroke .2s}
+  .comp.active rect.body{fill:var(--primary-light); stroke:var(--accent); stroke-width:4}
+  .comp text{fill:var(--ink); font-weight:700; pointer-events:none}
+  .comp .sub{fill:var(--muted); font-weight:400}
+  .wire{stroke:var(--line); stroke-width:5; fill:none; stroke-linecap:round}
+  .wire.hot{stroke:var(--accent); stroke-dasharray:10 8; animation:flow .8s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-18}}
+  #packet{transition:none}
+  #packet circle{fill:var(--accent); stroke:#fff; stroke-width:3}
+  #packet text{fill:#fff; font-weight:700}
+  .explain{
+    width:100%; background:var(--primary-light); border-radius:10px;
+    padding:14px 18px; font-size:15.5px; line-height:1.55; min-height:66px;
+  }
+  .explain b{color:var(--primary)}
+  .quizbox{
+    width:100%; background:#fff; border:2px solid var(--line); border-radius:10px;
+    padding:14px 18px; display:none; flex-direction:column; gap:10px;
+  }
+  .quizbox.show{display:flex}
+  .quizbox .q{font-size:16px; font-weight:700}
+  .answers{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px}
+  button.ans{
+    font:inherit; font-weight:700; font-size:15px; cursor:pointer;
+    padding:11px 10px; border-radius:8px; text-align:center;
+    border:2px solid var(--line); background:#fff; color:var(--ink);
+    transition:border-color .15s, background .15s;
+  }
+  button.ans:hover:not(:disabled){border-color:var(--primary)}
+  button.ans:disabled{cursor:default; opacity:.85}
+  button.ans.good{border-color:var(--primary); background:var(--primary-light); color:var(--primary)}
+  button.ans.bad{border-color:var(--accent); background:var(--accent-light); color:var(--accent)}
+  .feedback{font-size:15px; min-height:20px; font-weight:700}
+  .feedback.ok{color:var(--primary)}
+  .feedback.ko{color:var(--accent)}
+  .navrow{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .stepscore{font-size:15px; color:var(--muted)}
+  .stepscore b{color:var(--ink)}
+  .final{
+    width:100%; background:var(--primary-light); border-radius:10px; padding:20px 22px;
+    display:none; flex-direction:column; gap:12px; align-items:flex-start;
+  }
+  .final.show{display:flex}
+  .final h2{color:var(--primary); font-size:21px}
+  footer{padding:12px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center}
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div class="titles">
+    <div class="kicker" id="kicker">Architecture des ordinateurs</div>
+    <h1 id="title">Le voyage d'une donnée</h1>
+  </div>
+  <div class="controls">
+    <button class="ctl" id="langBtn">English</button>
+    <button class="ctl" id="fsBtn">⛶ <span id="fsLabel">Plein écran</span></button>
+  </div>
+</header>
+
+<main>
+  <div class="scenario" id="scenario"></div>
+  <div class="stepbar" id="stepbar"></div>
+
+  <div class="stage">
+    <svg viewBox="0 0 760 560" id="scene" aria-label="Trajet du signal">
+      <!-- bus / wires -->
+      <path class="wire" id="w-cpu-ram"   d="M 460 190 L 470 190 L 470 165 L 480 165"/>
+      <path class="wire" id="w-cpu-disk"  d="M 460 232 L 472 232 L 472 271 L 480 271"/>
+      <path class="wire" id="w-cpu-gpu"   d="M 300 212 L 200 212 L 200 202"/>
+      <path class="wire" id="w-cpu-kb"    d="M 330 252 L 330 300 L 160 300 L 160 380"/>
+      <path class="wire" id="w-cpu-mouse" d="M 430 252 L 430 320 L 600 320 L 600 380"/>
+      <path class="wire" id="w-gpu-mon"   d="M 250 140 L 250 74 L 290 74"/>
+      <!-- motherboard frame -->
+      <rect x="60" y="10" width="620" height="480" rx="18" fill="none"
+            stroke="#D8D5CB" stroke-width="2" stroke-dasharray="6 6"/>
+
+      <!-- CPU -->
+      <g class="comp" id="c-cpu" transform="translate(300,172)">
+        <rect class="body" x="0" y="0" width="160" height="80" rx="10"/>
+        <rect x="30" y="-14" width="100" height="14" rx="4" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <text x="80" y="36" text-anchor="middle" font-size="22">CPU</text>
+        <text class="sub" x="80" y="60" text-anchor="middle" font-size="13" data-sub="cpu">processeur</text>
+      </g>
+      <!-- RAM -->
+      <g class="comp" id="c-ram" transform="translate(480,140)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <rect x="20" y="62" width="120" height="10" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <text x="80" y="28" text-anchor="middle" font-size="22">RAM</text>
+        <text class="sub" x="80" y="50" text-anchor="middle" font-size="13" data-sub="ram">mémoire vive</text>
+      </g>
+      <!-- Disque -->
+      <g class="comp" id="c-disk" transform="translate(480,240)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <circle cx="40" cy="31" r="18" fill="#E3F0EA" stroke="#155E4C" stroke-width="2"/>
+        <circle cx="40" cy="31" r="4" fill="#155E4C"/>
+        <text x="102" y="28" text-anchor="middle" font-size="20" data-name="disk">Disque</text>
+        <text class="sub" x="102" y="50" text-anchor="middle" font-size="13" data-sub="disk">stockage</text>
+      </g>
+      <!-- Carte graphique -->
+      <g class="comp" id="c-gpu" transform="translate(120,140)">
+        <rect class="body" x="0" y="0" width="160" height="62" rx="10"/>
+        <text x="80" y="28" text-anchor="middle" font-size="18" data-name="gpu">Carte graphique</text>
+        <text class="sub" x="80" y="50" text-anchor="middle" font-size="13" data-sub="gpu">images</text>
+      </g>
+      <!-- Écran -->
+      <g class="comp" id="c-screen" transform="translate(290,24)">
+        <rect class="body" x="0" y="0" width="180" height="100" rx="10"/>
+        <rect x="72" y="100" width="36" height="14" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+        <rect x="48" y="114" width="84" height="10" rx="4" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+        <text id="screenChar" x="90" y="66" text-anchor="middle" font-size="40" fill="#155E4C"></text>
+        <text x="90" y="-10" text-anchor="middle" font-size="18" data-name="screen">Écran</text>
+      </g>
+      <!-- Clavier -->
+      <g class="comp" id="c-kb" transform="translate(80,380)">
+        <rect class="body" x="0" y="0" width="160" height="52" rx="10"/>
+        <g fill="#E3F0EA">
+          <rect x="14" y="12" width="18" height="12" rx="2"/><rect x="38" y="12" width="18" height="12" rx="2"/>
+          <rect x="62" y="12" width="18" height="12" rx="2"/><rect x="86" y="12" width="18" height="12" rx="2"/>
+          <rect x="110" y="12" width="18" height="12" rx="2"/><rect x="30" y="30" width="100" height="12" rx="2"/>
+        </g>
+        <text x="80" y="-12" text-anchor="middle" font-size="18" data-name="kb">Clavier</text>
+      </g>
+      <!-- Souris -->
+      <g class="comp" id="c-mouse" transform="translate(560,380)">
+        <rect class="body" x="0" y="0" width="80" height="52" rx="26"/>
+        <line x1="40" y1="0" x2="40" y2="20" stroke="#155E4C" stroke-width="2.5"/>
+        <text x="40" y="76" text-anchor="middle" font-size="18" data-name="mouse">Souris</text>
+      </g>
+      <!-- Paquet voyageur -->
+      <g id="packet" transform="translate(160,406)" opacity="0">
+        <circle r="17"/>
+        <text id="packetChar" text-anchor="middle" dy="6" font-size="17">a</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="explain" id="explain"></div>
+
+  <div class="quizbox" id="quizbox">
+    <div class="q" id="qtext"></div>
+    <div class="answers" id="qanswers"></div>
+    <div class="feedback" id="qfb"></div>
+  </div>
+
+  <div class="final" id="final">
+    <h2 id="finalTitle"></h2>
+    <p id="finalText" style="font-size:16px"></p>
+    <button class="ctl big" id="restartBtn"></button>
+  </div>
+
+  <div class="navrow">
+    <button class="ctl" id="prevBtn"></button>
+    <button class="ctl big" id="nextBtn"></button>
+    <span class="stepscore" id="stepscore"></span>
+  </div>
+</main>
+
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const I18N = {
+  fr:{back:"← Toutes les applications",
+    title:"Le voyage d'une donnée",
+    scenario:"Scénario : <b>tu appuies sur la touche « a »</b> dans un texte que tu es en train d'écrire. Suis le voyage du signal à travers l'ordinateur, étape par étape.",
+    fs:"Plein écran", fsExit:"Quitter",
+    prev:"← Étape précédente", next:"Étape suivante →", nextLocked:"Réponds à la question pour continuer",
+    start:"Commencer le voyage →",
+    steps:["Départ","Clavier","CPU (décodage)","RAM","CPU (mise à jour)","Carte graphique","Écran","Arrivée"],
+    names:{kb:"Clavier", screen:"Écran", disk:"Disque", gpu:"Carte graphique", mouse:"Souris"},
+    subs:{cpu:"processeur", ram:"mémoire vive", disk:"stockage", gpu:"images"},
+    score:"Questions justes",
+    finalTitle:"Voyage terminé !",
+    restart:"Recommencer le voyage",
+    slides:[
+      {at:null, text:"Bienvenue ! Le paquet orange représente le signal de la touche « a ». Il est prêt à partir du clavier. Clique sur « Commencer le voyage ».", q:null},
+      {at:"kb", text:"<b>Étape 1 — le clavier.</b> Sous chaque touche se cache un contact. Quand tu appuies, le clavier envoie un <b>code binaire qui identifie la touche physique</b> (son « numéro de touche »). Attention : ce n'est pas encore la lettre « a » !",
+       q:{q:"Que reçoit l'ordinateur quand tu appuies sur « a » ?", opts:["La lettre « a » directement","Un code binaire qui identifie la touche","Une image de la lettre"], a:1}},
+      {at:"cpu", wire:"w-cpu-kb", text:"<b>Étape 2 — le CPU reçoit le signal.</b> Le processeur <b>décode</b> le numéro de touche : grâce à la disposition du clavier (QWERTZ en Suisse !) et à l'état des touches Shift ou Caps Lock, il comprend que tu veux la lettre « a ».",
+       q:{q:"La même touche peut donner « a » ou « A ». Comment le CPU le sait-il ?", opts:["Grâce à l'état des touches Shift / Caps Lock","Le clavier envoie deux codes différents","C'est l'écran qui décide"], a:0}},
+      {at:"ram", wire:"w-cpu-ram", text:"<b>Étape 3 — direction la RAM.</b> Ton texte en cours d'écriture vit dans la mémoire vive. Le CPU y dépose la nouvelle lettre sous la forme de son code binaire : pour « a », c'est <b>1100001</b> (97 en décimal).",
+       q:{q:"Pourquoi la lettre est-elle stockée en RAM et pas sur le disque ?", opts:["Parce que la RAM est plus grande","Parce que la RAM est rapide pour les données en cours d'utilisation","Parce que le disque ne peut pas stocker de lettres"], a:1}},
+      {at:"cpu2", wire:"w-cpu-ram", text:"<b>Étape 4 — retour au CPU.</b> Le processeur reprend le texte complet mis à jour (avec le « a » en plus) pour préparer ce qui doit être affiché.",
+       q:{q:"Si tu éteins l'ordinateur maintenant, sans sauvegarder, que devient la lettre en RAM ?", opts:["Elle est perdue : la RAM est volatile","Elle reste en RAM pour toujours","Elle passe automatiquement sur le disque"], a:0}},
+      {at:"gpu", wire:"w-cpu-gpu", text:"<b>Étape 5 — la carte graphique prépare l'image.</b> Le CPU lui envoie le texte mis à jour ; elle le transforme en image prête à afficher.",
+       q:{q:"L'écran affiche le « a ». Que s'est-il passé juste avant, côté carte graphique ?", opts:["Elle a envoyé l'image pixel par pixel à l'écran","Elle a lu la lettre directement dans la RAM","Elle a demandé au clavier de répéter le signal"], a:0}},
+      {at:"screen", wire:"w-gpu-mon", text:"<b>Étape 6 — l'écran affiche.</b> La carte graphique envoie l'image à l'écran, qui l'affiche pixel par pixel. Tu vois enfin la lettre « a » apparaître !",
+       q:{q:"Tu éteins l'écran pendant que tu écris. Que devient ton texte ?", opts:["Il est perdu : l'écran contenait la dernière copie","Rien : le texte est toujours en RAM, l'écran n'a fait que l'afficher","Il passe automatiquement sur le disque dur"], a:1}},
+      {at:null, text:"<b>Arrivée !</b> Récapitulons le voyage : clavier → CPU → RAM → CPU → carte graphique → écran. Chaque touche pressée fait ce trajet complet, des dizaines de fois par seconde.", q:null}
+    ]
+  },
+  en:{back:"← All applications",
+    title:"The journey of a piece of data",
+    scenario:"Scenario: <b>you press the « a » key</b> in a text you are writing. Follow the signal's journey through the computer, step by step.",
+    fs:"Fullscreen", fsExit:"Exit",
+    prev:"← Previous step", next:"Next step →", nextLocked:"Answer the question to continue",
+    start:"Start the journey →",
+    steps:["Start","Keyboard","CPU (decoding)","RAM","CPU (update)","Graphics card","Screen","Arrival"],
+    names:{kb:"Keyboard", screen:"Screen", disk:"Drive", gpu:"Graphics card", mouse:"Mouse"},
+    subs:{cpu:"processor", ram:"working memory", disk:"storage", gpu:"images"},
+    score:"Correct answers",
+    finalTitle:"Journey complete!",
+    restart:"Restart the journey",
+    slides:[
+      {at:null, text:"Welcome! The orange packet is the signal of the « a » key. It is ready to leave the keyboard. Click « Start the journey ».", q:null},
+      {at:"kb", text:"<b>Step 1 — the keyboard.</b> Under each key hides a contact. When you press it, the keyboard sends a <b>binary code identifying the physical key</b> (its « key number »). Careful: this is not yet the letter « a »!",
+       q:{q:"What does the computer receive when you press « a »?", opts:["The letter « a » directly","A binary code identifying the key","A picture of the letter"], a:1}},
+      {at:"cpu", wire:"w-cpu-kb", text:"<b>Step 2 — the CPU receives the signal.</b> The processor <b>decodes</b> the key number: using the keyboard layout (QWERTZ in Switzerland!) and the state of Shift or Caps Lock, it understands that you mean the letter « a ».",
+       q:{q:"The same key can produce « a » or « A ». How does the CPU know?", opts:["From the state of the Shift / Caps Lock keys","The keyboard sends two different codes","The screen decides"], a:0}},
+      {at:"ram", wire:"w-cpu-ram", text:"<b>Step 3 — off to RAM.</b> Your text in progress lives in working memory. The CPU drops the new letter there as its binary code: for « a » it is <b>1100001</b> (97 in decimal).",
+       q:{q:"Why is the letter stored in RAM and not on the drive?", opts:["Because RAM is bigger","Because RAM is fast for data in use","Because the drive cannot store letters"], a:1}},
+      {at:"cpu2", wire:"w-cpu-ram", text:"<b>Step 4 — back to the CPU.</b> The processor takes the full updated text (with the extra « a ») to prepare what must be displayed.",
+       q:{q:"If you switch the computer off now, without saving, what happens to the letter in RAM?", opts:["It is lost: RAM is volatile","It stays in RAM forever","It moves to the drive automatically"], a:0}},
+      {at:"gpu", wire:"w-cpu-gpu", text:"<b>Step 5 — the graphics card prepares the image.</b> The CPU sends it the updated text; it turns it into a picture ready to display.",
+       q:{q:"The screen displays the « a ». What happened just before, at the graphics card?", opts:["It sent the picture to the screen pixel by pixel","It read the letter directly from RAM","It asked the keyboard to repeat the signal"], a:0}},
+      {at:"screen", wire:"w-gpu-mon", text:"<b>Step 6 — the screen displays.</b> The graphics card sends the picture to the screen, which shows it pixel by pixel. You finally see the letter « a » appear!",
+       q:{q:"You switch the screen off while writing. What happens to your text?", opts:["It is lost: the screen held the last copy","Nothing: the text is still in RAM, the screen only displayed it","It moves to the drive automatically"], a:1}},
+      {at:null, text:"<b>Arrival!</b> Let's recap the journey: keyboard → CPU → RAM → CPU → graphics card → screen. Every keystroke makes this full trip, dozens of times per second.", q:null}
+    ]
+  }
+};
+
+const POS = { start:[160,406], kb:[160,406], cpu:[380,212], ram:[560,171], cpu2:[380,212], gpu:[200,171], screen:[380,74] };
+const ACTIVE = { kb:"c-kb", cpu:"c-cpu", ram:"c-ram", cpu2:"c-cpu", gpu:"c-gpu", screen:"c-screen" };
+
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+let step = 0;
+let answered = true;   // step 0 has no question
+let correctCount = 0;
+const totalQuestions = 6;
+let wasCorrect = {};
+
+const $ = id => document.getElementById(id);
+const T = () => I18N[lang];
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = "Architecture des ordinateurs";
+  if(lang === "en") $("kicker").textContent = "Computer architecture";
+  $("title").textContent = T().title;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+  $("scenario").innerHTML = T().scenario;
+  document.querySelectorAll("[data-name]").forEach(el => el.textContent = T().names[el.dataset.name]);
+  document.querySelectorAll("[data-sub]").forEach(el => el.textContent = T().subs[el.dataset.sub]);
+  renderStepbar();
+  showStep();
+}
+
+function renderStepbar(){
+  const sb = $("stepbar");
+  sb.innerHTML = T().steps.map((s,i) => {
+    const cls = i < step ? "node done" : (i === step ? "node now" : "node");
+    return (i>0 ? '<span class="arr">→</span>' : '') + `<span class="${cls}">${s}</span>`;
+  }).join("");
+}
+
+function setPacket(x, y, visible){
+  const pk = $("packet");
+  pk.setAttribute("transform", `translate(${x},${y})`);
+  pk.setAttribute("opacity", visible ? 1 : 0);
+}
+function animatePacket(from, to, visible=true, dur=700){
+  const pk = $("packet");
+  pk.setAttribute("opacity", visible ? 1 : 0);
+  const t0 = performance.now();
+  function frame(t){
+    const k = Math.min(1, (t - t0) / dur);
+    const e = k * (2 - k); // easeOut
+    const x = from[0] + (to[0]-from[0]) * e;
+    const y = from[1] + (to[1]-from[1]) * e;
+    pk.setAttribute("transform", `translate(${x},${y})`);
+    if(k < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function showStep(animate=true){
+  const s = T().slides[step];
+  renderStepbar();
+
+  // composants actifs + fils
+  document.querySelectorAll(".comp").forEach(g => g.classList.remove("active"));
+  document.querySelectorAll(".wire").forEach(w => w.classList.remove("hot"));
+  if(s.at && ACTIVE[s.at]) $(ACTIVE[s.at]).classList.add("active");
+  if(s.wire) $(s.wire).classList.add("hot");
+
+  // paquet
+  const last = T().slides.length - 1;
+  const key = s.at || (step === 0 ? "start" : "screen");
+  const prevSlide = step > 0 ? T().slides[step-1] : null;
+  const prevKey = prevSlide ? (prevSlide.at || "start") : "start";
+  if(animate && POS[prevKey] && POS[key] && prevKey !== key){ animatePacket(POS[prevKey], POS[key]); }
+  else setPacket(...POS[key], true);
+  $("screenChar").textContent = (step >= last - 1) ? "a" : "";
+
+  // explication
+  $("explain").innerHTML = s.text;
+
+  // quiz
+  const qb = $("quizbox");
+  answered = !s.q || wasCorrect[step] === true;
+  if(s.q && wasCorrect[step] !== true){
+    qb.classList.add("show");
+    $("qtext").textContent = s.q.q;
+    $("qfb").textContent = ""; $("qfb").className = "feedback";
+    const box = $("qanswers");
+    box.innerHTML = "";
+    s.q.opts.forEach((opt, i) => {
+      const b = document.createElement("button");
+      b.className = "ans"; b.textContent = opt;
+      b.onclick = () => {
+        if(answered) return;
+        if(i === s.q.a){
+          answered = true; correctCount++; wasCorrect[step] = true;
+          b.classList.add("good");
+          $("qfb").textContent = lang === "fr" ? "Correct !" : "Correct!";
+          $("qfb").className = "feedback ok";
+          box.querySelectorAll(".ans").forEach(x => x.disabled = true);
+          updateNav();
+          updateScore();
+        } else {
+          b.classList.add("bad"); b.disabled = true;
+          $("qfb").textContent = lang === "fr" ? "Essaie encore…" : "Try again…";
+          $("qfb").className = "feedback ko";
+        }
+      };
+      box.appendChild(b);
+    });
+  } else {
+    qb.classList.remove("show");
+  }
+
+  // écran final
+  const fin = $("final");
+  if(step === T().slides.length - 1){
+    fin.classList.add("show");
+    $("finalTitle").textContent = T().finalTitle;
+    $("finalText").innerHTML = (lang === "fr"
+      ? `Questions justes : <b>${correctCount} / ${totalQuestions}</b>. Tu peux refaire le voyage pour t'entraîner avant le test !`
+      : `Correct answers: <b>${correctCount} / ${totalQuestions}</b>. You can redo the journey to practice!`);
+    $("restartBtn").textContent = T().restart;
+  } else fin.classList.remove("show");
+
+  updateNav();
+  updateScore();
+}
+
+function updateNav(){
+  const last = T().slides.length - 1;
+  $("prevBtn").textContent = T().prev;
+  $("prevBtn").disabled = step === 0;
+  const nb = $("nextBtn");
+  if(step === last){ nb.style.display = "none"; }
+  else {
+    nb.style.display = "";
+    nb.textContent = step === 0 ? T().start : (answered ? T().next : T().nextLocked);
+    nb.disabled = !answered;
+  }
+}
+function updateScore(){
+  $("stepscore").innerHTML = `${T().score} : <b>${correctCount} / ${totalQuestions}</b>`;
+}
+
+$("nextBtn").onclick = () => { if(step < T().slides.length - 1 && answered){ step++; showStep(); } };
+$("prevBtn").onclick = () => { if(step > 0){ step--; showStep(false); } };
+$("restartBtn").onclick = () => { step = 0; correctCount = 0; wasCorrect = {}; showStep(false); };
+$("langBtn").onclick = () => { lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+$("fsBtn").onclick = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+};
+document.addEventListener("fullscreenchange", () => {
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+});
+
+applyLang();
+setPacket(...POS.start, true);
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>

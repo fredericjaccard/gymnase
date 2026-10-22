@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>Circuit mystère — Architecture des ordinateurs · Gymnase — Frédéric Jaccard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBFAF6; --card:#F7F6F2; --ink:#20241F; --muted:#6E726B;
+    --primary:#155E4C; --primary-light:#E3F0EA;
+    --accent:#D96A08; --accent-light:#FDEBD8; --line:#D8D5CB;
+  }
+  *{margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none}
+  body{font-family:"Quattrocento Sans",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; display:flex; flex-direction:column}
+  header{padding:16px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; background:#fff}
+  .kicker{font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-size:26px; color:var(--primary); line-height:1.15}
+  .hdrbtns{display:flex; gap:10px}
+  .hbtn{padding:9px 16px; border-radius:10px; border:2px solid var(--primary); background:#fff; color:var(--primary); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer}
+  .hbtn:hover{background:var(--primary-light)}
+  main{flex:1; padding:22px 28px; max-width:1240px; margin:0 auto; width:100%}
+  .instruction{background:var(--primary-light); border-radius:12px; padding:14px 20px; font-size:16px; line-height:1.45; margin-bottom:20px; max-width:1060px}
+  .layout{display:grid; grid-template-columns:1.25fr 1fr; gap:24px; align-items:start}
+  .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px}
+  svg{display:block; width:100%; height:auto}
+  .sw{cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .wireBase{stroke:var(--line); stroke-width:5; fill:none; stroke-linecap:round}
+  .wireHot{stroke:var(--accent); stroke-width:5; fill:none; stroke-linecap:round; stroke-dasharray:10 8; animation:flow .8s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-18}}
+  .lampOn{fill:var(--accent); filter:drop-shadow(0 0 14px rgba(217,106,8,.75))}
+  .lampOff{fill:#fff; stroke:var(--line); stroke-width:3}
+  .panel h2{font-size:18px; color:var(--primary); margin-bottom:12px}
+  table{width:100%; border-collapse:collapse; margin-bottom:14px}
+  th,td{padding:7px 6px; text-align:center; font-size:15px}
+  th{background:var(--primary-light); color:var(--primary); font-weight:700}
+  td{border-bottom:1px solid var(--line)}
+  tr.now td{background:var(--accent-light)}
+  td.s{font-weight:700; font-size:17px}
+  .guessbar{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px}
+  .gbtn{padding:12px; border-radius:10px; border:2px solid var(--primary); background:#fff; color:var(--primary); font-family:inherit; font-size:16px; font-weight:700; cursor:pointer}
+  .gbtn:hover:not(:disabled){background:var(--primary-light)}
+  .gbtn:disabled{opacity:.45; cursor:default}
+  .gbtn.good{background:var(--primary); color:#fff; border-color:var(--primary)}
+  .gbtn.bad{background:var(--accent); color:#fff; border-color:var(--accent)}
+  #msg{border-radius:12px; padding:12px 16px; font-size:15px; line-height:1.4; margin-bottom:14px; display:none}
+  #msg.info{background:var(--accent-light); color:var(--accent); font-weight:700; display:block}
+  #msg.win{background:var(--primary-light); color:var(--primary); font-weight:700; display:block}
+  .actions{display:flex; gap:10px}
+  .abtn{flex:1; padding:12px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer}
+  .abtn:hover{filter:brightness(1.1)}
+  .abtn.ghost{background:#fff; color:var(--primary); border:2px solid var(--primary)}
+  .hardrow{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:15px; font-weight:700; color:var(--primary); cursor:pointer}
+  .hardrow input{width:20px; height:20px; accent-color:var(--primary); cursor:pointer}
+  footer{padding:14px; text-align:center; color:var(--muted); font-size:13px; border-top:1px solid var(--line); background:#fff}
+  @media (max-width:900px){
+    header{padding:12px 16px}
+    h1{font-size:21px}
+    main{padding:14px 16px}
+    .layout{grid-template-columns:1fr; gap:16px}
+    .card{padding:14px}
+    .gbtn{font-size:14px; padding:10px}
+  }
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker">Architecture des ordinateurs</div>
+    <h1 id="title">Circuit mystère</h1>
+  </div>
+  <div class="hdrbtns">
+    <button class="hbtn" id="langBtn">English</button>
+    <button class="hbtn" id="fsBtn">⛶ <span id="fsLabel">Plein écran</span></button>
+  </div>
+</header>
+<main>
+  <div class="instruction" id="instruction"></div>
+  <div class="layout">
+    <div class="card">
+      <svg viewBox="0 0 720 420">
+        <g id="sceneContent"></g>
+        <!-- interrupteurs -->
+        <g class="sw" id="swA" transform="translate(40,140)">
+          <rect x="0" y="0" width="150" height="52" rx="10" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+          <g class="off">
+            <rect x="12" y="14" width="56" height="24" rx="6" fill="#D8D5CB"/>
+            <text x="100" y="34" font-size="20" font-weight="700" fill="#6E726B">0</text>
+          </g>
+          <g class="on" style="display:none">
+            <rect x="82" y="14" width="56" height="24" rx="6" fill="#E3F0EA"/>
+            <text x="100" y="34" font-size="20" font-weight="700" fill="#155E4C">1</text>
+          </g>
+          <text x="-30" y="34" font-size="18" font-weight="700" fill="#20241F">A</text>
+        </g>
+        <g class="sw" id="swB" transform="translate(40,214)">
+          <rect x="0" y="0" width="150" height="52" rx="10" fill="#fff" stroke="#155E4C" stroke-width="2.5"/>
+          <g class="off">
+            <rect x="12" y="14" width="56" height="24" rx="6" fill="#D8D5CB"/>
+            <text x="100" y="34" font-size="20" font-weight="700" fill="#6E726B">0</text>
+          </g>
+          <g class="on" style="display:none">
+            <rect x="82" y="14" width="56" height="24" rx="6" fill="#E3F0EA"/>
+            <text x="100" y="34" font-size="20" font-weight="700" fill="#155E4C">1</text>
+          </g>
+          <text x="-30" y="34" font-size="18" font-weight="700" fill="#20241F">B</text>
+        </g>
+      </svg>
+    </div>
+    <div class="card panel">
+      <h2 id="panelTitle"></h2>
+      <table>
+        <thead><tr id="tblHead"></tr></thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+      <div class="guessbar" id="guessbar"></div>
+      <div id="msg"></div>
+      <div class="actions">
+        <button class="abtn" id="newBtn"></button>
+      </div>
+      <label class="hardrow"><input type="checkbox" id="hardChk"><span id="hardLbl"></span></label>
+    </div>
+  </div>
+</main>
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+  fr:{back:"← Toutes les applications",
+    title:"Circuit mystère",
+    instruction:"Une porte logique se cache dans la boîte noire. Actionnez les interrupteurs A et B, observez la sortie S : chaque essai est noté automatiquement dans le tableau. Quand vous êtes sûr de vous, devinez la porte — sans vous tromper !",
+    panelTitle:"Vos observations",
+    gates:{NON:"NON", ET:"ET", OU:"OU", XOR:"OU exclusif", NAND:"NON-ET", NOR:"NON-OU"},
+    out:"S",
+    newRound:"Nouveau circuit",
+    hard:"Mode difficile (+ NON-ET, NON-OU)",
+    errMsg:"Raté ! Ce n'est pas cette porte. Observez encore les combinaisons…",
+    winMsg:(g)=>`Bravo ! C'était la porte ${g}.`,
+    fs:"Plein écran", fsExit:"Quitter"
+  },
+  en:{back:"← All applications",
+    title:"Mystery circuit",
+    instruction:"A logic gate is hiding inside the black box. Flip switches A and B and watch output Q: each trial is logged automatically in the table. When you're confident, guess the gate — without any mistake!",
+    panelTitle:"Your observations",
+    gates:{NON:"NOT", ET:"AND", OU:"OR", XOR:"XOR", NAND:"NAND", NOR:"NOR"},
+    out:"Q",
+    newRound:"New circuit",
+    hard:"Hard mode (+ NAND, NOR)",
+    errMsg:"Nope! That's not the gate. Keep observing the combinations…",
+    winMsg:(g)=>`Well done! It was the ${g} gate.`,
+    fs:"Fullscreen", fsExit:"Exit"
+  }
+};
+
+const GATES_EASY = ["NON","ET","OU","XOR"];
+const GATES_HARD = ["NON","ET","OU","XOR","NAND","NOR"];
+const FN = {
+  NON:(a,b)=>1-a,
+  ET:(a,b)=>a&&b,
+  OU:(a,b)=>a||b?1:0,
+  XOR:(a,b)=>a^b,
+  NAND:(a,b)=>1-(a&&b),
+  NOR:(a,b)=>a||b?0:1
+};
+const TWO_INPUT = {NON:false, ET:true, OU:true, XOR:true, NAND:true, NOR:true};
+const ROWS2 = [[0,0],[0,1],[1,0],[1,1]];
+const ROWS1 = [[0,null],[1,null]];
+
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+let hard = false;
+let gate, a = 0, b = 0;
+let history = [];
+let tried = new Set();
+let solved = false;
+
+const T = () => I18N[lang];
+
+// formes ANSI/IEEE des portes (révélées à la fin)
+function gateShape(g, cx, cy){
+  const st = `fill="#E3F0EA" stroke="#155E4C" stroke-width="4"`;
+  if(g === "ET" || g === "NAND"){
+    const body = `<path d="M ${cx-36} ${cy-30} L ${cx+6} ${cy-30} A 30 30 0 0 1 ${cx+6} ${cy+30} L ${cx-36} ${cy+30} Z" ${st}/>`;
+    return g === "ET" ? body : body + `<circle cx="${cx+46}" cy="${cy}" r="9" fill="#fff" stroke="#155E4C" stroke-width="4"/>`;
+  }
+  if(g === "OU" || g === "XOR" || g === "NOR"){
+    // corps OU : dos très concave, côtés cambrés jusqu'à la pointe
+    const body = `<path d="M ${cx-38} ${cy-30} Q ${cx-12} ${cy} ${cx-38} ${cy+30} Q ${cx+2} ${cy+22} ${cx+32} ${cy} Q ${cx+2} ${cy-22} ${cx-38} ${cy-30} Z" ${st}/>`;
+    if(g === "NOR") return body + `<circle cx="${cx+42}" cy="${cy}" r="9" fill="#fff" stroke="#155E4C" stroke-width="4"/>`;
+    if(g === "XOR") return `<path d="M ${cx-50} ${cy-30} Q ${cx-24} ${cy} ${cx-50} ${cy+30}" fill="none" stroke="#155E4C" stroke-width="4"/>` + body;
+    return body;
+  }
+  return `<path d="M ${cx-28} ${cy-28} L ${cx+18} ${cy} L ${cx-28} ${cy+28} Z" ${st}/><circle cx="${cx+29}" cy="${cy}" r="9" fill="#fff" stroke="#155E4C" stroke-width="4"/>`;
+}
+
+const W = (d, hot) => `<path class="${hot ? "wireHot" : "wireBase"}" d="${d}"/>`;
+
+function scene(){
+  const s = FN[gate](a, b);
+  const two = TWO_INPUT[gate];
+  let c = "";
+  // interrupteur A : centre à (115,166) si deux entrées, (115,203) si une seule
+  const ay = two ? 166 : 203;
+  if(!two) $("swA").setAttribute("transform", "translate(40,177)");
+  else $("swA").setAttribute("transform", "translate(40,140)");
+  c += W(`M 190 ${ay} L 310 ${ay}`, a);
+  if(two){
+    // interrupteur B : centre à (115,240), fil horizontal
+    c += W("M 190 240 L 310 240", b);
+  }
+  // fil de sortie (dessiné sous la boîte)
+  c += W("M 530 203 L 580 203", s);
+  // boîte noire (dessinée par-dessus les fils)
+  c += `<rect x="310" y="110" width="220" height="200" rx="18" fill="#20241F" stroke="#155E4C" stroke-width="3"/>`;
+  if(solved){
+    c += gateShape(gate, 412, 190);
+    c += `<text x="420" y="286" text-anchor="middle" font-size="20" font-weight="700" fill="#E3F0EA">${T().gates[gate]}</text>`;
+  } else {
+    c += `<text x="420" y="222" text-anchor="middle" font-size="72" font-weight="700" fill="#D96A08">?</text>`;
+  }
+  // ampoule
+  c += `<circle cx="620" cy="203" r="36" class="${s ? "lampOn" : "lampOff"}"/>
+        <text x="620" y="212" text-anchor="middle" font-size="26" font-weight="700" fill="${s ? "#fff" : "#6E726B"}">${s}</text>
+        <text x="620" y="267" text-anchor="middle" font-size="16" font-weight="700" fill="#20241F">${T().out}</text>`;
+  $("sceneContent").innerHTML = c;
+  renderSwitches();
+}
+
+function renderSwitches(){
+  [["swA",a],["swB",b]].forEach(([id,v]) => {
+    const el = $(id);
+    el.querySelector(".on").style.display = v ? "" : "none";
+    el.querySelector(".off").style.display = v ? "none" : "";
+  });
+}
+
+function renderTable(){
+  const two = TWO_INPUT[gate];
+  const rows = two ? ROWS2 : ROWS1;
+  $("tblHead").innerHTML = two ? `<th>A</th><th>B</th><th>${T().out}</th>` : `<th>A</th><th>${T().out}</th>`;
+  const key = two ? `${a}${b}` : `${a}`;
+  $("tblBody").innerHTML = rows.map(([ra,rb]) => {
+    const k = two ? `${ra}${rb}` : `${ra}`;
+    const seen = tried.has(k);
+    const val = seen ? FN[gate](ra,rb) : "·";
+    const cells = two
+      ? `<td>${ra}</td><td>${rb}</td><td class="s" style="color:${seen ? "#155E4C" : "#D8D5CB"}">${val}</td>`
+      : `<td>${ra}</td><td class="s" style="color:${seen ? "#155E4C" : "#D8D5CB"}">${val}</td>`;
+    return `<tr class="${k === key && !solved ? "now" : ""}">${cells}</tr>`;
+  }).join("");
+}
+
+function renderGuessbar(){
+  const bar = $("guessbar");
+  bar.innerHTML = "";
+  (hard ? GATES_HARD : GATES_EASY).forEach(g => {
+    const btn = document.createElement("button");
+    btn.className = "gbtn";
+    btn.textContent = T().gates[g];
+    btn.disabled = solved;
+    btn.onclick = () => guess(g, btn);
+    bar.appendChild(btn);
+  });
+}
+
+function guess(g, btn){
+  if(solved) return;
+  if(g === gate){
+    solved = true;
+    btn.classList.add("good");
+    $("msg").className = ""; $("msg").classList.add("win");
+    $("msg").textContent = T().winMsg(T().gates[gate]);
+    renderGuessbar(); scene(); renderTable();
+  } else {
+    btn.classList.add("bad");
+    setTimeout(() => btn.classList.remove("bad"), 900);
+    $("msg").className = ""; $("msg").classList.add("info");
+    $("msg").textContent = T().errMsg;
+  }
+}
+
+function render(){
+  $("swB").style.display = TWO_INPUT[gate] ? "" : "none";
+  scene(); renderTable();
+}
+
+function newRound(){
+  const pool = hard ? GATES_HARD : GATES_EASY;
+  let next;
+  do {
+    next = pool[Math.floor(Math.random()*pool.length)];
+  } while(
+    (history[history.length-1] === next && Math.random() > 0.2) ||
+    (history[history.length-2] === next && Math.random() > 0.3)
+  );
+  gate = next;
+  history.push(gate); if(history.length > 10) history.shift();
+  a = 0; b = 0;
+  tried = new Set(); solved = false;
+  // la combinaison de départ est donnée
+  tried.add(TWO_INPUT[gate] ? "00" : "0");
+  $("msg").className = ""; $("msg").style.display = "none";
+  $("msg").classList.remove("win","info"); $("msg").style.display = "";
+  render(); renderGuessbar();
+}
+
+function test(){
+  if(solved) return;
+  tried.add(TWO_INPUT[gate] ? `${a}${b}` : `${a}`);
+  render();
+}
+
+$("swA").onclick = () => { a = 1 - a; test(); };
+$("swB").onclick = () => { b = 1 - b; test(); };
+$("newBtn").onclick = newRound;
+$("hardChk").onchange = e => { hard = e.target.checked; newRound(); };
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";
+  $("title").textContent = T().title;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+  $("instruction").textContent = T().instruction;
+  $("panelTitle").textContent = T().panelTitle;
+  $("newBtn").textContent = T().newRound;
+  $("hardLbl").textContent = T().hard;
+  if(solved) $("msg").textContent = T().winMsg(T().gates[gate]);
+  else if($("msg").classList.contains("info")) $("msg").textContent = T().errMsg;
+  render(); renderGuessbar();
+}
+
+$("langBtn").onclick = () => { lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+$("fsBtn").onclick = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+};
+document.addEventListener("fullscreenchange", () => {
+  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
+});
+
+newRound();
+applyLang();
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>

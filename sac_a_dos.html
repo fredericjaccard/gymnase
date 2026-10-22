@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Application interactive pour le cours d'informatique.">
+<title>Le sac à dos — Algorithmique · Gymnase — Frédéric Jaccard</title>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.levelRow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:14px}
+.levelRow label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.lvlBtn{width:36px;height:36px;padding:0;border-radius:50%;position:relative}
+.lvlBtn.active{background:var(--accentLight);border-color:var(--accent);color:var(--accent)}
+.lvlBtn.locked{opacity:.35;cursor:not-allowed}
+.lvlBtn.solved::after{content:"★";font-size:11px;position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:var(--accent)}
+.nextBtn{display:none;background:var(--accent);border-color:var(--accent);color:#fff;margin:0 auto 14px}
+.nextBtn.show{display:inline-block}
+.nextBtn:hover{background:#b85806}
+.workzone{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+@media(max-width:860px){.workzone{grid-template-columns:1fr}}
+/* objets */
+.items{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px}
+.items h2{font-size:15px;color:var(--primary);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.itemGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.item{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:transform .1s}
+.item:hover{border-color:var(--primary);transform:translateY(-2px)}
+.item.inBag{border-color:var(--primary);background:var(--primaryLight)}
+.item .emoji{font-size:34px}
+.item .nm{font-weight:700;font-size:14px;margin:4px 0}
+.item .wv{font-size:13px;color:var(--muted)}
+.item .wv b{color:var(--ink)}
+.item .ratio{font-size:12px;color:var(--accent);font-weight:700;margin-top:2px}
+/* sac */
+.bag{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.bag h2{font-size:15px;color:var(--primary);text-transform:uppercase;letter-spacing:.1em}
+.bagBar{height:26px;background:#fff;border:2px solid var(--line);border-radius:13px;overflow:hidden;position:relative}
+.bagFill{height:100%;background:var(--primary);transition:width .25s;border-radius:11px}
+.bagTxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.bagList{min-height:52px;display:flex;flex-wrap:wrap;gap:6px}
+.bagChip{background:var(--primaryLight);border:1.5px solid var(--primary);border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--primary)}
+.bagEmpty{font-size:13px;color:var(--muted)}
+.valueRow{font-size:16px;font-weight:700;color:var(--primary)}
+.goBtn{background:var(--primary);color:#fff;font-size:16px;padding:10px 0}
+.goBtn:hover{background:#0e4a3b}
+.greedyBtn{font-size:13px}
+.msg{border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;display:none;line-height:1.5}
+.msg.show{display:block}
+.msg.ok{background:var(--primaryLight);color:var(--primary);border:2px solid var(--primary)}
+.msg.err{background:var(--accentLight);color:var(--accent);border:2px solid var(--accent)}
+.msg.info{background:#fff;color:var(--ink);border:2px solid var(--line)}
+/* victoire : grosse bannière festive */
+.msg.ok.big{font-size:18px;text-align:center;padding:18px;animation:pop .4s}
+.msg.ok.big .bigTitle{font-size:22px;display:block;margin-bottom:4px}
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+.bag.solved{border-color:var(--primary);background:var(--primaryLight)}
+.hint{font-size:13px;color:var(--muted);line-height:1.45}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn">English</button>
+    <button id="fsBtn"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="levelRow" id="levelRow"><label id="levelLabel"></label></div>
+<div style="text-align:center"><button class="nextBtn" id="nextBtn"></button></div>
+
+<div class="workzone">
+  <div class="items">
+    <h2 id="itemsTitle"></h2>
+    <div class="itemGrid" id="itemGrid"></div>
+  </div>
+  <div class="bag">
+    <h2 id="bagTitle"></h2>
+    <div class="bagBar"><div class="bagFill" id="bagFill"></div><div class="bagTxt" id="bagTxt"></div></div>
+    <div class="bagList" id="bagList"></div>
+    <div class="valueRow" id="valueRow"></div>
+    <button class="goBtn" id="evalBtn"></button>
+    <button class="greedyBtn" id="greedyBtn"></button>
+    <div class="msg" id="msg"></div>
+    <p class="hint" id="hint"></p>
+  </div>
+</div>
+
+<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- niveaux (vérifiés par force brute) ---------- */
+const LEVELS = [
+  { cap:1000, unit:"g", items:[ // le glouton gagne ici : A+C = 82, optimal
+    {emoji:"🍫", fr:"Tablette de chocolat", en:"Chocolate bar", w:300, v:29},
+    {emoji:"🧦", fr:"Vêtements de rechange", en:"Spare clothes", w:300, v:25},
+    {emoji:"📻", fr:"Radio", en:"Radio", w:600, v:53},
+    {emoji:"🛏️", fr:"Tapis de sol", en:"Sleeping mat", w:600, v:38}
+  ]},
+  { cap:2000, unit:"kg", items:[ // le piège du cours : glouton A = 66, optimal B+C = 100
+    {emoji:"🥾", fr:"Chaussures de montagne", en:"Hiking boots", w:1200, v:66},
+    {emoji:"🧀", fr:"Gruyère", en:"Gruyère cheese", w:1000, v:50},
+    {emoji:"🧀", fr:"Fromage à raclette", en:"Raclette cheese", w:1000, v:50}
+  ]},
+  { cap:1400, unit:"g", items:[ // glouton 93, optimal 131
+    {emoji:"🔨", fr:"Marteau", en:"Hammer", w:600, v:44},
+    {emoji:"🔦", fr:"Lampe torche", en:"Flashlight", w:400, v:40},
+    {emoji:"🧭", fr:"Boussole", en:"Compass", w:200, v:22},
+    {emoji:"📷", fr:"Appareil photo", en:"Camera", w:600, v:60},
+    {emoji:"🔭", fr:"Jumelles", en:"Binoculars", w:300, v:31}
+  ]},
+  { cap:1800, unit:"g", items:[ // glouton 152, optimal 174
+    {emoji:"🎸", fr:"Petite guitare de voyage", en:"Travel guitar", w:500, v:41},
+    {emoji:"🖨️", fr:"Imprimante portable", en:"Portable printer", w:600, v:50},
+    {emoji:"🖥️", fr:"Écran portable", en:"Portable screen", w:600, v:61},
+    {emoji:"🎧", fr:"Casque audio", en:"Headphones", w:200, v:19},
+    {emoji:"⌨️", fr:"Clavier", en:"Keyboard", w:600, v:46},
+    {emoji:"🎮", fr:"Console de jeux", en:"Game console", w:700, v:72}
+  ]}
+];
+
+const I18N = {
+  fr:{back:"← Toutes les applications",
+    kicker:"Algorithmique",
+    title:"Le sac à dos",
+    fs:"Plein écran", fsExit:"Quitter",
+    instruction:"Votre sac à dos ne peut porter qu'un poids limité. Cliquez sur les objets pour les mettre dans le sac, et emportez la <b>plus grande valeur possible</b>. Vous pouvez cliquer sur le bouton « stratégie gloutonne » pour voir ce que ferait un glouton… mais est-ce toujours la meilleure idée ?",
+    level:"Défi",
+    next:"Défi suivant →",
+    locked:"Réussissez d'abord les défis précédents !",
+    itemsTitle:"Les objets disponibles",
+    bagTitle:"Votre sac à dos",
+    bagEmpty:"Cliquez sur des objets pour les mettre dans le sac…",
+    value:"Valeur du sac",
+    valWord:"valeur",
+    eval:"Évaluer mon sac",
+    greedy:"🤖 Voir la stratégie gloutonne",
+    hint:"Cliquez sur un objet du sac pour le retirer. Le glouton prend toujours d'abord l'objet au meilleur rapport valeur/poids.",
+    tooHeavy:"Trop lourd ! Ce objet ne rentre plus dans le sac.",
+    empty:"Le sac est vide : mettez-y d'abord des objets.",
+    win:(v)=>`Parfait ! Valeur ${v} — c'est le maximum possible. Vous avez trouvé la solution optimale !`,
+    winLast:"Bravo ! Vous avez réussi tous les défis — et vous avez vu que le glouton ne gagne pas à tous les coups !",
+    fail:(v,best,greedy,greedyV)=>`Valeur ${v} — on peut faire mieux : le maximum est ${best}. La stratégie gloutonne (${greedy}) donne ${greedyV}. Cherchez la combinaison gagnante !`,
+    greedyMsg:(names,v)=>`Le glouton prend : ${names} → valeur ${v}. Est-ce le maximum possible ? À vous de vérifier !`,
+    kg:"kg"
+  },
+  en:{back:"← All applications",
+    kicker:"ALGORITHMS",
+    title:"The Knapsack",
+    fs:"Fullscreen", fsExit:"Exit",
+    instruction:"Your backpack can only carry a limited weight. Click the items to put them in the bag, and carry the <b>highest possible value</b>. You can click the “greedy strategy” button to see what a greedy algorithm would do… but is it always the best idea?",
+    level:"Challenge",
+    next:"Next challenge →",
+    locked:"Complete the previous challenges first!",
+    itemsTitle:"Available items",
+    bagTitle:"Your backpack",
+    bagEmpty:"Click items to put them in the bag…",
+    value:"Bag value",
+    valWord:"value",
+    eval:"Evaluate my bag",
+    greedy:"🤖 See the greedy strategy",
+    hint:"Click an item in the bag to remove it. The greedy algorithm always takes the best value/weight ratio first.",
+    tooHeavy:"Too heavy! This item does not fit anymore.",
+    empty:"The bag is empty: put some items in first.",
+    win:(v)=>`Perfect! Value ${v} — this is the maximum possible. You found the optimal solution!`,
+    winLast:"Well done! You completed all the challenges — and you saw that greedy does not win every time!",
+    fail:(v,best,greedy,greedyV)=>`Value ${v} — you can do better: the maximum is ${best}. The greedy strategy (${greedy}) gives ${greedyV}. Find the winning combination!`,
+    greedyMsg:(names,v)=>`Greedy takes: ${names} → value ${v}. Is this the maximum possible? Check for yourself!`,
+    kg:"kg"
+  }
+};
+let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+const T = () => I18N[lang];
+
+/* ---------- état ---------- */
+let levelIdx = 0, solved = new Set();
+let bag = new Set();   // indices d'objets dans le sac
+
+/* ---------- calculs ---------- */
+function cur(){ return LEVELS[levelIdx]; }
+function bagWeight(){ return [...bag].reduce((s,i)=>s+cur().items[i].w,0); }
+function bagValue(){ return [...bag].reduce((s,i)=>s+cur().items[i].v,0); }
+function greedyPick(){
+  const order = cur().items.map((it,i)=>i).sort((a,b)=> cur().items[b].v/cur().items[b].w - cur().items[a].v/cur().items[a].w);
+  const g = new Set(); let w=0;
+  for(const i of order){ if(w+cur().items[i].w<=cur().cap){ g.add(i); w+=cur().items[i].w; } }
+  return g;
+}
+function optimalPick(){
+  const its = cur().items; let best=0, bestSet=new Set();
+  const n = its.length;
+  for(let mask=1; mask<(1<<n); mask++){
+    let w=0,v=0; const s=new Set();
+    for(let i=0;i<n;i++) if(mask&(1<<i)){ w+=its[i].w; v+=its[i].v; s.add(i); }
+    if(w<=cur().cap && v>best){ best=v; bestSet=s; }
+  }
+  return bestSet;
+}
+
+/* ---------- rendu ---------- */
+function fmtW(w){   // poids affiché selon l'unité du niveau
+  if(cur().unit==="kg"){
+    const k = w/1000;
+    const ks = Number.isInteger(k) ? k.toString() : k.toFixed(1).replace(".", lang==="fr" ? "," : ".");
+    return ks + " kg";
+  }
+  return w + " g";
+}
+function ratioTxt(it){   // rapport valeur/poids par unité affichée (100 g ou kg)
+  const per = cur().unit==="kg" ? 1000 : 100;
+  const r = it.v/it.w*per;
+  const rs = (Math.round(r*10)/10).toString().replace(".", lang==="fr" ? "," : ".");
+  return `${rs} / ${cur().unit==="kg" ? "kg" : "100 g"}`;
+}
+function renderLevelButtons(){
+  const row = $("levelRow");
+  row.querySelectorAll("button").forEach(b=>b.remove());
+  const maxUnlocked = Math.max(0, ...[...solved].map(x=>x+1));
+  LEVELS.forEach((_,i)=>{
+    const b = document.createElement("button");
+    const locked = i > maxUnlocked;
+    b.className = "lvlBtn" + (i===levelIdx?" active":"") + (solved.has(i)?" solved":"") + (locked?" locked":"");
+    b.textContent = i+1;
+    b.onclick = ()=>{
+      if(locked){ showMsg("err", T().locked); return; }
+      levelIdx=i; bag=new Set(); buildLevel(); hideMsg(); updateNextBtn();
+    };
+    row.appendChild(b);
+  });
+}
+function updateNextBtn(){
+  $("nextBtn").classList.toggle("show", solved.has(levelIdx) && levelIdx < LEVELS.length-1);
+}
+$("nextBtn").onclick = ()=>{
+  if(levelIdx < LEVELS.length-1){
+    levelIdx++; bag=new Set(); buildLevel(); hideMsg();
+    renderLevelButtons(); updateNextBtn();
+  }
+};
+
+function buildLevel(){
+  const grid = $("itemGrid");
+  grid.innerHTML = "";
+  cur().items.forEach((it,i)=>{
+    const d = document.createElement("div");
+    d.className = "item" + (bag.has(i)?" inBag":"");
+    d.innerHTML = `<div class="emoji">${it.emoji}</div>
+      <div class="nm">${it[lang]}</div>
+      <div class="wv"><b>${fmtW(it.w)}</b> · ${T().valWord} <b>${it.v}</b></div>
+      <div class="ratio">${ratioTxt(it)}</div>`;
+    d.onclick = ()=>{
+      if(bag.has(i)){ bag.delete(i); }
+      else if(bagWeight()+it.w > cur().cap){ showMsg("err", T().tooHeavy); return; }
+      else bag.add(i);
+      buildLevel(); hideMsg();
+    };
+    grid.appendChild(d);
+  });
+  // sac
+  const w = bagWeight(), v = bagValue();
+  $("bagFill").style.width = (100*w/cur().cap)+"%";
+  $("bagTxt").textContent = `${fmtW(w)} / ${fmtW(cur().cap)}`;
+  $("valueRow").textContent = v>0 ? `${T().value} : ${v}` : "";
+  const bl = $("bagList");
+  bl.innerHTML = "";
+  if(bag.size===0){
+    const s=document.createElement("span"); s.className="bagEmpty"; s.textContent=T().bagEmpty; bl.appendChild(s);
+  }else{
+    [...bag].forEach(i=>{
+      const it = cur().items[i];
+      const c = document.createElement("span");
+      c.className="bagChip"; c.textContent=`${it.emoji} ${it[lang]}`;
+      c.onclick=()=>{ bag.delete(i); buildLevel(); hideMsg(); };
+      bl.appendChild(c);
+    });
+  }
+}
+
+/* ---------- messages ---------- */
+function showMsg(kind,text){ const m=$("msg"); m.className="msg show "+kind; m.textContent=text; }
+function hideMsg(){ $("msg").className="msg"; document.querySelector(".bag").classList.remove("solved"); }
+
+/* ---------- évaluation ---------- */
+$("evalBtn").onclick = ()=>{
+  if(bag.size===0){ showMsg("err", T().empty); return; }
+  const v = bagValue();
+  const opt = optimalPick();
+  const optV = [...opt].reduce((s,i)=>s+cur().items[i].v,0);
+  const g = greedyPick();
+  const gV = [...g].reduce((s,i)=>s+cur().items[i].v,0);
+  const gNames = [...g].map(i=>cur().items[i][lang]).join(", ");
+  if(v===optV){
+    solved.add(levelIdx); renderLevelButtons(); updateNextBtn();
+    const last = levelIdx===LEVELS.length-1;
+    const m=$("msg");
+    m.className="msg show ok big";
+    m.innerHTML = `<span class="bigTitle">🎉 ${last ? T().winLast : T().win(v)}</span>`;
+    document.querySelector(".bag").classList.add("solved");
+  }else{
+    showMsg("err", T().fail(v, optV, gNames, gV));
+  }
+};
+$("greedyBtn").onclick = ()=>{
+  bag = greedyPick();
+  buildLevel();
+  const gV = bagValue();
+  const names = [...bag].map(i=>cur().items[i][lang]).join(", ");
+  showMsg("info", T().greedyMsg(names, gV));
+};
+
+/* ---------- i18n + fullscreen ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  document.title = T().title + " — Algorithmique";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("instruction").innerHTML = T().instruction;
+  $("levelLabel").textContent = T().level;
+  $("nextBtn").textContent = T().next;
+  $("itemsTitle").textContent = T().itemsTitle;
+  $("bagTitle").textContent = T().bagTitle;
+  $("evalBtn").textContent = T().eval;
+  $("greedyBtn").textContent = T().greedy;
+  $("hint").textContent = T().hint;
+  buildLevel(); renderLevelButtons(); updateNextBtn();
+}
+$("langBtn").onclick = ()=>{ lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = ()=>{
+  const el = document.documentElement;
+  if(isFs()){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+  else{
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+buildLevel();
+</script>
+
+<script>
+(function(){
+  var el=document.getElementById("fjBack");
+  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
+  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
+  var btn=document.getElementById("langBtn");
+  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
+  upd();
+})();
+</script>
+</body>
+</html>
