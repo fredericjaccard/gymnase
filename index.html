@@ -1,7 +1,9 @@
 <!DOCTYPE html><html lang="fr"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Portail — Applications d'informatique</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23155E4C'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FBFAF6' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Applications interactives pour le cours d'informatique au gymnase : binaire, algorithmique, logique, architecture des ordinateurs. Bilingue français / english.">
+<title>Applications interactives — Gymnase · Frédéric Jaccard</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +36,8 @@ h1{font-size:24px;font-weight:700}
 .chapTitle{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin:28px 0 12px}
 .chapTitle:first-of-type{margin-top:0}
 footer{margin-top:32px;text-align:center;font-size:13px;color:var(--muted)}
-footer a{color:inherit;text-decoration:none}
+footer a{text-decoration:none}
+footer a:hover{color:var(--primary);text-decoration:underline}
 footer a:hover{text-decoration:underline}
 @media(max-width:640px){
   body{padding:20px 12px}
@@ -51,19 +54,21 @@ footer a:hover{text-decoration:underline}
     <h1 id="title"></h1>
   </div>
   <div class="btns">
+    <a class="iconBtn" id="homeBtn" href="https://www.fredericjaccard.com" style="text-decoration:none;font-size:11px;white-space:nowrap"></a>
     <button class="iconBtn" id="langBtn" title="English">EN</button>
     <button class="iconBtn" id="fsBtn" title="Plein écran">⛶</button>
   </div>
 </div>
 <div class="sub" id="sub"></div>
 <div id="content"></div>
-<footer><a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<footer><a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
 </div>
 
 <script>
-let lang="fr";
+let lang=(function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
 const I18N={
  fr:{
+  home:"← fredericjaccard.com",
   kicker:"INFORMATIQUE · GYMNASE",
   title:"Applications interactives",
   sub:"Cliquez sur une application pour l'ouvrir. Toutes fonctionnent directement dans le navigateur, sans installation.",
@@ -85,24 +90,25 @@ const I18N={
     desc:"Remplissez votre sac à dos avec la meilleure valeur possible… et découvrez quand la stratégie gloutonne se trompe.",cat:"algo"},
    {file:"revision_algorithmique.html",em:"📝",title:"Révision — Algorithmique II",
     desc:"Questions générées à l'infini sur les 7 leçons : algorithmes, tris, complexité, recherche et algorithmes gloutons.",cat:"algo"},
-   {file:"inside_the_machine_index.html",em:"🖥️",title:"Inside the Machine",
+   {file:"inside_the_machine.html",em:"🖥️",title:"Inside the Machine",
     desc:"Explorez les composants d'un ordinateur — CPU, RAM, disque, périphériques — et testez vos connaissances en mode quiz.",cat:"arch"},
-   {file:"voyage_donnee_index.html",em:"⌨️",title:"Le voyage d'une donnée",
+   {file:"voyage_donnee.html",em:"⌨️",title:"Le voyage d'une donnée",
     desc:"Suivez le signal d'une touche pressée à travers le clavier, le CPU, la RAM et la carte graphique jusqu'à l'écran.",cat:"arch"},
-   {file:"transistor_porte_index.html",em:"🔌",title:"Du transistor à la porte",
+   {file:"transistor_porte.html",em:"🔌",title:"Du transistor à la porte",
     desc:"Ouvrez et fermez des transistors pour comprendre comment on construit les portes NON, ET et OU.",cat:"arch"},
-   {file:"portes_logiques_index.html",em:"🚪",title:"Portes logiques",
+   {file:"portes_logiques.html",em:"🚪",title:"Portes logiques",
     desc:"Testez les quatre portes à l'aide d'interrupteurs, puis reconstruisez leur table de vérité.",cat:"arch"},
-   {file:"circuit_mystere_index.html",em:"🕵️",title:"Circuit mystère",
+   {file:"circuit_mystere.html",em:"🕵️",title:"Circuit mystère",
     desc:"Une porte se cache dans la boîte noire : observez ses entrées et ses sorties pour l'identifier sans vous tromper.",cat:"arch"},
-   {file:"constructeur_nand_index.html",em:"🧱",title:"Constructeur NON-ET",
+   {file:"constructeur_nand.html",em:"🧱",title:"Constructeur NON-ET",
     desc:"Reliez des portes NON-ET pour fabriquer NON, ET, OU et OU exclusif — comme un vrai processeur.",cat:"arch"},
-   {file:"addition_binaire_index.html",em:"➕",title:"Addition binaire",
+   {file:"addition_binaire.html",em:"➕",title:"Addition binaire",
     desc:"Additionnez à la main et regardez le circuit en direct : demi-additionneur, additionneur complet et dépassement de capacité.",cat:"arch"}
   ],
   fsTitle:"Plein écran",langBtn:"EN"
  },
  en:{
+  home:"← fredericjaccard.com",
   kicker:"COMPUTER SCIENCE · HIGH SCHOOL",
   title:"Interactive applications",
   sub:"Click an application to open it. They all run directly in the browser, with no installation.",
@@ -124,19 +130,19 @@ const I18N={
     desc:"Fill your knapsack with the best possible value… and discover when the greedy strategy gets it wrong.",cat:"algo"},
    {file:"revision_algorithmique.html",em:"📝",title:"Revision — Algorithmics II",
     desc:"Infinitely generated questions on the 7 lessons: algorithms, sorts, complexity, search and greedy algorithms.",cat:"algo"},
-   {file:"inside_the_machine_index.html",em:"🖥️",title:"Inside the Machine",
+   {file:"inside_the_machine.html",em:"🖥️",title:"Inside the Machine",
     desc:"Explore the components of a computer — CPU, RAM, drive, peripherals — and test your knowledge in quiz mode.",cat:"arch"},
-   {file:"voyage_donnee_index.html",em:"⌨️",title:"The journey of a piece of data",
+   {file:"voyage_donnee.html",em:"⌨️",title:"The journey of a piece of data",
     desc:"Follow the signal of a keystroke through the keyboard, CPU, RAM and graphics card all the way to the screen.",cat:"arch"},
-   {file:"transistor_porte_index.html",em:"🔌",title:"From the transistor to the gate",
+   {file:"transistor_porte.html",em:"🔌",title:"From the transistor to the gate",
     desc:"Open and close transistors to understand how NOT, AND and OR gates are built.",cat:"arch"},
-   {file:"portes_logiques_index.html",em:"🚪",title:"Logic gates",
+   {file:"portes_logiques.html",em:"🚪",title:"Logic gates",
     desc:"Test the four gates with switches, then rebuild their truth tables.",cat:"arch"},
-   {file:"circuit_mystere_index.html",em:"🕵️",title:"Mystery circuit",
+   {file:"circuit_mystere.html",em:"🕵️",title:"Mystery circuit",
     desc:"A gate hides in the black box: observe its inputs and outputs to identify it without a mistake.",cat:"arch"},
-   {file:"constructeur_nand_index.html",em:"🧱",title:"NAND-only builder",
+   {file:"constructeur_nand.html",em:"🧱",title:"NAND-only builder",
     desc:"Wire NAND gates to build NOT, AND, OR and XOR — just like a real processor.",cat:"arch"},
-   {file:"addition_binaire_index.html",em:"➕",title:"Binary addition",
+   {file:"addition_binaire.html",em:"➕",title:"Binary addition",
     desc:"Add by hand and watch the circuit live: half adder, full adder and overflow.",cat:"arch"}
   ],
   fsTitle:"Fullscreen",langBtn:"FR"
@@ -151,8 +157,9 @@ function applyLang(){
   document.getElementById("title").textContent=t.title;
   document.getElementById("sub").textContent=t.sub;
   document.getElementById("langBtn").textContent=t.langBtn;
+  document.getElementById("homeBtn").textContent=t.home;
   document.getElementById("fsBtn").title=t.fsTitle;
-  document.title=t.title;
+  document.title=t.title+" — Gymnase · Frédéric Jaccard";
   const box=document.getElementById("content");
   box.innerHTML="";
   ["rep","algo","arch"].forEach(cat=>{
@@ -169,7 +176,7 @@ function applyLang(){
     box.appendChild(g);
   });
 }
-document.getElementById("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";applyLang();};
+document.getElementById("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";try{localStorage.setItem("fj-lang",lang);}catch(e){};applyLang();};
 
 const fsBtn=document.getElementById("fsBtn");
 function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
