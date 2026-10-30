@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000000'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
-<meta name="description" content="Application interactive pour le cours d'informatique.">
-<title>Le rendu de monnaie — Algorithmique · Gymnase — Frédéric Jaccard</title>
+<title>Le rendu de monnaie — Algorithmique</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -73,9 +72,6 @@ button:hover{background:var(--primaryLight)}
 .purse.solved{border-color:var(--primary);background:var(--primaryLight)}
 .hint{font-size:13px;color:var(--muted);line-height:1.45}
 footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
-
-footer a{color:var(--muted);text-decoration:none}
-footer a:hover{color:var(--primary);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -112,7 +108,7 @@ footer a:hover{color:var(--primary);text-decoration:underline}
   </div>
 </div>
 
-<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+<footer>Frédéric Jaccard</footer>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -129,7 +125,7 @@ const LEVELS = [
 ];
 
 const I18N = {
-  fr:{back:"← Toutes les applications",
+  fr:{
     kicker:"Algorithmique",
     title:"Le rendu de monnaie",
     fs:"Plein écran", fsExit:"Quitter",
@@ -159,7 +155,7 @@ const I18N = {
       : `Le glouton prend : ${list} → ${n} pièces. Est-ce le minimum possible ? À vous de vérifier !`,
     fr2:"fr"
   },
-  en:{back:"← All applications",
+  en:{
     kicker:"ALGORITHMS",
     title:"Making Change",
     fs:"Fullscreen", fsExit:"Exit",
@@ -190,7 +186,7 @@ const I18N = {
     fr2:"fr"
   }
 };
-let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+let lang = "fr";
 const T = () => I18N[lang];
 
 /* ---------- état ---------- */
@@ -363,7 +359,7 @@ function applyLang(){
   $("hint").textContent = T().hint;
   buildLevel(); renderLevelButtons(); updateNextBtn();
 }
-$("langBtn").onclick = ()=>{ lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+$("langBtn").onclick = ()=>{ lang = lang==="fr" ? "en" : "fr"; applyLang(); };
 
 function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 $("fsBtn").onclick = ()=>{
@@ -380,17 +376,6 @@ document.addEventListener("webkitfullscreenchange", syncFsLabel);
 
 applyLang();
 buildLevel();
-</script>
-
-<script>
-(function(){
-  var el=document.getElementById("fjBack");
-  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
-  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
-  var btn=document.getElementById("langBtn");
-  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
-  upd();
-})();
 </script>
 </body>
 </html>

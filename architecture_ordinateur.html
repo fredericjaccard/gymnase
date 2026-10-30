@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Explorez une tour et un ordinateur portable en 3D, identifiez leurs composants et suivez le trajet d’une donnée.">
+<title>Dans l’ordinateur · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F;
+  --muted:#6E726B; --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;min-height:100dvh}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:9px 15px;border-radius:10px;border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:44px;transition:background .18s,transform .18s,color .18s}
+button:hover{background:var(--primaryLight)}
+button:active{transform:scale(.97)}
+button:focus-visible,a:focus-visible,canvas:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+button.active{background:var(--primary);color:var(--bg)}
+button.accent{border-color:var(--accent);color:var(--accent)}
+button.accent:hover{background:var(--accentLight)}
+button.accent.active{background:var(--accent);color:var(--bg)}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;max-width:1440px;margin-left:auto;margin-right:auto}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:28px;color:var(--primary);line-height:1.15;margin-top:3px}
+.hdrBtns{display:flex;gap:8px;flex-wrap:wrap}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin:0 auto 16px;font-size:15px;max-width:1440px;line-height:1.5}
+.toolbar{max-width:1440px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.segment{display:flex;gap:6px;flex-wrap:wrap}
+.segment button{border-width:1px;padding:7px 13px}
+.workspace{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,2.15fr) minmax(280px,.85fr);gap:16px;align-items:stretch}
+.stage{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0;height:590px}
+#scene{display:block;width:100%;height:100%;touch-action:none;cursor:grab;background:var(--card)}
+#scene.dragging{cursor:grabbing}
+.sceneBadge{position:absolute;left:14px;top:14px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:7px 11px;color:var(--primary);font-size:13px;font-weight:700;pointer-events:none}
+.sceneHint{position:absolute;left:14px;bottom:12px;color:var(--muted);font-size:12px;background:var(--bg);border-radius:8px;padding:6px 9px;pointer-events:none}
+#componentLabel{position:absolute;transform:translate(-50%,-115%);background:var(--primary);color:var(--bg);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;pointer-events:none;white-space:nowrap;display:none}
+#componentLabel:after{content:"";position:absolute;left:50%;bottom:-6px;width:12px;height:12px;background:var(--primary);transform:translateX(-50%) rotate(45deg)}
+.panel{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:18px;display:flex;flex-direction:column;min-height:590px}
+.panelTop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.componentIcon{width:42px;height:42px;flex:0 0 42px;border-radius:10px;background:var(--primaryLight);display:grid;place-items:center;color:var(--primary);font-weight:700;font-size:13px}
+.panel h2{font-size:22px;color:var(--primary);line-height:1.2}
+.category{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:700;margin-bottom:10px}
+.description{font-size:16px;line-height:1.55;margin-bottom:14px}
+.remember{background:var(--primaryLight);border-radius:10px;padding:11px 13px;font-size:14px;line-height:1.5;margin-bottom:16px}
+.remember strong{display:block;color:var(--primary);margin-bottom:3px}
+.listTitle{font-size:13px;font-weight:700;color:var(--muted);margin:auto 0 8px;padding-top:10px}
+.componentList{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.componentList button{font-size:12px;min-height:40px;padding:6px 7px;border-width:1px;white-space:normal;line-height:1.2}
+.componentList button.active{border-color:var(--accent);background:var(--accentLight);color:var(--accent)}
+.flowPanel{max-width:1440px;margin:16px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px}
+.flowHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.flowHeader h2{font-size:19px;color:var(--primary)}
+.flowSteps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.flowStep{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px;text-align:left;display:flex;align-items:center;gap:9px;font-weight:400;min-height:58px}
+.flowStep:hover{background:var(--primaryLight)}
+.flowStep.active{border:2px solid var(--accent);background:var(--accentLight);color:var(--ink)}
+.stepNum{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:var(--primaryLight);color:var(--primary);font-weight:700}
+.flowStep.active .stepNum{background:var(--accent);color:var(--bg)}
+.flowStep strong{display:block;font-size:14px}
+.flowStep small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+#flowText{font-size:15px;line-height:1.55;margin-top:12px;min-height:24px}
+.legend{max-width:1440px;margin:10px auto 0;display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--accent)}
+.dot.green{background:var(--primary)}
+footer{margin:20px auto 0;text-align:center;color:var(--muted);font-size:13px;max-width:1440px}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{text-decoration:underline}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:900px){
+  .workspace{grid-template-columns:1fr}.stage{height:530px}.panel{min-height:0}.componentList{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:640px){
+  body{padding:12px}h1{font-size:23px}.hdrBtns{width:100%}.hdrBtns button{flex:1}
+  .instruction{font-size:14px;padding:11px 13px}.toolbar{gap:9px}.segment{width:100%}.segment button{flex:1;padding:7px 8px}
+  .stage{height:440px;border-radius:13px}.sceneHint{font-size:11px;max-width:85%}
+  .panel{padding:15px}.componentList{grid-template-columns:repeat(2,1fr)}
+  .flowPanel{padding:13px}.flowSteps{grid-template-columns:1fr 1fr}.flowStep{min-height:62px;padding:8px}
+  .flowHeader button{width:100%}.flowHeader h2{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker">Architecture des ordinateurs</div>
+    <h1 id="title">Dans l’ordinateur</h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span aria-hidden="true">⛶ </span><span id="fsLabel">Plein écran</span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<div class="toolbar">
+  <div class="segment" id="modelGroup" role="group" aria-label="Modèle">
+    <button id="towerBtn" class="active" type="button">Tour</button>
+    <button id="laptopBtn" type="button">Portable</button>
+  </div>
+  <div class="segment" id="viewGroup" role="group" aria-label="Vue">
+    <button id="assembledBtn" type="button">Assemblé</button>
+    <button id="explodedBtn" class="active" type="button">Vue éclatée</button>
+    <button id="resetBtn" type="button">Recentrer</button>
+  </div>
+</div>
+<main>
+<div class="workspace">
+  <section class="stage" id="stage" aria-label="Modèle 3D interactif">
+    <canvas id="scene" tabindex="0"></canvas>
+    <div class="sceneBadge" id="sceneBadge"></div>
+    <div id="componentLabel"></div>
+    <div class="sceneHint" id="sceneHint"></div>
+  </section>
+  <aside class="panel" aria-live="polite">
+    <div class="panelTop"><div class="componentIcon" id="componentIcon">CPU</div><h2 id="componentName"></h2></div>
+    <div class="category" id="componentCategory"></div>
+    <p class="description" id="componentDescription"></p>
+    <div class="remember"><strong id="rememberTitle"></strong><span id="componentRemember"></span></div>
+    <div class="listTitle" id="listTitle"></div>
+    <div class="componentList" id="componentList"></div>
+  </aside>
+</div>
+<section class="flowPanel">
+  <div class="flowHeader"><h2 id="flowTitle"></h2><button id="playBtn" class="accent" type="button"></button></div>
+  <div class="flowSteps" id="flowSteps"></div>
+  <div id="flowText"></div>
+</section>
+<div class="legend"><span><i class="dot"></i><span id="legendData"></span></span><span><i class="dot green"></i><span id="legendSelected"></span></span></div>
+</main>
+<footer><a id="backLink" href="index.html">← Toutes les applications</a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+const I18N = {
+  fr:{
+    tab:"Dans l’ordinateur · Gymnase — Frédéric Jaccard",
+    description:"Explorez une tour et un ordinateur portable en 3D, identifiez leurs composants et suivez le trajet d’une donnée.",
+    kicker:"Architecture des ordinateurs",title:"Dans l’ordinateur",fs:"Plein écran",fsExit:"Quitter",
+    instruction:"Faites glisser le modèle pour le tourner, molette ou pincement pour zoomer. Cliquez sur un composant pour découvrir son rôle, puis suivez le trajet d’une donnée.",
+    tower:"Tour",laptop:"Portable",assembled:"Assemblé",exploded:"Vue éclatée",reset:"Recentrer",modelAria:"Choix du modèle",viewAria:"Choix de la vue",stageAria:"Modèle 3D interactif",
+    badgeTower:"ORDINATEUR DE BUREAU",badgeLaptop:"ORDINATEUR PORTABLE",hint:"Glisser : tourner · Molette : zoomer · Cliquer : sélectionner",
+    remember:"À retenir",list:"COMPOSANTS À EXPLORER",flowTitle:"Le trajet d’une donnée",play:"▶ Suivre une donnée",pause:"❚❚ Mettre en pause",replay:"↻ Rejouer le trajet",
+    legendData:"donnée en déplacement",legendSelected:"composant sélectionné",back:"← Toutes les applications",
+    categories:{processing:"Traitement",memory:"Mémoire",storage:"Stockage",connection:"Connexion",graphics:"Image",power:"Énergie",input:"Entrée",output:"Sortie",cooling:"Refroidissement",case:"Structure"},
+    components:{
+      motherboard:{name:"Carte mère",icon:"CM",desc:"Relie les composants et leur permet d’échanger des données. Ses circuits font circuler les informations et l’électricité.",remember:"C’est le réseau de communication interne de l’ordinateur."},
+      cpu:{name:"Processeur (CPU)",icon:"CPU",desc:"Exécute les instructions des programmes : calculs, comparaisons et décisions. Il travaille avec les données placées dans la mémoire vive.",remember:"Il traite les instructions, mais ne conserve pas tous vos fichiers."},
+      ram:{name:"Mémoire vive (RAM)",icon:"RAM",desc:"Garde temporairement les programmes et les données en cours d’utilisation. Le processeur y accède rapidement.",remember:"Rapide, mais son contenu s’efface lorsque l’ordinateur s’éteint."},
+      storage:{name:"Stockage (SSD)",icon:"SSD",desc:"Conserve le système, les applications et les fichiers, même sans électricité. Les données nécessaires sont copiées vers la RAM pour être traitées.",remember:"Il conserve durablement ; la RAM travaille temporairement."},
+      gpu:{name:"Carte graphique (GPU)",icon:"GPU",desc:"Prépare les images à afficher. Elle effectue de nombreux calculs en parallèle, utiles pour les jeux, la 3D et certains calculs scientifiques.",remember:"Elle transforme les données en images envoyées vers l’écran."},
+      psu:{name:"Alimentation",icon:"⚡",desc:"Convertit le courant de la prise en tensions adaptées aux composants de l’ordinateur.",remember:"Elle distribue l’énergie, pas les données."},
+      fan:{name:"Ventilateur",icon:"AIR",desc:"Fait circuler l’air pour évacuer la chaleur produite notamment par le processeur et la carte graphique.",remember:"Un composant trop chaud réduit sa vitesse pour se protéger."},
+      battery:{name:"Batterie",icon:"BAT",desc:"Fournit l’énergie nécessaire lorsque l’ordinateur portable n’est pas branché sur une prise.",remember:"Elle alimente tous les circuits du portable."},
+      keyboard:{name:"Clavier",icon:"IN",desc:"Transforme chaque pression de touche en un signal numérique envoyé à l’ordinateur.",remember:"C’est un périphérique d’entrée : vous donnez une information à la machine."},
+      screen:{name:"Écran",icon:"OUT",desc:"Affiche le résultat des calculs sous forme d’image. L’écran du portable est intégré ; celui du bureau est externe.",remember:"C’est un périphérique de sortie : la machine vous renvoie une information."},
+      case:{name:"Boîtier et châssis",icon:"BOX",desc:"Protège les composants et les maintient en place. Son ouverture dans le modèle permet d’observer l’intérieur.",remember:"La structure facilite aussi la circulation de l’air."}
+    },
+    flowSteps:[
+      {title:"1. Entrée",short:"Clavier",text:"Vous appuyez sur une touche. Le clavier envoie un code numérique : l’information entre dans l’ordinateur."},
+      {title:"2. Traitement",short:"CPU + RAM",text:"Le processeur récupère l’instruction et les données utiles dans la RAM. Il exécute les opérations nécessaires."},
+      {title:"3. Mémoire",short:"RAM + SSD",text:"La RAM garde le travail en cours. Si vous enregistrez, les données sont copiées vers le SSD pour être conservées durablement."},
+      {title:"4. Sortie",short:"GPU + écran",text:"Le résultat est préparé pour l’affichage, puis envoyé à l’écran. Vous voyez la réponse de l’ordinateur."}
+    ],
+    selectedStep:"Étape",flowIdle:"Lancez l’animation ou choisissez une étape pour comprendre comment les composants coopèrent.",flowDone:"Le trajet est terminé : une entrée a été traitée, conservée si nécessaire, puis présentée en sortie."
+  },
+  en:{
+    tab:"Inside the computer · Gymnase — Frédéric Jaccard",
+    description:"Explore a desktop tower and a laptop in 3D, identify their components and follow the path of data.",
+    kicker:"Computer architecture",title:"Inside the computer",fs:"Full screen",fsExit:"Exit",
+    instruction:"Drag the model to rotate it, scroll or pinch to zoom. Click a component to discover its role, then follow the path of data.",
+    tower:"Tower",laptop:"Laptop",assembled:"Assembled",exploded:"Exploded view",reset:"Reset view",modelAria:"Model choice",viewAria:"View choice",stageAria:"Interactive 3D model",
+    badgeTower:"DESKTOP COMPUTER",badgeLaptop:"LAPTOP COMPUTER",hint:"Drag: rotate · Scroll: zoom · Click: select",
+    remember:"Key idea",list:"COMPONENTS TO EXPLORE",flowTitle:"The path of data",play:"▶ Follow some data",pause:"❚❚ Pause",replay:"↻ Replay the journey",
+    legendData:"moving data",legendSelected:"selected component",back:"← All applications",
+    categories:{processing:"Processing",memory:"Memory",storage:"Storage",connection:"Connections",graphics:"Graphics",power:"Power",input:"Input",output:"Output",cooling:"Cooling",case:"Structure"},
+    components:{
+      motherboard:{name:"Motherboard",icon:"MB",desc:"Connects the components and lets them exchange data. Its circuits carry information and electricity.",remember:"It is the computer’s internal communication network."},
+      cpu:{name:"Processor (CPU)",icon:"CPU",desc:"Executes program instructions: calculations, comparisons and decisions. It works with data held in main memory.",remember:"It processes instructions, but does not store all your files."},
+      ram:{name:"Main memory (RAM)",icon:"RAM",desc:"Temporarily holds the programs and data currently in use. The processor can access them quickly.",remember:"Fast, but its contents disappear when the computer switches off."},
+      storage:{name:"Storage (SSD)",icon:"SSD",desc:"Keeps the operating system, applications and files, even without power. Required data is copied to RAM for processing.",remember:"Storage keeps data permanently; RAM holds current work temporarily."},
+      gpu:{name:"Graphics card (GPU)",icon:"GPU",desc:"Prepares images for display. It performs many calculations in parallel, useful for games, 3D and some scientific computing.",remember:"It turns data into images sent to the screen."},
+      psu:{name:"Power supply",icon:"⚡",desc:"Converts mains electricity into voltages suitable for the computer’s components.",remember:"It distributes power, not data."},
+      fan:{name:"Fan",icon:"AIR",desc:"Moves air to remove heat produced mainly by the processor and graphics card.",remember:"An overheated component slows down to protect itself."},
+      battery:{name:"Battery",icon:"BAT",desc:"Supplies power when the laptop is not connected to a mains socket.",remember:"It powers all the laptop’s circuits."},
+      keyboard:{name:"Keyboard",icon:"IN",desc:"Turns each key press into a digital signal sent to the computer.",remember:"It is an input device: you give information to the machine."},
+      screen:{name:"Screen",icon:"OUT",desc:"Displays the results of calculations as images. A laptop screen is built in; a desktop screen is external.",remember:"It is an output device: the machine returns information to you."},
+      case:{name:"Case and chassis",icon:"BOX",desc:"Protects the components and holds them in place. The model opens it so you can observe the inside.",remember:"The structure also helps air circulate."}
+    },
+    flowSteps:[
+      {title:"1. Input",short:"Keyboard",text:"You press a key. The keyboard sends a digital code: information enters the computer."},
+      {title:"2. Processing",short:"CPU + RAM",text:"The processor fetches the instruction and relevant data from RAM. It performs the required operations."},
+      {title:"3. Memory",short:"RAM + SSD",text:"RAM holds current work. If you save, data is copied to the SSD so it remains available later."},
+      {title:"4. Output",short:"GPU + screen",text:"The result is prepared for display, then sent to the screen. You see the computer’s response."}
+    ],
+    selectedStep:"Step",flowIdle:"Start the animation or choose a step to understand how the components work together.",flowDone:"The journey is complete: an input was processed, saved if needed, then presented as output."
+  }
+};
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T=()=>I18N[lang];
+const PALETTE={bg:"#FBFAF6",card:"#F7F6F2",primary:"#155E4C",primaryLight:"#E3F0EA",accent:"#D96A08",accentLight:"#FDEBD8",line:"#D8D5CB",ink:"#20241F",muted:"#6E726B"};
+let modelType="tower",exploded=true,selected="cpu",activeStep=-1,playing=false,playTime=0,lastTime=0;
+let yaw=-0.65,pitch=0.42,distance=15,targetDistance=15;
+const reducedMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const V=(x=0,y=0,z=0)=>({x,y,z});
+const add=(a,b)=>V(a.x+b.x,a.y+b.y,a.z+b.z);
+const scale=(a,s)=>V(a.x*s,a.y*s,a.z*s);
+const mix=(a,b,t)=>V(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t);
+const B=(id,pos,size,color,exp=V(),extra={})=>({id,pos,size,color,exp,kind:"box",...extra});
+const C=(id,pos,r,h,color,exp=V(),axis="z")=>({id,pos,r,h,color,exp,kind:"cylinder",axis});
+function repeated(count,fn){return Array.from({length:count},(_,i)=>fn(i));}
+function buildTower(){
+  const p=[],o=V(-2,0,0),q=a=>add(o,a);
+  p.push(B("case",q(V(0,0,-2.15)),V(4.8,6.8,.22),PALETTE.muted,V(-4,0,-1.5)));
+  p.push(B("case",q(V(-2.3,0,0)),V(.2,6.8,4.4),PALETTE.line,V(-4,0,-1.5)));
+  p.push(B("case",q(V(0,-3.3,0)),V(4.8,.2,4.4),PALETTE.line,V(-4,0,-1.5)));
+  p.push(B("case",q(V(0,3.3,0)),V(4.8,.2,4.4),PALETTE.line,V(-4,0,-1.5)));
+  p.push(B("case",q(V(2.3,0,-2.05)),V(.2,6.8,.3),PALETTE.primary,V(-4,0,-1.5)));
+  p.push(B("motherboard",q(V(-.15,.15,-1.82)),V(3.85,5.35,.18),PALETTE.primary,V(-.8,0,.8)));
+  p.push(...repeated(12,i=>B("motherboard",q(V(-1.55+(i%4)*.92,-1.75+Math.floor(i/4)*1.65,-1.65)),V(.34,.25,.12),i%3?PALETTE.line:PALETTE.accentLight,V(-.8,0,.8))));
+  p.push(B("cpu",q(V(-.65,.75,-1.42)),V(1.15,1.15,.42),PALETTE.muted,V(-.6,.3,1.7)));
+  p.push(B("cpu",q(V(-.65,.75,-1.16)),V(.82,.82,.12),PALETTE.primaryLight,V(-.6,.3,1.7)));
+  p.push(...repeated(2,i=>B("ram",q(V(.75+i*.48,.85,-1.35)),V(.26,2.3,.42),PALETTE.accent,V(1.7,.5,1.1))));
+  p.push(...repeated(2,i=>repeated(5,j=>B("ram",q(V(.75+i*.48,.85+(j-2)*.4,-1.09)),V(.2,.25,.12),PALETTE.ink,V(1.7,.5,1.1)))).flat());
+  p.push(B("storage",q(V(-1.25,-1.55,-1.45)),V(1.25,.52,.28),PALETTE.primaryLight,V(-2,-.4,1.4)));
+  p.push(...repeated(3,i=>B("storage",q(V(-1.62+i*.37,-1.55,-1.25)),V(.25,.32,.12),PALETTE.ink,V(-2,-.4,1.4))));
+  p.push(B("gpu",q(V(0,-.7,-.82)),V(3.35,.6,1.45),PALETTE.ink,V(.2,-.8,2.2)));
+  p.push(B("gpu",q(V(0,-.7,-.02)),V(3.15,.42,.15),PALETTE.primaryLight,V(.2,-.8,2.2)));
+  p.push(C("gpu",q(V(-.75,-.7,.09)),.38,.12,PALETTE.muted,V(.2,-.8,2.2)));
+  p.push(C("gpu",q(V(.75,-.7,.09)),.38,.12,PALETTE.muted,V(.2,-.8,2.2)));
+  p.push(B("psu",q(V(0,-2.45,-.65)),V(3.7,.9,2.15),PALETTE.muted,V(0,-1.4,-.4)));
+  p.push(C("psu",q(V(0,-2.45,.47)),.34,.1,PALETTE.ink,V(0,-1.4,-.4)));
+  p.push(C("fan",q(V(0,2.45,-1.32)),.65,.35,PALETTE.line,V(.3,1.8,.6)));
+  p.push(C("fan",q(V(0,2.45,-1.1)),.22,.1,PALETTE.primary,V(.3,1.8,.6)));
+  p.push(...repeated(6,i=>{const a=i*Math.PI/3;return B("fan",q(V(Math.cos(a)*.38,2.45+Math.sin(a)*.38,-1.04)),V(.16,.42,.08),PALETTE.primary,V(.3,1.8,.6),{rotZ:a});}));
+  p.push(B("screen",V(4.25,1.0,-.4),V(4.4,3.15,.32),PALETTE.ink));
+  p.push(B("screen",V(4.25,1.0,-.2),V(4.05,2.78,.08),PALETTE.primaryLight));
+  p.push(B("screen",V(4.25,1.65,-.13),V(3.2,.18,.04),PALETTE.primary));
+  p.push(B("screen",V(3.65,.85,-.13),V(1.75,.85,.04),PALETTE.bg));
+  p.push(B("screen",V(5.45,.85,-.13),V(1.1,.85,.04),PALETTE.accentLight));
+  p.push(B("screen",V(4.25,-.9,-.4),V(.28,1.1,.28),PALETTE.muted));
+  p.push(B("screen",V(4.25,-1.48,-.15),V(1.8,.16,1.0),PALETTE.muted));
+  p.push(B("keyboard",V(3.85,-2.85,2.0),V(4.7,.28,1.75),PALETTE.muted,V(),{rotX:-.08}));
+  const rows=4,cols=12;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)p.push(B("keyboard",V(1.8+c*.37,-2.64,1.35+r*.36),V(.28,.12,.26),(r===0&&c>8)?PALETTE.accentLight:PALETTE.primaryLight));
+  return p;
+}
+function buildLaptop(){
+  const p=[];
+  p.push(B("case",V(0,-2.0,0),V(7.2,.38,4.7),PALETTE.muted,V(0,-.8,0)));
+  p.push(B("case",V(0,-1.48,2.25),V(7.2,1.1,.18),PALETTE.muted,V(0,-.8,0)));
+  p.push(B("case",V(-3.5,-1.48,0),V(.18,1.1,4.5),PALETTE.muted,V(0,-.8,0)));
+  p.push(B("case",V(3.5,-1.48,0),V(.18,1.1,4.5),PALETTE.muted,V(0,-.8,0)));
+  p.push(B("case",V(0,-1.48,-2.25),V(7.2,1.1,.18),PALETTE.muted,V(0,-.8,0)));
+  p.push(B("battery",V(0,-1.58,1.15),V(4.9,.34,1.45),PALETTE.ink,V(-1.5,-.1,1.1)));
+  p.push(...repeated(5,i=>B("battery",V(-1.9+i*.95,-1.37,1.15),V(.78,.08,1.15),PALETTE.muted,V(-1.5,-.1,1.1))));
+  p.push(B("motherboard",V(0,-1.55,-.85),V(6.25,.18,2.1),PALETTE.primary,V(.4,.55,-.5)));
+  p.push(...repeated(10,i=>B("motherboard",V(-2.6+(i%5)*1.25,-1.39,-1.45+Math.floor(i/5)*1.0),V(.35,.16,.3),PALETTE.line,V(.4,.55,-.5))));
+  p.push(B("cpu",V(-.7,-1.25,-.85),V(1.05,.3,1.05),PALETTE.muted,V(-.7,1.1,-.3)));
+  p.push(B("cpu",V(-.7,-1.06,-.85),V(.76,.1,.76),PALETTE.primaryLight,V(-.7,1.1,-.3)));
+  p.push(...repeated(2,i=>B("ram",V(1.0+i*.65,-1.2,-.8),V(.38,.28,1.45),PALETTE.accent,V(1.5,1.2,-.1))));
+  p.push(B("storage",V(2.35,-1.22,-.8),V(.85,.26,1.45),PALETTE.primaryLight,V(2.2,.8,.3)));
+  p.push(...repeated(3,i=>B("storage",V(2.35,-1.04,-1.25+i*.43),V(.58,.1,.3),PALETTE.ink,V(2.2,.8,.3))));
+  p.push(C("fan",V(-2.25,-1.25,-.85),.68,.28,PALETTE.line,V(-2,1,-.2),"y"));
+  p.push(C("fan",V(-2.25,-1.06,-.85),.22,.1,PALETTE.primary,V(-2,1,-.2),"y"));
+  p.push(B("keyboard",V(0,-1.18,0),V(7.0,.18,4.35),PALETTE.line,V(0,4.2,.8)));
+  for(let r=0;r<5;r++)for(let c=0;c<13;c++)p.push(B("keyboard",V(-2.85+c*.47,-1.03,-1.45+r*.42),V(.37,.12,.31),(r===0&&c>9)?PALETTE.accentLight:PALETTE.primaryLight,V(0,4.2,.8)));
+  p.push(B("keyboard",V(0,-1.01,1.35),V(2.25,.1,.95),PALETTE.card,V(0,4.2,.8)));
+  p.push(B("screen",V(0,1.05,-2.12),V(7.2,4.85,.3),PALETTE.ink,V(0,.7,-1)));
+  p.push(B("screen",V(0,1.08,-1.94),V(6.75,4.35,.08),PALETTE.primaryLight,V(0,.7,-1)));
+  p.push(B("screen",V(0,2.35,-1.88),V(5.5,.2,.04),PALETTE.primary,V(0,.7,-1)));
+  p.push(B("screen",V(-1.55,.85,-1.88),V(2.8,1.75,.04),PALETTE.bg,V(0,.7,-1)));
+  p.push(B("screen",V(1.85,.85,-1.88),V(2.1,1.75,.04),PALETTE.accentLight,V(0,.7,-1)));
+  p.push(B("case",V(0,-1.5,-2.1),V(6.3,.25,.3),PALETTE.muted,V(0,-.4,-.3)));
+  return p;
+}
+let parts=buildTower();
+let explodeAmount=1;
+function componentIds(){return [...new Set(parts.map(p=>p.id))].filter(id=>T().components[id]);}
+function currentAnchor(id){
+  const found=parts.filter(p=>p.id===id);
+  if(!found.length)return V();
+  const sum=found.reduce((a,p)=>add(a,add(p.pos,scale(p.exp,explodeAmount))),V());
+  return scale(sum,1/found.length);
+}
+const canvas=$("scene"),ctx=canvas.getContext("2d");
+let cw=800,ch=590,dpr=1,visibleFaces=[],hovered=null;
+function rotateLocal(v,p){
+  let {x,y,z}=v;
+  if(p.rotZ){const c=Math.cos(p.rotZ),s=Math.sin(p.rotZ);[x,y]=[c*x-s*y,s*x+c*y];}
+  if(p.rotX){const c=Math.cos(p.rotX),s=Math.sin(p.rotX);[y,z]=[c*y-s*z,s*y+c*z];}
+  return V(x,y,z);
+}
+function boxMesh(p){
+  const x=p.size.x/2,y=p.size.y/2,z=p.size.z/2;
+  const vs=[V(-x,-y,-z),V(x,-y,-z),V(x,y,-z),V(-x,y,-z),V(-x,-y,z),V(x,-y,z),V(x,y,z),V(-x,y,z)].map(v=>rotateLocal(v,p));
+  return {vs,faces:[[0,3,2,1],[4,5,6,7],[0,4,7,3],[1,2,6,5],[0,1,5,4],[3,7,6,2]]};
+}
+function cylinderMesh(p){
+  const n=14,vs=[];
+  for(let k=0;k<2;k++)for(let i=0;i<n;i++){
+    const a=i*Math.PI*2/n,h=(k?1:-1)*p.h/2;
+    vs.push(p.axis==="y"?V(Math.cos(a)*p.r,h,Math.sin(a)*p.r):V(Math.cos(a)*p.r,Math.sin(a)*p.r,h));
+  }
+  const faces=[];
+  for(let i=0;i<n;i++){const j=(i+1)%n;faces.push([i,j,j+n,i+n]);}
+  faces.push([...Array(n).keys()].reverse());faces.push([...Array(n).keys()].map(i=>i+n));
+  return {vs,faces};
+}
+function view(v){
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const x=cy*v.x-sy*v.z,z=sy*v.x+cy*v.z;
+  return V(x,cp*v.y-sp*z,sp*v.y+cp*z);
+}
+function project(v){
+  const a=view(v),f=Math.min(cw,ch)*1.32,den=Math.max(1,distance-a.z);
+  return {x:cw/2+a.x*f/den,y:ch/2-a.y*f/den,z:a.z,s:f/den};
+}
+function normalOf(points){
+  const a=points[0],b=points[1],c=points[2],u=V(b.x-a.x,b.y-a.y,b.z-a.z),v=V(c.x-a.x,c.y-a.y,c.z-a.z);
+  const n=V(u.y*v.z-u.z*v.y,u.z*v.x-u.x*v.z,u.x*v.y-u.y*v.x),l=Math.hypot(n.x,n.y,n.z)||1;
+  return V(n.x/l,n.y/l,n.z/l);
+}
+function rgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
+function shade(hex,n){
+  const light=V(-.45,.75,.55),d=Math.max(0,n.x*light.x+n.y*light.y+n.z*light.z),f=.68+.32*d,c=rgb(hex),paper=rgb(PALETTE.bg);
+  const out=c.map((v,i)=>Math.round(v*f+paper[i]*(1-f)*.16));
+  return `rgb(${out.join(",")})`;
+}
+function pathPolygon(points){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
+function flowAnchors(){return ["keyboard","cpu","ram","storage","ram",modelType==="laptop"?"cpu":"gpu","screen"].map(id=>currentAnchor(id));}
+function flowPosition(){
+  const anchors=flowAnchors(),u=Math.max(0,Math.min(5.999,playTime/12*6)),i=Math.floor(u),t=u-i;
+  return mix(anchors[i],anchors[i+1],t*t*(3-2*t));
+}
+function drawFlowPath(){
+  if(!playing&&activeStep<0)return;
+  const pts=flowAnchors().map(project);
+  ctx.save();ctx.strokeStyle=PALETTE.accent;ctx.globalAlpha=.32;ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.beginPath();
+  pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore();
+}
+function drawDataDot(){
+  if(!playing&&activeStep<0)return;
+  const p=project(flowPosition()),r=Math.max(6,Math.min(11,p.s*.09));
+  ctx.save();ctx.fillStyle=PALETTE.accentLight;ctx.beginPath();ctx.arc(p.x,p.y,r+6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=PALETTE.accent;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=PALETTE.bg;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+}
+function render(){
+  ctx.clearRect(0,0,cw,ch);ctx.fillStyle=PALETTE.card;ctx.fillRect(0,0,cw,ch);
+  ctx.save();ctx.globalAlpha=.16;ctx.fillStyle=PALETTE.muted;ctx.beginPath();ctx.ellipse(cw*.48,ch*.87,cw*.29,ch*.045,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  drawFlowPath();
+  const faces=[];
+  for(const p of parts){
+    if(explodeAmount<.03&&!["case","keyboard","screen"].includes(p.id))continue;
+    if(!p._mesh)p._mesh=p.kind==="box"?boxMesh(p):cylinderMesh(p);
+    const offset=add(p.pos,scale(p.exp,explodeAmount)),world=p._mesh.vs.map(v=>add(v,offset));
+    for(const indices of p._mesh.faces){
+      const pts=indices.map(i=>world[i]),n=normalOf(pts),vn=view(n);
+      if(vn.z<-.08)continue;
+      const projected=pts.map(project),depth=pts.reduce((s,v)=>s+view(v).z,0)/pts.length;
+      faces.push({id:p.id,color:p.color,pts,projected,depth,n});
+    }
+  }
+  faces.sort((a,b)=>a.depth-b.depth);visibleFaces=faces;
+  for(const f of faces){
+    pathPolygon(f.projected);ctx.fillStyle=shade(f.id===selected&&f.id!=="case"?PALETTE.primaryLight:f.color,f.n);ctx.fill();
+    ctx.strokeStyle=f.id===selected?PALETTE.accent:f.id===hovered?PALETTE.primary:PALETTE.ink;
+    ctx.globalAlpha=f.id===selected||f.id===hovered?1:.2;ctx.lineWidth=f.id===selected?1.8:.65;ctx.stroke();ctx.globalAlpha=1;
+  }
+  drawDataDot();updateLabel();
+}
+function updateLabel(){
+  const el=$("componentLabel");
+  if(!selected){el.style.display="none";return;}
+  const p=project(currentAnchor(selected));el.style.display="block";el.textContent=T().components[selected].name;
+  el.style.left=Math.max(65,Math.min(cw-65,p.x))+"px";el.style.top=Math.max(55,p.y-24)+"px";
+}
+function pointInPoly(x,y,pts){
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const a=pts[i],b=pts[j],hit=((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+function pick(x,y){
+  for(let i=visibleFaces.length-1;i>=0;i--){const f=visibleFaces[i];if(pointInPoly(x,y,f.projected))return f.id;}
+  return null;
+}
+function resize(){
+  const r=canvas.getBoundingClientRect();cw=Math.max(1,r.width);ch=Math.max(1,r.height);dpr=Math.min(2,window.devicePixelRatio||1);
+  canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);render();
+}
+new ResizeObserver(resize).observe(canvas);
+const pointers=new Map();let dragStart=null,pinchDistance=0;
+canvas.addEventListener("pointerdown",e=>{
+  canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  dragStart={x:e.clientX,y:e.clientY,moved:false};canvas.classList.add("dragging");
+  if(pointers.size===2){const a=[...pointers.values()];pinchDistance=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);}
+});
+canvas.addEventListener("pointermove",e=>{
+  const r=canvas.getBoundingClientRect();
+  if(!pointers.has(e.pointerId)){hovered=pick(e.clientX-r.left,e.clientY-r.top);canvas.style.cursor=hovered?"pointer":"grab";return;}
+  const old=pointers.get(e.pointerId),dx=e.clientX-old.x,dy=e.clientY-old.y;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(dragStart&&Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)>5)dragStart.moved=true;
+  if(pointers.size===2){const a=[...pointers.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);targetDistance=Math.max(8,Math.min(27,targetDistance-(d-pinchDistance)*.035));pinchDistance=d;}
+  else{yaw+=dx*.008;pitch=Math.max(-.15,Math.min(1.15,pitch+dy*.006));}
+});
+function endPointer(e){
+  const r=canvas.getBoundingClientRect(),wasTap=dragStart&&!dragStart.moved&&pointers.size===1;
+  pointers.delete(e.pointerId);canvas.classList.remove("dragging");
+  if(wasTap){const id=pick(e.clientX-r.left,e.clientY-r.top);if(id&&T().components[id])selectComponent(id);}
+  dragStart=null;
+}
+canvas.addEventListener("pointerup",endPointer);canvas.addEventListener("pointercancel",endPointer);
+canvas.addEventListener("pointerleave",()=>{hovered=null;});
+canvas.addEventListener("wheel",e=>{e.preventDefault();targetDistance=Math.max(8,Math.min(27,targetDistance+e.deltaY*.012));},{passive:false});
+canvas.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft")yaw-=.12;else if(e.key==="ArrowRight")yaw+=.12;else if(e.key==="ArrowUp")pitch=Math.min(1.15,pitch+.1);else if(e.key==="ArrowDown")pitch=Math.max(-.15,pitch-.1);
+  else if(e.key==="+"||e.key==="=")targetDistance=Math.max(8,targetDistance-1);else if(e.key==="-")targetDistance=Math.min(27,targetDistance+1);else return;e.preventDefault();
+});
+function renderPanel(){
+  const c=T().components[selected]||T().components.cpu;
+  $("componentIcon").textContent=c.icon;$("componentName").textContent=c.name;
+  const categories={motherboard:"connection",cpu:"processing",ram:"memory",storage:"storage",gpu:"graphics",psu:"power",battery:"power",fan:"cooling",keyboard:"input",screen:"output",case:"case"};
+  $("componentCategory").textContent=T().categories[categories[selected]];$("componentDescription").textContent=c.desc;$("componentRemember").textContent=c.remember;
+  document.querySelectorAll("#componentList button").forEach(b=>b.classList.toggle("active",b.dataset.id===selected));
+}
+function buildComponentList(){
+  const order=["motherboard","cpu","ram","storage","gpu","psu","battery","fan","keyboard","screen","case"],ids=componentIds().sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  $("componentList").innerHTML="";
+  ids.forEach(id=>{const b=document.createElement("button");b.type="button";b.dataset.id=id;b.textContent=T().components[id].name;b.onclick=()=>selectComponent(id);$("componentList").appendChild(b);});
+  renderPanel();
+}
+function selectComponent(id){if(!exploded&&!["case","keyboard","screen"].includes(id))setExploded(true);selected=id;renderPanel();}
+function buildFlowSteps(){
+  $("flowSteps").innerHTML="";
+  T().flowSteps.forEach((s,i)=>{const b=document.createElement("button");b.type="button";b.className="flowStep"+(i===activeStep?" active":"");b.innerHTML=`<span class="stepNum">${i+1}</span><span><strong>${s.title.slice(3)}</strong><small>${s.short}</small></span>`;b.onclick=()=>setStep(i);$("flowSteps").appendChild(b);});
+  updateFlowText();
+}
+function updateFlowText(){
+  $("flowText").textContent=activeStep>=0?T().flowSteps[activeStep].text:(playTime>=12?T().flowDone:T().flowIdle);
+  document.querySelectorAll(".flowStep").forEach((b,i)=>b.classList.toggle("active",i===activeStep));
+  $("playBtn").textContent=playing?T().pause:(playTime>=12?T().replay:T().play);
+}
+function setStep(i){if(!exploded)setExploded(true);playing=false;activeStep=i;playTime=[.5,1.5,3,5.2][i]/6*12;updateFlowText();}
+function stepFromTime(){const u=playTime/12*6;return u<1?0:u<2?1:u<4?2:3;}
+function setModel(type){
+  modelType=type;parts=type==="tower"?buildTower():buildLaptop();selected="cpu";activeStep=-1;playing=false;playTime=0;
+  yaw=type==="tower"?-.65:-.48;pitch=type==="tower"?.42:.5;distance=targetDistance=type==="tower"?19.5:14.5;
+  $("towerBtn").classList.toggle("active",type==="tower");$("laptopBtn").classList.toggle("active",type==="laptop");
+  $("sceneBadge").textContent=type==="tower"?T().badgeTower:T().badgeLaptop;buildComponentList();buildFlowSteps();
+}
+function setExploded(value){
+  exploded=value;if(!value&&!["case","keyboard","screen"].includes(selected)){selected="case";renderPanel();}
+  $("assembledBtn").classList.toggle("active",!value);$("explodedBtn").classList.toggle("active",value);
+}
+function resetView(){
+  yaw=modelType==="tower"?-.65:-.48;pitch=modelType==="tower"?.42:.5;targetDistance=modelType==="tower"?19.5:14.5;
+}
+function applyLang(){
+  document.documentElement.lang=lang;document.title=T().tab;document.querySelector('meta[name="description"]').content=T().description;
+  $("kicker").textContent=T().kicker;$("title").textContent=T().title;$("langBtn").textContent=lang==="fr"?"English":"Français";
+  $("modelGroup").setAttribute("aria-label",T().modelAria);$("viewGroup").setAttribute("aria-label",T().viewAria);$("stage").setAttribute("aria-label",T().stageAria);$("scene").setAttribute("aria-label",T().stageAria);
+  $("instruction").textContent=T().instruction;$("towerBtn").textContent=T().tower;$("laptopBtn").textContent=T().laptop;
+  $("assembledBtn").textContent=T().assembled;$("explodedBtn").textContent=T().exploded;$("resetBtn").textContent=T().reset;
+  $("sceneBadge").textContent=modelType==="tower"?T().badgeTower:T().badgeLaptop;$("sceneHint").textContent=T().hint;
+  $("rememberTitle").textContent=T().remember;$("listTitle").textContent=T().list;$("flowTitle").textContent=T().flowTitle;
+  $("legendData").textContent=T().legendData;$("legendSelected").textContent=T().legendSelected;$("backLink").textContent=T().back;
+  syncFsLabel();buildComponentList();buildFlowSteps();
+}
+$("towerBtn").onclick=()=>setModel("tower");$("laptopBtn").onclick=()=>setModel("laptop");
+$("assembledBtn").onclick=()=>setExploded(false);$("explodedBtn").onclick=()=>setExploded(true);$("resetBtn").onclick=resetView;
+$("playBtn").onclick=()=>{
+  if(playing){playing=false;}else{if(!exploded)setExploded(true);if(playTime>=12)playTime=0;playing=true;activeStep=stepFromTime();}updateFlowText();
+};
+$("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";try{localStorage.setItem("fj-lang",lang);}catch(e){}applyLang();};
+function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
+function syncFsLabel(){$("fsLabel").textContent=isFs()?T().fsExit:T().fs;}
+function toggleFs(){
+  try{
+    if(isFs()){const fn=document.exitFullscreen||document.webkitExitFullscreen;if(fn){const r=fn.call(document);if(r&&r.catch)r.catch(()=>{});}}
+    else{const el=document.documentElement,fn=el.requestFullscreen||el.webkitRequestFullscreen;if(fn){const r=fn.call(el);if(r&&r.catch)r.catch(()=>{});}}
+  }catch(e){}
+}
+$("fsBtn").onclick=toggleFs;document.addEventListener("fullscreenchange",syncFsLabel);document.addEventListener("webkitfullscreenchange",syncFsLabel);
+function animate(now){
+  const dt=Math.min(.05,(now-lastTime)/1000||0);lastTime=now;
+  const target=exploded?1:0;explodeAmount=reducedMotion?target:explodeAmount+(target-explodeAmount)*Math.min(1,dt*8);
+  distance=reducedMotion?targetDistance:distance+(targetDistance-distance)*Math.min(1,dt*9);
+  if(playing){
+    playTime+=dt;const step=stepFromTime();if(step!==activeStep){activeStep=step;updateFlowText();}
+    if(playTime>=12){playTime=12;playing=false;activeStep=3;updateFlowText();$("flowText").textContent=T().flowDone;}
+  }
+  render();requestAnimationFrame(animate);
+}
+applyLang();setModel("tower");resize();requestAnimationFrame(animate);
+</script>
+</body>
+</html>
