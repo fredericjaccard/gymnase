@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Identifiez les composants d’un ordinateur, comprenez leur rôle et reconstituez le trajet d’une donnée dans un quiz progressif.">
+<title>Le bon composant · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBFAF6;--card:#F7F6F2;--primary:#155E4C;--primaryLight:#E3F0EA;--accent:#D96A08;--accentLight:#FDEBD8;--line:#D8D5CB;--ink:#20241F;--muted:#6E726B;--error:#C84B31}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;min-height:100dvh}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:10px;border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:44px;transition:background .18s,transform .18s,border-color .18s}
+button:hover{background:var(--primaryLight)}button:active{transform:scale(.98)}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin:0 auto 16px;max-width:1180px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:28px;color:var(--primary);margin-top:3px}.hdrBtns{display:flex;gap:8px;flex-wrap:wrap}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin:0 auto 16px;font-size:15px;max-width:1180px;line-height:1.5}
+.game{max-width:1180px;margin:0 auto}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.levelBtn{position:relative;background:var(--card);border:1px solid var(--primary);text-align:left;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.levelBtn.current{background:var(--primary);color:var(--bg)}.levelBtn.locked{opacity:.35;cursor:not-allowed}.levelBtn.solved{border-color:var(--accent)}
+.levelBtn.solved:after{content:"★";position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:var(--accent);font-size:22px;background:var(--bg);padding:0 5px}
+.levelNum{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--primaryLight);color:var(--primary);flex:0 0 30px}.current .levelNum{background:var(--bg)}
+.levelBtn small{display:block;font-size:12px;font-weight:400;margin-top:2px}.levelBtn.locked small{visibility:hidden}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;color:var(--muted);font-size:14px}
+.score{color:var(--accent);font-weight:700;font-size:16px}.progress{height:7px;background:var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}.progressBar{height:100%;background:var(--accent);width:0;transition:width .25s}
+.quizCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;min-height:460px;display:flex;flex-direction:column}
+.questionGrid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:24px;align-items:start}
+.promptSide{display:flex;flex-direction:column;gap:14px}.chipArt{width:104px;height:104px;border:2px solid var(--primary);border-radius:22px;background:var(--primaryLight);display:grid;place-items:center;position:relative;color:var(--primary);font-size:34px;font-weight:700}
+.chipArt:before,.chipArt:after{content:"";position:absolute;left:-14px;right:-14px;height:2px;background:var(--line)}.chipArt:before{top:28px}.chipArt:after{bottom:28px}
+.chipPins{position:absolute;top:-12px;bottom:-12px;width:2px;background:var(--line);left:31px;box-shadow:40px 0 0 var(--line)}
+.levelTag{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:700}
+h2{font-size:24px;line-height:1.25;color:var(--primary)}.prompt{font-size:18px;line-height:1.55;max-width:65ch}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.answer{border:1px solid var(--primary);background:var(--bg);text-align:left;padding:13px;display:flex;align-items:center;gap:10px;line-height:1.3;min-height:62px;color:var(--ink);font-weight:400}
+.answer:hover:not(:disabled){background:var(--primaryLight)}.answer:disabled{cursor:default}.answer.wrong{border-color:var(--error);background:var(--accentLight);color:var(--error)}.answer.correct{border:2px solid var(--primary);background:var(--primaryLight);color:var(--primary);font-weight:700}
+.answer.dimmed{opacity:.45}.answerIcon{display:grid;place-items:center;min-width:42px;height:38px;padding:0 5px;border-radius:8px;background:var(--primaryLight);color:var(--primary);font-size:11px;font-weight:700}.wrong .answerIcon{background:var(--accentLight);color:var(--error)}
+.feedback{margin-top:18px;border-radius:11px;padding:12px 14px;line-height:1.5;font-size:15px;display:none}.feedback.show{display:block}.feedback.good{background:var(--primaryLight);color:var(--primary)}.feedback.bad{background:var(--accentLight);color:var(--error)}
+.feedback strong{display:block;margin-bottom:2px}.cardFooter{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:18px}.miniTip{font-size:13px;color:var(--muted)}
+.nextBtn{background:var(--accent);border-color:var(--accent);color:var(--bg);display:none}.nextBtn.show{display:block}.nextBtn:hover{background:var(--accentLight);color:var(--accent)}
+.sequenceArea{margin-top:14px}.sequenceSlots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.slot{min-height:78px;border:2px dashed var(--line);border-radius:10px;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px;background:var(--bg)}.slot.filled{border-style:solid;border-color:var(--primary);background:var(--primaryLight)}.slotNum{color:var(--accent);font-weight:700;font-size:18px}.sequenceControls{display:flex;gap:8px;flex-wrap:wrap}.sequenceControls button:disabled{opacity:.4;cursor:not-allowed}
+.final{text-align:center;display:none;padding:26px 10px;margin:auto}.final.show{display:block}.finalMedal{width:104px;height:104px;border-radius:50%;background:var(--accentLight);color:var(--accent);display:grid;place-items:center;font-size:52px;margin:0 auto 18px;border:2px solid var(--accent)}.final h2{font-size:30px;margin-bottom:10px}.finalScore{font-size:22px;color:var(--accent);font-weight:700;margin:12px 0}.final p{font-size:17px;line-height:1.55;max-width:55ch;margin:0 auto 18px}
+.lockedMessage{color:var(--error);font-size:14px;margin:0 0 10px;display:none}.lockedMessage.show{display:block}
+footer{margin:20px auto 0;text-align:center;color:var(--muted);font-size:13px;max-width:1180px}footer a{color:var(--muted);font-weight:400;text-decoration:none}footer a:hover{text-decoration:underline}
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+@media(max-width:760px){.questionGrid{grid-template-columns:1fr;gap:16px}.promptSide{display:grid;grid-template-columns:78px 1fr;gap:8px 14px}.chipArt{width:76px;height:76px;border-radius:17px;font-size:25px;grid-row:span 2}.promptSide .prompt{grid-column:1/-1}.quizCard{min-height:540px}}
+@media(max-width:640px){body{padding:12px}h1{font-size:24px}.hdrBtns{width:100%}.hdrBtns button{flex:1}.instruction{font-size:14px}.levels{gap:6px}.levelBtn{padding:10px 7px;gap:5px;font-size:12px;justify-content:center}.levelNum{width:25px;height:25px;flex-basis:25px}.levelBtn small{display:none}.quizCard{padding:16px;min-height:560px}h2{font-size:21px}.prompt{font-size:16px}.answers{grid-template-columns:1fr}.answer{min-height:54px}.hud{font-size:12px}.score{font-size:14px}.cardFooter{align-items:flex-end}.miniTip{max-width:55%}.sequenceSlots{grid-template-columns:1fr 1fr}.slot{min-height:65px}}
+@media(prefers-reduced-motion:reduce){button,.progressBar{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="kicker" id="kicker"></div><h1 id="title"></h1></div>
+  <div class="hdrBtns"><button id="langBtn" type="button">English</button><button id="fsBtn" type="button">⛶ <span id="fsLabel"></span></button></div>
+</header>
+<div class="instruction" id="instruction"></div>
+<main class="game">
+  <div class="levels" id="levels"></div>
+  <div class="lockedMessage" id="lockedMessage" role="status"></div>
+  <div class="hud"><span id="progressText"></span><span class="score" id="score"></span></div>
+  <div class="progress" aria-hidden="true"><div class="progressBar" id="progressBar"></div></div>
+  <section class="quizCard" id="quizCard">
+    <div class="questionGrid" id="questionGrid">
+      <div class="promptSide"><div class="chipArt" aria-hidden="true"><span class="chipPins"></span><span id="chipSymbol">?</span></div><div class="levelTag" id="levelTag"></div><h2 id="questionTitle"></h2><p class="prompt" id="prompt"></p></div>
+      <div><div class="answers" id="answers"></div><div class="sequenceArea" id="sequenceArea" hidden><div class="sequenceSlots" id="sequenceSlots"></div><div class="sequenceControls"><button id="undoBtn" type="button"></button><button id="resetSeqBtn" type="button"></button><button id="validateSeqBtn" type="button"></button></div></div></div>
+    </div>
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="cardFooter"><span class="miniTip" id="miniTip"></span><button class="nextBtn" id="nextBtn" type="button"></button></div>
+  </section>
+  <section class="quizCard final" id="finalCard"><div class="finalMedal" aria-hidden="true">★</div><h2 id="finalTitle"></h2><div class="finalScore" id="finalScore"></div><p id="finalText"></p><button id="restartBtn" type="button"></button></section>
+</main>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<canvas id="fireworks"></canvas>
+<script>
+const $=id=>document.getElementById(id);
+const I18N={
+fr:{
+ tab:"Le bon composant · Gymnase — Frédéric Jaccard",description:"Identifiez les composants d’un ordinateur, comprenez leur rôle et reconstituez le trajet d’une donnée dans un quiz progressif.",
+ kicker:"Architecture des ordinateurs",title:"Le bon composant",fs:"Plein écran",fsExit:"Quitter",backList:"← Toutes les applications",
+ instruction:"Répondez aux questions pour débloquer les trois niveaux. Après une erreur, vous pouvez réessayer : chaque défi reste résolvable à votre rythme.",
+ levelNames:["Identifier","Comprendre","Raisonner"],levelSubs:["Le rôle des composants","Des situations concrètes","RAM, SSD et données"],
+ question:(a,b)=>`Question ${a} sur ${b}`,score:n=>`Score : ${n} pts`,miniTip:"10 points sans erreur · 5 points après un essai",
+ good:"Bonne réponse !",bad:"Pas encore. Réessayez.",badSequence:"L’ordre n’est pas correct. Repérez d’abord l’entrée et la sortie.",
+ next:"Question suivante",nextLevel:"Niveau suivant",finish:"Voir le résultat",locked:"Terminez d’abord les niveaux précédents !",
+ undo:"↶ Annuler",resetSeq:"Recommencer",validate:"Valider l’ordre",emptySlot:"Étape",
+ finalTitle:"Bravo, les trois niveaux sont réussis !",finalScore:n=>`Votre score : ${n} / 110 points`,finalText:"Vous savez distinguer les composants essentiels et expliquer comment ils coopèrent pour traiter une information.",restart:"Rejouer",
+ levels:[
+  {tag:"Niveau 1 · Identifier",title:"Quel composant est décrit ?",questions:[
+   {prompt:"Il exécute les instructions des programmes et effectue les calculs.",options:[{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"cpu",name:"Processeur (CPU)",icon:"CPU"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"psu",name:"Alimentation",icon:"⚡"}],answer:"cpu",explain:"Le processeur exécute les instructions : calculs, comparaisons et décisions."},
+   {prompt:"Elle garde temporairement les données et les programmes en cours d’utilisation.",options:[{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"},{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"fan",name:"Ventilateur",icon:"AIR"}],answer:"ram",explain:"La RAM est une mémoire de travail rapide. Son contenu disparaît à l’extinction."},
+   {prompt:"Il conserve vos fichiers et vos applications même lorsque l’ordinateur est éteint.",options:[{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"cpu",name:"Processeur (CPU)",icon:"CPU"},{id:"screen",name:"Écran",icon:"OUT"}],answer:"ssd",explain:"Le SSD assure un stockage durable, contrairement à la mémoire vive."},
+   {prompt:"Elle relie les composants et leur permet d’échanger des données.",options:[{id:"psu",name:"Alimentation",icon:"⚡"},{id:"motherboard",name:"Carte mère",icon:"CM"},{id:"keyboard",name:"Clavier",icon:"IN"},{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"}],answer:"motherboard",explain:"La carte mère est le réseau de communication interne de l’ordinateur."}
+  ]},
+  {tag:"Niveau 2 · Comprendre",title:"Quel composant est sollicité ?",questions:[
+   {prompt:"Vous jouez à un jeu en 3D. Quel composant prépare surtout les images à afficher ?",options:[{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"},{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"psu",name:"Alimentation",icon:"⚡"}],answer:"gpu",explain:"Le GPU effectue de nombreux calculs en parallèle pour construire les images."},
+   {prompt:"Quel composant convertit le courant de la prise pour alimenter les circuits ?",options:[{id:"motherboard",name:"Carte mère",icon:"CM"},{id:"psu",name:"Alimentation",icon:"⚡"},{id:"cpu",name:"Processeur (CPU)",icon:"CPU"},{id:"fan",name:"Ventilateur",icon:"AIR"}],answer:"psu",explain:"L’alimentation distribue une énergie adaptée aux composants ; elle ne transporte pas vos données."},
+   {prompt:"Le processeur chauffe. Quel composant fait circuler l’air pour évacuer cette chaleur ?",options:[{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"},{id:"fan",name:"Ventilateur",icon:"AIR"},{id:"screen",name:"Écran",icon:"OUT"}],answer:"fan",explain:"Le ventilateur aide à évacuer la chaleur afin de protéger les composants."},
+   {prompt:"Quel périphérique présente le résultat des calculs sous forme d’image ?",options:[{id:"keyboard",name:"Clavier",icon:"IN"},{id:"screen",name:"Écran",icon:"OUT"},{id:"motherboard",name:"Carte mère",icon:"CM"},{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"}],answer:"screen",explain:"L’écran est un périphérique de sortie : il renvoie une information vers vous."}
+  ]},
+  {tag:"Niveau 3 · Raisonner",title:"RAM ou SSD : faites le bon choix",questions:[
+   {prompt:"Vous ouvrez plusieurs applications en même temps. Quelle mémoire de travail est alors davantage utilisée ?",options:[{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"},{id:"psu",name:"Alimentation",icon:"⚡"}],answer:"ram",explain:"Les applications ouvertes et leurs données de travail occupent la RAM."},
+   {prompt:"Vous enregistrez un document pour le retrouver après avoir éteint l’ordinateur. Où est-il conservé ?",options:[{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"cpu",name:"Processeur (CPU)",icon:"CPU"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"fan",name:"Ventilateur",icon:"AIR"}],answer:"ssd",explain:"L’enregistrement copie le document vers un stockage durable, ici le SSD."},
+   {type:"sequence",title:"Remettez le trajet dans l’ordre",prompt:"Vous appuyez sur une touche, l’ordinateur traite et enregistre le texte, puis affiche une confirmation. Cliquez sur les étapes dans le bon ordre.",options:[{id:"output",name:"L’écran affiche une confirmation",icon:"4"},{id:"input",name:"Le clavier envoie un code",icon:"1"},{id:"storage",name:"Le SSD enregistre le texte",icon:"3"},{id:"processing",name:"Le CPU traite le texte",icon:"2"}],answer:["input","processing","storage","output"],explain:"Le trajet est : entrée → traitement → enregistrement → sortie."}
+  ]}
+ ]
+},
+en:{
+ tab:"The right component · Gymnase — Frédéric Jaccard",description:"Identify computer components, understand their roles and reconstruct the path of data in a progressive quiz.",
+ kicker:"Computer architecture",title:"The right component",fs:"Full screen",fsExit:"Exit",backList:"← All applications",
+ instruction:"Answer the questions to unlock all three levels. After a mistake, you can try again: every challenge can be completed at your own pace.",
+ levelNames:["Identify","Understand","Reason"],levelSubs:["Component roles","Real-life situations","RAM, SSD and data"],
+ question:(a,b)=>`Question ${a} of ${b}`,score:n=>`Score: ${n} pts`,miniTip:"10 points without a mistake · 5 points after a retry",
+ good:"Correct!",bad:"Not quite. Try again.",badSequence:"The order is not correct. Find the input and output first.",
+ next:"Next question",nextLevel:"Next level",finish:"See your result",locked:"Complete the previous levels first!",
+ undo:"↶ Undo",resetSeq:"Start again",validate:"Check the order",emptySlot:"Step",
+ finalTitle:"Well done, you completed all three levels!",finalScore:n=>`Your score: ${n} / 110 points`,finalText:"You can distinguish the essential components and explain how they work together to process information.",restart:"Play again",
+ levels:[
+  {tag:"Level 1 · Identify",title:"Which component is described?",questions:[
+   {prompt:"It executes program instructions and performs calculations.",options:[{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"cpu",name:"Processor (CPU)",icon:"CPU"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"psu",name:"Power supply",icon:"⚡"}],answer:"cpu",explain:"The processor executes instructions: calculations, comparisons and decisions."},
+   {prompt:"It temporarily holds the data and programs currently in use.",options:[{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"},{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"fan",name:"Fan",icon:"AIR"}],answer:"ram",explain:"RAM is fast working memory. Its contents disappear when the power is switched off."},
+   {prompt:"It keeps your files and applications even when the computer is switched off.",options:[{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"cpu",name:"Processor (CPU)",icon:"CPU"},{id:"screen",name:"Screen",icon:"OUT"}],answer:"ssd",explain:"The SSD provides permanent storage, unlike main memory."},
+   {prompt:"It connects the components and allows them to exchange data.",options:[{id:"psu",name:"Power supply",icon:"⚡"},{id:"motherboard",name:"Motherboard",icon:"MB"},{id:"keyboard",name:"Keyboard",icon:"IN"},{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"}],answer:"motherboard",explain:"The motherboard is the computer’s internal communication network."}
+  ]},
+  {tag:"Level 2 · Understand",title:"Which component is being used?",questions:[
+   {prompt:"You are playing a 3D game. Which component mainly prepares the images for display?",options:[{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"},{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"psu",name:"Power supply",icon:"⚡"}],answer:"gpu",explain:"The GPU performs many calculations in parallel to build images."},
+   {prompt:"Which component converts mains electricity to power the circuits?",options:[{id:"motherboard",name:"Motherboard",icon:"MB"},{id:"psu",name:"Power supply",icon:"⚡"},{id:"cpu",name:"Processor (CPU)",icon:"CPU"},{id:"fan",name:"Fan",icon:"AIR"}],answer:"psu",explain:"The power supply delivers suitable power to the components; it does not carry your data."},
+   {prompt:"The processor gets hot. Which component moves air to remove this heat?",options:[{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"},{id:"fan",name:"Fan",icon:"AIR"},{id:"screen",name:"Screen",icon:"OUT"}],answer:"fan",explain:"The fan helps remove heat to protect the components."},
+   {prompt:"Which device presents the results of calculations as images?",options:[{id:"keyboard",name:"Keyboard",icon:"IN"},{id:"screen",name:"Screen",icon:"OUT"},{id:"motherboard",name:"Motherboard",icon:"MB"},{id:"ram",name:"Main memory (RAM)",icon:"RAM"}],answer:"screen",explain:"The screen is an output device: it returns information to you."}
+  ]},
+  {tag:"Level 3 · Reason",title:"RAM or SSD: make the right choice",questions:[
+   {prompt:"You open several applications at the same time. Which working memory is used more?",options:[{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"},{id:"psu",name:"Power supply",icon:"⚡"}],answer:"ram",explain:"Open applications and their working data occupy RAM."},
+   {prompt:"You save a document to retrieve it after switching off the computer. Where is it kept?",options:[{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"cpu",name:"Processor (CPU)",icon:"CPU"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"fan",name:"Fan",icon:"AIR"}],answer:"ssd",explain:"Saving copies the document to permanent storage, here the SSD."},
+   {type:"sequence",title:"Put the journey in order",prompt:"You press a key, the computer processes and saves the text, then displays a confirmation. Click the steps in the correct order.",options:[{id:"output",name:"The screen displays a confirmation",icon:"4"},{id:"input",name:"The keyboard sends a code",icon:"1"},{id:"storage",name:"The SSD saves the text",icon:"3"},{id:"processing",name:"The CPU processes the text",icon:"2"}],answer:["input","processing","storage","output"],explain:"The journey is: input → processing → saving → output."}
+  ]}
+ ]
+}};
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T=()=>I18N[lang];
+let stage=0,qIndex=0,score=0,solved=new Set(),maxUnlocked=0,answered=false,attempts=0,sequence=[],finished=false;
+let credited=new Set();
+const currentLevel=()=>T().levels[stage],currentQ=()=>currentLevel().questions[qIndex];
+function renderLevels(){
+ $("levels").innerHTML="";
+ T().levelNames.forEach((name,i)=>{
+  const b=document.createElement("button");b.type="button";b.className="levelBtn"+(i===stage&&!finished?" current":"")+(i>maxUnlocked?" locked":"")+(solved.has(i)?" solved":"");
+  b.setAttribute("aria-disabled",i>maxUnlocked?"true":"false");b.innerHTML=`<span class="levelNum">${i+1}</span><span>${name}<small>${T().levelSubs[i]}</small></span>`;
+  b.onclick=()=>{if(i>maxUnlocked){$("lockedMessage").textContent=T().locked;$("lockedMessage").classList.add("show");return;}if(finished)return;stage=i;qIndex=0;resetQuestionState();finished=false;renderAll();};
+  $("levels").appendChild(b);
+ });
+}
+function resetQuestionState(){answered=false;attempts=0;sequence=[];$("feedback").className="feedback";$("nextBtn").classList.remove("show");$("lockedMessage").classList.remove("show");}
+function renderQuestion(){
+ const q=currentQ(),level=currentLevel();$("quizCard").style.display="flex";$("finalCard").classList.remove("show");
+ $("levelTag").textContent=level.tag;$("questionTitle").textContent=q.title||level.title;$("prompt").textContent=q.prompt;$("chipSymbol").textContent=q.type==="sequence"?"↔":"?";
+ $("progressText").textContent=T().question(qIndex+1,level.questions.length);$("score").textContent=T().score(score);
+ $("progressBar").style.width=((qIndex+(answered?1:0))/level.questions.length*100)+"%";$("miniTip").textContent=T().miniTip;
+ $("answers").innerHTML="";$("sequenceArea").hidden=q.type!=="sequence";
+ q.options.forEach(opt=>{
+  const b=document.createElement("button");b.type="button";b.className="answer";b.dataset.id=opt.id;b.innerHTML=`<span class="answerIcon">${opt.icon}</span><span>${opt.name}</span>`;
+  if(q.type==="sequence"){
+   if(sequence.includes(opt.id)){b.disabled=true;b.classList.add("dimmed");}
+   if(answered){b.disabled=true;if(q.answer.includes(opt.id))b.classList.add("correct");}
+   b.onclick=()=>{if(answered||sequence.includes(opt.id))return;$("lockedMessage").classList.remove("show");sequence.push(opt.id);renderQuestion();};
+  }else{
+   if(answered){b.disabled=true;if(opt.id===q.answer)b.classList.add("correct");else b.classList.add("dimmed");}
+   b.onclick=()=>answerChoice(opt.id,b);
+  }
+  $("answers").appendChild(b);
+ });
+ if(q.type==="sequence")renderSequenceSlots();
+ if(answered){$("nextBtn").classList.add("show");$("nextBtn").textContent=qIndex<level.questions.length-1?T().next:(stage<2?T().nextLevel:T().finish);}
+ else{$("nextBtn").classList.remove("show");$("feedback").className="feedback";}
+}
+function answerChoice(id,button){
+ if(answered||button.disabled)return;$("lockedMessage").classList.remove("show");const q=currentQ();
+ if(id===q.answer){handleCorrect();}
+ else{attempts++;button.disabled=true;button.classList.add("wrong");showBad(T().bad);}
+}
+function award(){
+ const key=stage+":"+qIndex;if(credited.has(key))return 0;const pts=attempts===0?10:5;score+=pts;credited.add(key);return pts;
+}
+function handleCorrect(){
+ answered=true;const pts=award();renderQuestion();renderLevels();$("score").textContent=T().score(score);showGood(pts);
+}
+function showGood(pts=0){
+ const q=currentQ(),f=$("feedback");f.className="feedback show good";f.innerHTML=`<strong>${T().good}${pts?` +${pts} pts`:""}</strong>${q.explain}`;
+}
+function showBad(message){const f=$("feedback");f.className="feedback show bad";f.innerHTML=`<strong>${message}</strong>`;}
+function renderSequenceSlots(){
+ const q=currentQ();$("sequenceSlots").innerHTML="";
+ for(let i=0;i<4;i++){
+  const slot=document.createElement("div");slot.className="slot"+(sequence[i]?" filled":"");
+  const opt=q.options.find(o=>o.id===sequence[i]);slot.innerHTML=`<span class="slotNum">${i+1}</span><span>${opt?opt.name:T().emptySlot}</span>`;$("sequenceSlots").appendChild(slot);
+ }
+ $("undoBtn").textContent=T().undo;$("resetSeqBtn").textContent=T().resetSeq;$("validateSeqBtn").textContent=T().validate;
+ $("undoBtn").disabled=!sequence.length||answered;$("resetSeqBtn").disabled=!sequence.length||answered;$("validateSeqBtn").disabled=sequence.length!==4||answered;
+}
+function validateSequence(){
+ const q=currentQ();if(sequence.length!==4||answered)return;
+ if(sequence.every((id,i)=>id===q.answer[i]))handleCorrect();
+ else{attempts++;sequence=[];renderQuestion();showBad(T().badSequence);}
+}
+$("undoBtn").onclick=()=>{sequence.pop();renderQuestion();};$("resetSeqBtn").onclick=()=>{sequence=[];renderQuestion();};$("validateSeqBtn").onclick=validateSequence;
+$("nextBtn").onclick=()=>{
+ if(!answered)return;
+ if(qIndex<currentLevel().questions.length-1){qIndex++;resetQuestionState();renderAll();return;}
+ solved.add(stage);
+ if(stage<2){maxUnlocked=Math.max(maxUnlocked,stage+1);stage++;qIndex=0;resetQuestionState();renderAll();}
+ else finishGame();
+};
+function finishGame(){finished=true;renderLevels();$("quizCard").style.display="none";$("finalCard").classList.add("show");$("progressBar").style.width="100%";$("progressText").textContent="3 / 3";renderFinal();fireworks();}
+function renderFinal(){$("finalTitle").textContent=T().finalTitle;$("finalScore").textContent=T().finalScore(score);$("finalText").textContent=T().finalText;$("restartBtn").textContent=T().restart;}
+function resetGame(){stage=0;qIndex=0;score=0;solved=new Set();credited=new Set();maxUnlocked=0;finished=false;resetQuestionState();renderAll();}
+$("restartBtn").onclick=resetGame;
+function renderAll(){renderLevels();if(finished){renderFinal();$("score").textContent=T().score(score);}else renderQuestion();}
+function applyLang(){
+ document.documentElement.lang=lang;document.title=T().tab;document.querySelector('meta[name="description"]').content=T().description;
+ $("kicker").textContent=T().kicker;$("title").textContent=T().title;$("langBtn").textContent=lang==="fr"?"English":"Français";
+ $("instruction").textContent=T().instruction;$("backLink").textContent=T().backList;syncFsLabel();renderAll();if(answered&&!finished)showGood(0);
+}
+$("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";try{localStorage.setItem("fj-lang",lang);}catch(e){}applyLang();};
+function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
+function syncFsLabel(){$("fsLabel").textContent=isFs()?T().fsExit:T().fs;}
+function toggleFs(){
+ try{if(isFs()){const fn=document.exitFullscreen||document.webkitExitFullscreen;if(fn){const r=fn.call(document);if(r&&r.catch)r.catch(()=>{});}}
+ else{const el=document.documentElement,fn=el.requestFullscreen||el.webkitRequestFullscreen;if(fn){const r=fn.call(el);if(r&&r.catch)r.catch(()=>{});}}}catch(e){}
+}
+$("fsBtn").onclick=toggleFs;document.addEventListener("fullscreenchange",syncFsLabel);document.addEventListener("webkitfullscreenchange",syncFsLabel);
+let fwRunning=false;
+function fireworks(){
+ if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const cv=$("fireworks"),ctx=cv.getContext("2d");cv.width=innerWidth;cv.height=innerHeight;cv.style.display="block";fwRunning=true;
+ const COLORS=["#155E4C","#D96A08","#3E8E7E","#F0A04B","#7FB69E","#C84B31"],rockets=[],sparks=[];
+ const launch=()=>{rockets.push({x:cv.width*(.15+Math.random()*.7),y:cv.height,vx:(Math.random()-.5)*2,vy:-(10+Math.random()*4),color:COLORS[Math.floor(Math.random()*COLORS.length)]});};
+ const explode=r=>{for(let i=0;i<90;i++){const ang=Math.random()*Math.PI*2,sp=2+Math.random()*5;sparks.push({x:r.x,y:r.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,life:60+Math.random()*40,color:r.color});}};
+ let frame=0;const tick=()=>{ctx.clearRect(0,0,cv.width,cv.height);frame++;if(frame<260&&frame%16===0)launch();
+  for(let i=rockets.length-1;i>=0;i--){const r=rockets[i];r.x+=r.vx;r.y+=r.vy;r.vy+=.18;ctx.beginPath();ctx.arc(r.x,r.y,3,0,Math.PI*2);ctx.fillStyle=r.color;ctx.fill();if(r.vy>=-1.5){explode(r);rockets.splice(i,1);}}
+  for(let i=sparks.length-1;i>=0;i--){const s=sparks[i];s.x+=s.vx;s.y+=s.vy;s.vy+=.05;s.vx*=.985;s.life--;ctx.globalAlpha=Math.max(0,s.life/80);ctx.beginPath();ctx.arc(s.x,s.y,2.4,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();if(s.life<=0)sparks.splice(i,1);}
+  ctx.globalAlpha=1;if(frame<600||rockets.length||sparks.length)requestAnimationFrame(tick);else{cv.style.display="none";fwRunning=false;}};tick();
+}
+applyLang();
+</script>
+</body>
+</html>
