@@ -244,7 +244,7 @@ const I18N = {
   }
 };
 
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 let gate = "TRANS";
 let a = 0, b = 0;
 let tried = {};
@@ -383,7 +383,7 @@ function renderGatebar(){
 $("swA").onclick = () => { a = 1 - a; render(); };
 $("swB").onclick = () => { b = 1 - b; render(); };
 
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";

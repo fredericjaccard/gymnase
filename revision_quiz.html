@@ -84,7 +84,7 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <script>
-let lang="fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const I18N={
  fr:{
   backList:"← Toutes les applications",
@@ -401,7 +401,7 @@ function buildFilters(){
     box.appendChild(b);
   });
 }
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang=lang;
   document.getElementById("kicker").textContent=T().kicker;

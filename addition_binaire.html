@@ -174,7 +174,7 @@ const I18N = {
     colLbl:"column",
   }
 };
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 
 // ---------- etat ----------
@@ -451,7 +451,7 @@ function renderSteps(){
 function showMsg(t,cls){ const m=$("msg"); m.className=cls; m.style.display="block"; m.textContent=t; }
 
 
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang=lang;
   $("kicker").textContent = lang==="fr"?"Architecture des ordinateurs":"Computer architecture";

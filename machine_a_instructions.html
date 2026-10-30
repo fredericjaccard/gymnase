@@ -184,7 +184,7 @@ const I18N = {
     errStar:"The program is over, but the star was not reached. Look where the robot stopped, then adjust."
   }
 };
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 
 /* ---------- état ---------- */
@@ -409,7 +409,7 @@ function fireworks(){
 }
 
 /* ---------- i18n + fullscreen (charte) ---------- */
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("langBtn").textContent = lang==="fr" ? "English" : "Français";

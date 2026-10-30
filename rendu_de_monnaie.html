@@ -190,7 +190,7 @@ const I18N = {
     fr2:"fr"
   }
 };
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 
 /* ---------- état ---------- */
@@ -346,7 +346,7 @@ function greedyListText(list){
 }
 
 /* ---------- i18n + fullscreen ---------- */
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("langBtn").textContent = lang==="fr" ? "English" : "Français";

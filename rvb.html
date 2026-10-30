@@ -124,7 +124,7 @@ const I18N = {
     mel:"Resulting light",
     note:"Red + green = yellow, red + blue = magenta, green + blue = cyan — and all three together give white. This is the additive synthesis of light (screens, projectors)." }
 };
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 function toHex(v){var s=v.toString(16);return (s.length<2?'0':'')+s.toUpperCase()}
 function toBin(v){var s=v.toString(2);while(s.length<8)s='0'+s;return s}
@@ -162,7 +162,7 @@ function dessiner(){
   txt(322,352,'#00'+toHex(g)+toHex(b),coulTxt(0,g,b),14);
   txt(320,262,'#'+toHex(r)+toHex(g)+toHex(b),coulTxt(r,g,b),16);
 }
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   var t=T();
   document.documentElement.lang = lang;

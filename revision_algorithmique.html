@@ -81,7 +81,7 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <script>
-let lang="fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const I18N={
  fr:{
   kicker:"RÉVISION",
@@ -443,6 +443,7 @@ function buildFilters(){
   });
 }
 function applyLang(){
+  try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.documentElement.lang=lang;
   document.getElementById("kicker").textContent=T().kicker;
   document.getElementById("title").textContent=T().title;

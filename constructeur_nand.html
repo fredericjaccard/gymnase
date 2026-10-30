@@ -266,7 +266,7 @@ const LAMP_PIN = [786,210];
 
 const FN_NAND = (x,y) => 1-(x&&y);
 
-let lang = "fr";
+let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 let level = 0;              // défi en cours 0..3
 let unlocked = 0;           // nb de défis réussis
 let manual = false;         // mode table : auto ou par interrupteurs
@@ -620,7 +620,7 @@ $("nextBtn").onclick = () => {
   resetCircuit(); render(); updatePanel();
 };
 
-function applyLang(){
+function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";
