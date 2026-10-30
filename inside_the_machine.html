@@ -279,7 +279,7 @@ const ORDER = ["cpu","ram","disk","gpu","screen","keyboard","mouse"];
 const NAMES = {fr:{cpu:"CPU",ram:"RAM",disk:"Disque",gpu:"Carte graphique",screen:"Écran",keyboard:"Clavier",mouse:"Souris"},
                en:{cpu:"CPU",ram:"RAM",disk:"Drive",gpu:"Graphics card",screen:"Screen",keyboard:"Keyboard",mouse:"Mouse"}};
 
-let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 let mode = "explore";
 let selected = null;
 let qi = 0, score = 0, locked = false;
@@ -287,7 +287,7 @@ let qi = 0, score = 0, locked = false;
 const $ = id => document.getElementById(id);
 const T = () => I18N[lang];
 
-function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
+function applyLang(){try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
   document.documentElement.lang = lang;
   $("kicker").textContent = T().kicker;
   $("title").textContent = T().title;

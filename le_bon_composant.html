@@ -137,7 +137,7 @@ en:{
   ]}
  ]
 }};
-let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T=()=>I18N[lang];
 let stage=0,qIndex=0,score=0,solved=new Set(),maxUnlocked=0,answered=false,attempts=0,sequence=[],finished=false;
 let credited=new Set();
@@ -221,7 +221,7 @@ function applyLang(){
  $("kicker").textContent=T().kicker;$("title").textContent=T().title;$("langBtn").textContent=lang==="fr"?"English":"Français";
  $("instruction").textContent=T().instruction;$("backLink").textContent=T().backList;syncFsLabel();renderAll();if(answered&&!finished)showGood(0);
 }
-$("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";try{localStorage.setItem("fj-lang",lang);}catch(e){}applyLang();};
+$("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}applyLang();};
 function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
 function syncFsLabel(){$("fsLabel").textContent=isFs()?T().fsExit:T().fs;}
 function toggleFs(){

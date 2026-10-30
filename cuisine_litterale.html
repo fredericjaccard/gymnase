@@ -197,7 +197,7 @@ const I18N = {
     startScene:"🍽️ Ready to cook! Assemble your recipe on the right."
   }
 };
-let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 
 /* ---------- état ---------- */
@@ -375,7 +375,7 @@ function fireworks(){
 }
 
 /* ---------- i18n + fullscreen ---------- */
-function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
+function applyLang(){try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("langBtn").textContent = lang==="fr" ? "English" : "Français";

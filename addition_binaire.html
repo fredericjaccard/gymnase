@@ -174,7 +174,7 @@ const I18N = {
     colLbl:"column",
   }
 };
-let lang=(function(){try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 
 // ---------- etat ----------
@@ -451,7 +451,7 @@ function renderSteps(){
 function showMsg(t,cls){ const m=$("msg"); m.className=cls; m.style.display="block"; m.textContent=t; }
 
 
-function applyLang(){try{localStorage.setItem("fj-lang",lang);}catch(e){}
+function applyLang(){try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
   document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang=lang;
   $("kicker").textContent = lang==="fr"?"Architecture des ordinateurs":"Computer architecture";
