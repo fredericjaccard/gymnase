@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000000'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
-<meta name="description" content="Application interactive pour le cours d'informatique.">
-<title>Portes logiques — Architecture des ordinateurs · Gymnase — Frédéric Jaccard</title>
+<title>Portes logiques — Architecture des ordinateurs</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#FBFAF6; --ink:#20241F; --muted:#6E726B;
@@ -107,9 +106,6 @@
   .final.show{display:flex}
   .final h2{color:var(--primary); font-size:21px}
   footer{padding:12px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center}
-
-footer a{color:var(--muted);text-decoration:none}
-footer a:hover{color:var(--primary);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -191,7 +187,7 @@ footer a:hover{color:var(--primary);text-decoration:underline}
   </div>
 </main>
 
-<footer><a href="index.html" id="fjBack"></a> · <a href="https://www.fredericjaccard.com">Frédéric Jaccard</a></footer>
+<footer>Frédéric Jaccard</footer>
 
 <script>
 const GATES = ["NON","ET","OU","XOR"];
@@ -204,7 +200,7 @@ const FN = {
 const ROWS = gate => gate === "NON" ? [[0],[1]] : [[0,0],[0,1],[1,0],[1,1]];
 
 const I18N = {
-  fr:{back:"← Toutes les applications",
+  fr:{
     title:"Portes logiques à manipuler",
     instruction:"Choisis une porte, teste toutes les combinaisons avec les interrupteurs A et B, observe l'ampoule S… puis reconstruis la table de vérité en cliquant sur les cases de la colonne S !",
     fs:"Plein écran", fsExit:"Quitter",
@@ -222,7 +218,7 @@ const I18N = {
     combos:["A = 0","A = 1"],
     combos2:["A = 0, B = 0","A = 0, B = 1","A = 1, B = 0","A = 1, B = 1"],
   },
-  en:{back:"← All applications",
+  en:{
     title:"Logic gates playground",
     instruction:"Pick a gate, test every combination with switches A and B, watch bulb Q… then rebuild the truth table by clicking the cells in column Q!",
     fs:"Fullscreen", fsExit:"Exit",
@@ -243,7 +239,7 @@ const I18N = {
 };
 const gateName = g => I18N[lang].gates[g];
 
-let lang = (function(){try{var s=localStorage.getItem("fj-lang");return (s==="fr"||s==="en")?s:"fr";}catch(e){return "fr";}})();
+let lang = "fr";
 let gate = "NON";
 let a = 0, b = 0;
 let entries = {};        // "ET" -> [null,"0","1",null]
@@ -420,7 +416,7 @@ function applyLang(){
   renderTable();
 }
 
-$("langBtn").onclick = () => { lang = lang==="fr" ? "en" : "fr"; try{localStorage.setItem("fj-lang",lang);}catch(e){}; applyLang(); };
+$("langBtn").onclick = () => { lang = lang === "fr" ? "en" : "fr"; applyLang(); };
 $("fsBtn").onclick = () => {
   if(document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen().catch(()=>{});
@@ -432,17 +428,6 @@ document.addEventListener("fullscreenchange", () => {
 GATES.forEach(g => entries[g] = ROWS(g).map(() => null));
 applyLang();
 selectGate("NON");
-</script>
-
-<script>
-(function(){
-  var el=document.getElementById("fjBack");
-  if(!el||typeof I18N==="undefined"||typeof lang==="undefined")return;
-  function upd(){try{el.textContent=I18N[lang].back;}catch(e){}}
-  var btn=document.getElementById("langBtn");
-  if(btn){var old=btn.onclick;btn.onclick=function(){if(old)old.apply(this,arguments);upd();};}
-  upd();
-})();
 </script>
 </body>
 </html>
