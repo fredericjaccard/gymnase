@@ -69,6 +69,8 @@ button:hover{background:var(--primaryLight)}
 .bag.solved{border-color:var(--primary);background:var(--primaryLight)}
 .hint{font-size:13px;color:var(--muted);line-height:1.45}
 footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -104,7 +106,7 @@ footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
   </div>
 </div>
 
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -141,6 +143,7 @@ const LEVELS = [
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     kicker:"Algorithmique",
     title:"Le sac à dos",
     fs:"Plein écran", fsExit:"Quitter",
@@ -165,6 +168,7 @@ const I18N = {
     kg:"kg"
   },
   en:{
+  backList:"← All applications",
     kicker:"ALGORITHMS",
     title:"The Knapsack",
     fs:"Fullscreen", fsExit:"Exit",
@@ -330,6 +334,7 @@ $("greedyBtn").onclick = ()=>{
 
 /* ---------- i18n + fullscreen ---------- */
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("langBtn").textContent = lang==="fr" ? "English" : "Français";
   $("kicker").textContent = T().kicker;

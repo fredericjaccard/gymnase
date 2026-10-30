@@ -106,6 +106,8 @@
   .final.show{display:flex}
   .final h2{color:var(--primary); font-size:21px}
   footer{padding:12px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -187,7 +189,7 @@
   </div>
 </main>
 
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const GATES = ["NON","ET","OU","XOR"];
@@ -201,6 +203,7 @@ const ROWS = gate => gate === "NON" ? [[0],[1]] : [[0,0],[0,1],[1,0],[1,1]];
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     title:"Portes logiques à manipuler",
     instruction:"Choisis une porte, teste toutes les combinaisons avec les interrupteurs A et B, observe l'ampoule S… puis reconstruis la table de vérité en cliquant sur les cases de la colonne S !",
     fs:"Plein écran", fsExit:"Quitter",
@@ -219,6 +222,7 @@ const I18N = {
     combos2:["A = 0, B = 0","A = 0, B = 1","A = 1, B = 0","A = 1, B = 1"],
   },
   en:{
+  backList:"← All applications",
     title:"Logic gates playground",
     instruction:"Pick a gate, test every combination with switches A and B, watch bulb Q… then rebuild the truth table by clicking the cells in column Q!",
     fs:"Fullscreen", fsExit:"Exit",
@@ -401,6 +405,7 @@ $("restartBtn").onclick = () => {
 };
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";
   $("title").textContent = T().title;

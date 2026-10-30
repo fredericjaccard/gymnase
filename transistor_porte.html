@@ -87,6 +87,8 @@
   table.truth tr.now td{background:var(--accent-light)}
   .tried{display:inline-block; width:20px; text-align:center; font-weight:700; color:var(--primary)}
   footer{padding:12px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -147,7 +149,7 @@
   </div>
 </main>
 
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const GATES = ["TRANS","NON","ET","OU"];
@@ -161,6 +163,7 @@ const ROWS = gate => (gate === "NON" || gate === "TRANS") ? [[0],[1]] : [[0,0],[
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     title:"Du transistor à la porte",
     instruction:"Commence par « Le transistor » pour comprendre comment il fonctionne, puis choisis une porte : le circuit la réalise avec des transistors — en série pour ET, en parallèle pour OU, et en inverseur pour NON. Clique sur les interrupteurs : un transistor qui reçoit une tension devient conducteur et laisse passer le courant. Observe l'ampoule et teste toutes les combinaisons !",
     fs:"Plein écran", fsExit:"Quitter",
@@ -200,6 +203,7 @@ const I18N = {
     },
   },
   en:{
+  backList:"← All applications",
     title:"From the transistor to the gate",
     instruction:"Start with “The transistor” to understand how it works, then pick a gate: the circuit implements it with transistors — in series for AND, in parallel for OR, and as an inverter for NOT. Click the switches: a transistor that receives a voltage conducts and lets current through. Watch the bulb and try every combination!",
     fs:"Fullscreen", fsExit:"Exit",
@@ -380,6 +384,7 @@ $("swA").onclick = () => { a = 1 - a; render(); };
 $("swB").onclick = () => { b = 1 - b; render(); };
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";
   $("title").textContent = T().title;

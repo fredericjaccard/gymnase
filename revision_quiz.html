@@ -54,6 +54,8 @@ pre.code{font-family:'Courier New',monospace;font-size:14px;line-height:1.6;back
 .fb .les b{color:var(--primary)}
 .next{margin-top:16px;display:flex;justify-content:flex-end}
 footer{margin-top:28px;text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 @media(max-width:640px){
   body{padding:20px 12px}
   h1{font-size:17px}
@@ -78,13 +80,14 @@ footer{margin-top:28px;text-align:center;font-size:13px;color:var(--muted)}
 <div class="bar"><i id="fill"></i></div>
 <div class="meta"><span id="mleft"></span><span id="mright"></span></div>
 <div class="card" id="card"></div>
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 </div>
 
 <script>
 let lang="fr";
 const I18N={
  fr:{
+  backList:"← Toutes les applications",
   kicker:"RÉVISION",
   title:"Représentation de l'information & AlgoPython",
   sub:"Questions générées à l'infini · réponse et explication après chaque question",
@@ -104,6 +107,7 @@ const I18N={
   fsTitle:"Plein écran"
  },
  en:{
+  backList:"← All applications",
   kicker:"REVISION",
   title:"Representing information & AlgoPython",
   sub:"Infinitely generated questions · answer and explanation after each question",
@@ -398,6 +402,7 @@ function buildFilters(){
   });
 }
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang=lang;
   document.getElementById("kicker").textContent=T().kicker;
   document.getElementById("title").textContent=T().title;

@@ -43,6 +43,8 @@ input[type=range]{width:100%;height:24px;cursor:pointer}
 #mel_rgb{color:var(--muted);font-variant-numeric:tabular-nums}
 .note{margin-top:14px;font-size:14px;color:var(--muted);line-height:1.55;max-width:640px}
 footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 @media(max-width:600px){
   body{padding:10px}
   .lig{grid-template-columns:24px 1fr 1fr 1fr;grid-template-areas:"past nom dec hex bin" "slider slider slider slider slider";gap:6px 8px;padding:10px 0}
@@ -99,20 +101,22 @@ footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
   </div>
 </div>
 <div class="note" id="note"></div>
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 <script>
 const $ = id => document.getElementById(id);
 const cv=$("cv"), ctx=cv.getContext("2d");
 let r=255, g=255, b=255;
 const I18N = {
-  fr:{ kicker:"La représentation de l’information",
+  fr:{
+  backList:"← Toutes les applications", kicker:"La représentation de l’information",
     title:"Synthèse additive RVB",
     instruction:"Réglez l'intensité de chaque projecteur avec les curseurs. Les superpositions sur la scène noire et les codes décimal, hexadécimal et binaire se mettent à jour en direct.",
     fs:"Plein écran", fsExit:"Quitter",
     r:"Rouge", g:"Vert", b:"Bleu", dec:"Déc", hex:"Hex", bin:"Bin",
     mel:"Lumière résultante",
     note:"Rouge + vert = jaune, rouge + bleu = magenta, vert + bleu = cyan — et les trois ensemble donnent le blanc. C'est la synthèse additive des lumières (écrans, projecteurs)." },
-  en:{ kicker:"Representing information",
+  en:{
+  backList:"← All applications", kicker:"Representing information",
     title:"RGB additive synthesis",
     instruction:"Adjust the intensity of each spotlight with the sliders. The overlaps on the black stage and the decimal, hexadecimal and binary codes update live.",
     fs:"Fullscreen", fsExit:"Exit",
@@ -159,6 +163,7 @@ function dessiner(){
   txt(320,262,'#'+toHex(r)+toHex(g)+toHex(b),coulTxt(r,g,b),16);
 }
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   var t=T();
   document.documentElement.lang = lang;
   $("kicker").textContent=t.kicker;

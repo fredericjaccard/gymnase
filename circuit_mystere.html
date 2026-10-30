@@ -55,6 +55,8 @@
   .hardrow{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:15px; font-weight:700; color:var(--primary); cursor:pointer}
   .hardrow input{width:20px; height:20px; accent-color:var(--primary); cursor:pointer}
   footer{padding:14px; text-align:center; color:var(--muted); font-size:13px; border-top:1px solid var(--line); background:#fff}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
   @media (max-width:900px){
     header{padding:12px 16px}
     h1{font-size:21px}
@@ -124,12 +126,13 @@
     </div>
   </div>
 </main>
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 <script>
 const $ = id => document.getElementById(id);
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     title:"Circuit mystère",
     instruction:"Une porte logique se cache dans la boîte noire. Actionnez les interrupteurs A et B, observez la sortie S : chaque essai est noté automatiquement dans le tableau. Quand vous êtes sûr de vous, devinez la porte — sans vous tromper !",
     panelTitle:"Vos observations",
@@ -142,6 +145,7 @@ const I18N = {
     fs:"Plein écran", fsExit:"Quitter"
   },
   en:{
+  backList:"← All applications",
     title:"Mystery circuit",
     instruction:"A logic gate is hiding inside the black box. Flip switches A and B and watch output Q: each trial is logged automatically in the table. When you're confident, guess the gate — without any mistake!",
     panelTitle:"Your observations",
@@ -318,6 +322,7 @@ $("newBtn").onclick = newRound;
 $("hardChk").onchange = e => { hard = e.target.checked; newRound(); };
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = lang === "fr" ? "Architecture des ordinateurs" : "Computer architecture";
   $("title").textContent = T().title;

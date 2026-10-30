@@ -103,6 +103,8 @@
   .final.show{display:flex}
   .final h2{color:var(--primary); font-size:21px}
   footer{padding:12px 24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -215,11 +217,12 @@
   </div>
 </main>
 
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     title:"Le voyage d'une donnée",
     scenario:"Scénario : <b>tu appuies sur la touche « a »</b> dans un texte que tu es en train d'écrire. Suis le voyage du signal à travers l'ordinateur, étape par étape.",
     fs:"Plein écran", fsExit:"Quitter",
@@ -249,6 +252,7 @@ const I18N = {
     ]
   },
   en:{
+  backList:"← All applications",
     title:"The journey of a piece of data",
     scenario:"Scenario: <b>you press the « a » key</b> in a text you are writing. Follow the signal's journey through the computer, step by step.",
     fs:"Fullscreen", fsExit:"Exit",
@@ -293,6 +297,7 @@ const $ = id => document.getElementById(id);
 const T = () => I18N[lang];
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = "Architecture des ordinateurs";
   if(lang === "en") $("kicker").textContent = "Computer architecture";

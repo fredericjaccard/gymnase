@@ -101,6 +101,8 @@
     padding:12px 24px; border-top:1px solid var(--line);
     color:var(--muted); font-size:13px; text-align:center;
   }
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -191,7 +193,7 @@
   <aside class="panel" id="panel"><!-- rempli par JS --></aside>
 </main>
 
-<footer id="footer">Cliquez sur un composant pour découvrir son rôle. — Frédéric Jaccard</footer>
+<footer id="footer"><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const I18N = {
@@ -272,8 +274,10 @@ const I18N = {
 };
 
 const ORDER = ["cpu","ram","disk","gpu","screen","keyboard","mouse"];
-const NAMES = {fr:{cpu:"CPU",ram:"RAM",disk:"Disque",gpu:"Carte graphique",screen:"Écran",keyboard:"Clavier",mouse:"Souris"},
-               en:{cpu:"CPU",ram:"RAM",disk:"Drive",gpu:"Graphics card",screen:"Screen",keyboard:"Keyboard",mouse:"Mouse"}};
+const NAMES = {fr:{
+  backList:"← Toutes les applications",cpu:"CPU",ram:"RAM",disk:"Disque",gpu:"Carte graphique",screen:"Écran",keyboard:"Clavier",mouse:"Souris"},
+               en:{
+  backList:"← All applications",cpu:"CPU",ram:"RAM",disk:"Drive",gpu:"Graphics card",screen:"Screen",keyboard:"Keyboard",mouse:"Mouse"}};
 
 let lang = "fr";
 let mode = "explore";
@@ -284,13 +288,14 @@ const $ = id => document.getElementById(id);
 const T = () => I18N[lang];
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("kicker").textContent = T().kicker;
   $("title").textContent = T().title;
   $("langBtn").textContent = lang === "fr" ? "English" : "Français";
   $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
   $("quizBtn").textContent = mode === "quiz" ? T().exploreBtn : T().quizBtn;
-  $("footer").textContent = T().footer;
+  document.getElementById("backLink").textContent=T().backList;
   $("stageInstruction").textContent = T().hint;
   document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = T()[el.dataset.i18n] ?? el.textContent);
   document.querySelectorAll("[data-i18n-sub]").forEach(el => el.textContent = T().subs[el.dataset.i18nSub] ?? el.textContent);

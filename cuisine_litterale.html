@@ -64,6 +64,8 @@ button:hover{background:var(--primaryLight)}
 .goBtn:hover{background:#0e4a3b}
 .hint{font-size:13px;color:var(--muted);line-height:1.45}
 footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
 #fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
 </style>
 </head>
@@ -101,7 +103,7 @@ footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
 </div>
 
 <canvas id="fireworks"></canvas>
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -155,6 +157,7 @@ const RECIPES = [
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     kicker:"Algorithmique",
     title:"La cuisine littérale",
     fs:"Plein écran", fsExit:"Quitter",
@@ -174,6 +177,7 @@ const I18N = {
     startScene:"🍽️ Prêt à cuisiner ! Assemblez votre recette à droite."
   },
   en:{
+  backList:"← All applications",
     kicker:"ALGORITHMS",
     title:"The Literal Kitchen",
     fs:"Fullscreen", fsExit:"Exit",
@@ -372,6 +376,7 @@ function fireworks(){
 
 /* ---------- i18n + fullscreen ---------- */
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang = lang;
   $("langBtn").textContent = lang==="fr" ? "English" : "Français";
   $("kicker").textContent = T().kicker;

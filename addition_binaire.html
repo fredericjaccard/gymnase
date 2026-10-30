@@ -66,6 +66,8 @@
   .ovf{background:var(--accent-light); border-radius:10px; padding:10px 14px; font-size:14px; font-weight:700; color:var(--accent); margin-top:12px; display:none}
   .ovf.show{display:block}
   footer{text-align:center; padding:12px; color:var(--muted); font-size:13px; border-top:1px solid var(--line)}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
   #rotateHint{display:none; text-align:center; font-size:12.5px; font-weight:700; color:var(--accent);
     background:var(--accent-light); border-radius:8px; padding:5px 10px; margin-bottom:8px}
   @media (max-width:1000px){
@@ -114,12 +116,13 @@
     </div>
   </div>
 </main>
-<footer>Frédéric Jaccard</footer>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 <script>
 const $ = id => document.getElementById(id);
 
 const I18N = {
   fr:{
+  backList:"← Toutes les applications",
     title:"Addition binaire — du calcul au circuit",
     instruction:"À chaque étape, cliquez sur les chiffres des deux nombres — dans le calcul à gauche ou sur les entrées A et B du circuit (et R₀ dans l'additionneur 1 bit) — pour changer l'addition : le résultat, les retenues et le circuit (courant orange) se mettent à jour instantanément.",
     rotateHint:"🔄 Tournez votre téléphone en paysage pour tout voir côte à côte",
@@ -145,6 +148,7 @@ const I18N = {
     colLbl:"colonne",
   },
   en:{
+  backList:"← All applications",
     title:"Binary addition — from paper to circuit",
     instruction:"At each step, click the digits of the two numbers — in the calculation on the left or on the A and B inputs of the circuit (and R₀ in the 1-bit adder) — to change the addition: the result, the carries and the circuit (orange current) update instantly.",
     rotateHint:"🔄 Rotate your phone to landscape to see both side by side",
@@ -448,6 +452,7 @@ function showMsg(t,cls){ const m=$("msg"); m.className=cls; m.style.display="blo
 
 
 function applyLang(){
+  document.getElementById("backLink").textContent=T().backList;
   document.documentElement.lang=lang;
   $("kicker").textContent = lang==="fr"?"Architecture des ordinateurs":"Computer architecture";
   $("title").textContent=T().title;
