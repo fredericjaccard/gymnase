@@ -490,7 +490,7 @@ const I18N = {
     ['Un programme en mémoire','Un petit programme demande de charger les valeurs 5 et 3, de les additionner, puis de conserver le résultat.',['ram']],
     ['Préparer les valeurs','Des instructions de chargement placent 5 et 3 dans deux registres du processeur.',['ram','cpu']],
     ['Lire et décoder','Le processeur lit l’instruction d’addition. L’unité de commande détermine l’opération et les registres concernés.',['cpu']],
-    ['Calculer en binaire','L’UAL additionne 0101 et 0011 : le résultat 1000 vaut 8. Ouvrez l’onglet « Dans le processeur » pour expérimenter.',['cpu']],
+    ['Calculer en binaire','L’UAL additionne 0101 et 0011 : le résultat 1000 vaut 8.',['cpu']],
     ['Utiliser le résultat','Le résultat est dans un registre. Une autre instruction peut le copier en RAM pour la suite du programme. Ce calcul seul n’enregistre aucun fichier sur le SSD.',['cpu','ram']]
    ]}
   ]
@@ -559,13 +559,13 @@ const I18N = {
     ['A program in memory','A small program requests that 5 and 3 be loaded, added, and the result stored.',['ram']],
     ['Prepare the values','Load instructions place 5 and 3 into two processor registers.',['ram','cpu']],
     ['Fetch and decode','The processor reads the addition instruction. The control unit determines the operation and the registers involved.',['cpu']],
-    ['Calculate in binary','The ALU adds 0101 and 0011: the result, 1000, equals 8. Open the “Inside the processor” tab to experiment.',['cpu']],
+    ['Calculate in binary','The ALU adds 0101 and 0011: the result, 1000, equals 8.',['cpu']],
     ['Use the result','The result is in a register. Another instruction may copy it into RAM for later use. This calculation alone does not save any file to the SSD.',['cpu','ram']]
    ]}
   ]
  }
 };
-let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
 let mode='explore',selected='cpu',scenario=0,step=0,playing=false,playTimer=0;
 let renderer=null,caseOpen=true,exploded=false,connections=false,showMarkers=true,graphicsReady=false;
