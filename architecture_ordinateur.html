@@ -567,7 +567,7 @@ const I18N = {
 };
 let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
 const T = () => I18N[lang];
-let mode='explore',selected='cpu',scenario=0,step=0,playing=false,playTimer=0;
+let mode='explore',selected='board',scenario=0,step=0,playing=false,playTimer=0;
 let renderer=null,caseOpen=true,exploded=false,connections=false,showMarkers=true,graphicsReady=false;
 let powered=true,ramText='',savedText='',savedExists=false,memoryEvent='memoryReady';
 const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -588,7 +588,7 @@ function selectPart(id,fromUser=false){
  renderPart();
 }
 function renderPart(){
- const p=T().parts[selected];
+ const p=T().parts[selected]||T().parts.board;
  $('partRole').textContent=p.role;$('partNumber').textContent=String(PART_IDS.indexOf(selected)+1).padStart(2,'0');
  $('partTitle').textContent=p.name;$('partCode').textContent=p.code;$('partDescription').textContent=p.description;
  $('partFacts').replaceChildren(...p.facts.map(f=>{const li=document.createElement('li');li.textContent=f;return li;}));
