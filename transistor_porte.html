@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Du transistor à la porte — Architecture des ordinateurs</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#FBFAF6; --ink:#20241F; --muted:#6E726B;
@@ -39,6 +40,7 @@
     width:100%; font-size:15px; line-height:1.5; background:var(--primary-light);
     border-radius:10px; padding:12px 16px;
   }
+  .modelNote{width:100%; color:var(--muted); font-size:14px; line-height:1.5; padding:0 4px}
   .gatebar{display:flex; gap:10px; flex-wrap:wrap}
   button.gate{
     font:inherit; font-weight:700; font-size:17px; cursor:pointer;
@@ -58,7 +60,7 @@
   .wireBase{stroke:var(--line); stroke-width:5; fill:none; stroke-linecap:round}
   .wireHot{stroke:var(--accent); stroke-width:5; fill:none; stroke-linecap:round; stroke-dasharray:10 8; animation:flow .8s linear infinite}
   .cmdBase{stroke:var(--line); stroke-width:3.5; fill:none; stroke-linecap:round}
-  .cmdOn{stroke:var(--primary); stroke-width:3.5; fill:none; stroke-linecap:round; stroke-dasharray:2 7; animation:flow .8s linear infinite}
+  .cmdOn{stroke:var(--primary); stroke-width:3.5; fill:none; stroke-linecap:round; stroke-dasharray:2 7}
   @keyframes flow{to{stroke-dashoffset:-18}}
   .tr{cursor:pointer; -webkit-tap-highlight-color:transparent}
   .lampOff{fill:#fff; stroke:var(--line); stroke-width:3}
@@ -105,6 +107,7 @@ footer a:hover{text-decoration:underline}
 
 <main>
   <p class="instruction" id="instruction"></p>
+  <p class="modelNote" id="modelNote"></p>
   <div class="gatebar" id="gatebar"></div>
 
   <div class="playrow">
@@ -165,15 +168,16 @@ const I18N = {
   fr:{
   backList:"← Toutes les applications",
     title:"Du transistor à la porte",
-    instruction:"Commence par « Le transistor » pour comprendre comment il fonctionne, puis choisis une porte : le circuit la réalise avec des transistors — en série pour ET, en parallèle pour OU, et en inverseur pour NON. Clique sur les interrupteurs : un transistor qui reçoit une tension devient conducteur et laisse passer le courant. Observe l'ampoule et teste toutes les combinaisons !",
+    instruction:"Commencez par « Le transistor » pour comprendre comment il fonctionne, puis choisissez une porte : le circuit la réalise avec des transistors — en série pour ET, en parallèle pour OU, et en inverseur pour NON. Cliquez sur les interrupteurs et observez l'ampoule : le tracé orange animé indique un courant, tandis que le vert fixe signale un transistor passant.",
+    modelNote:"Ces montages représentent les transistors comme des interrupteurs idéaux. L'ampoule visualise la sortie. Dans une puce, les bits 0 et 1 sont représentés par des niveaux de tension. Les portes d'un processeur CMOS utilisent des réseaux complémentaires de transistors.",
     fs:"Plein écran", fsExit:"Quitter",
     panelTitle:"Ce qui se passe",
-    panelSub:"Essaie toutes les combinaisons : la ligne en cours est surlignée dans la table.",
-    transSub:"Clique sur l'interrupteur A pour ouvrir et fermer le transistor.",
+    panelSub:"Essayez toutes les combinaisons : la ligne en cours est surlignée dans la table.",
+    transSub:"Cliquez sur l'interrupteur A pour ouvrir et fermer le transistor.",
     transPoints:[
-      "<b>Trois connexions.</b> Deux pour le courant principal (entrée et sortie), une pour la commande — la <b>grille</b>, reliée ici à l'interrupteur A.",
-      "<b>Un interrupteur commandé électriquement.</b> Sans tension sur la grille, le transistor est <b>bloqué</b> ; avec une tension, il devient <b>conducteur</b>. Aucune pièce ne bouge mécaniquement : c'est comme un robinet dont la petite poignée (la grille) contrôle un grand débit d'eau (le courant).",
-      "<b>Côté matière.</b> Le transistor est fait d'un <b>semi-conducteur</b> (silicium), un matériau qui conduit mal l'électricité au repos. La tension de la grille modifie le silicium : il devient conducteur, le temps que la tension soit présente.",
+      "<b>Trois connexions.</b> Deux pour le courant principal (source et drain), une pour la commande — la <b>grille</b>, reliée ici à l'interrupteur A.",
+      "<b>Un interrupteur commandé électriquement.</b> Quand la tension de la grille par rapport à la source dépasse un seuil, un canal conducteur se forme entre la source et le drain. Le transistor devient <b>conducteur</b> ; sous ce seuil, il est <b>bloqué</b>. Aucune pièce ne bouge mécaniquement : c'est comme un robinet dont la petite poignée (la grille) contrôle un grand débit d'eau (le courant).",
+      "<b>Côté matière.</b> Le MOSFET représenté est fabriqué dans un <b>semi-conducteur</b> (silicium). La grille est isolée du canal : c'est la tension de commande qui permet au canal conducteur de se former.",
       "<b>C'est là tout l'ordinateur.</b> Commutable des milliards de fois par seconde et miniaturisé à l'extrême, on en grave des <b>milliards</b> dans un seul CPU. En les combinant, on fabrique les portes logiques — voir les autres onglets !",
     ],
     gates:{TRANS:"Le transistor", NON:"NON", ET:"ET", OU:"OU"},
@@ -185,13 +189,13 @@ const I18N = {
         "1":"A = 1 : une tension arrive sur la grille. Le canal devient conducteur — le courant traverse le transistor et l'ampoule s'allume !",
       },
       NON:{
-        "0":"Le transistor est bloqué (A = 0) : le courant passe par l'ampoule, elle s'allume. S = 1",
-        "1":"Le transistor conduit (A = 1) : le courant est détourné directement vers la masse, l'ampoule s'éteint. S = 0",
+        "0":"Le transistor est bloqué (A = 0) : le courant limité par R traverse l'ampoule, elle s'allume. S = 1",
+        "1":"Le transistor conduit (A = 1) : il ramène la sortie près de la masse et l'ampoule s'éteint. La résistance R limite le courant. S = 0",
       },
       ET:{
-        "00":"Les deux transistors sont bloqués : aucun courant ne peut passer. S = 0",
-        "01":"Le transistor A est bloqué : le courant est coupé dès le premier transistor, B conduit mais ne reçoit rien. S = 0",
-        "10":"Le transistor A conduit, mais B est bloqué : le courant est coupé avant l'ampoule. S = 0",
+        "00":"Les deux transistors sont bloqués : la boucle est ouverte et le courant est nul dans tout le circuit. S = 0",
+        "01":"A est bloqué : la boucle est ouverte et le courant est nul partout, même si B est passant. S = 0",
+        "10":"A est passant, mais B est bloqué : la boucle est ouverte et le courant est nul dans tout le circuit. S = 0",
         "11":"Le courant passe ! Les deux transistors en série conduisent : l'ampoule s'allume. S = 1",
       },
       OU:{
@@ -205,15 +209,16 @@ const I18N = {
   en:{
   backList:"← All applications",
     title:"From the transistor to the gate",
-    instruction:"Start with “The transistor” to understand how it works, then pick a gate: the circuit implements it with transistors — in series for AND, in parallel for OR, and as an inverter for NOT. Click the switches: a transistor that receives a voltage conducts and lets current through. Watch the bulb and try every combination!",
+    instruction:"Start with “The transistor” to understand how it works, then pick a gate: the circuit implements it with transistors — in series for AND, in parallel for OR, and as an inverter for NOT. Click the switches and watch the bulb: the animated orange trace indicates current, while solid green marks a conducting transistor.",
+    modelNote:"These circuits model transistors as ideal switches. The bulb represents the output. In a chip, bits 0 and 1 are represented by voltage levels. The gates in a CMOS processor use complementary transistor networks.",
     fs:"Fullscreen", fsExit:"Exit",
     panelTitle:"What's happening",
     panelSub:"Try every combination: the current row is highlighted in the table.",
     transSub:"Click switch A to open and close the transistor.",
     transPoints:[
-      "<b>Three connections.</b> Two for the main current (in and out), one for control — the <b>gate</b>, wired here to switch A.",
-      "<b>An electrically controlled switch.</b> With no voltage on the gate the transistor is <b>off</b>; with a voltage it becomes <b>conducting</b>. No mechanical part moves: think of a tap whose small handle (the gate) controls a large flow of water (the current).",
-      "<b>The material side.</b> The transistor is made of a <b>semiconductor</b> (silicon), a material that barely conducts electricity at rest. The gate voltage changes the silicon: it conducts as long as the voltage is present.",
+      "<b>Three connections.</b> Two for the main current (source and drain), one for control — the <b>gate</b>, wired here to switch A.",
+      "<b>An electrically controlled switch.</b> When the gate-to-source voltage exceeds a threshold, a conducting channel forms between the source and the drain. The transistor becomes <b>conducting</b>; below this threshold, it is <b>off</b>. No mechanical part moves: think of a tap whose small handle (the gate) controls a large flow of water (the current).",
+      "<b>The material side.</b> The MOSFET shown is made from a <b>semiconductor</b> (silicon). The gate is insulated from the channel: the control voltage allows the conducting channel to form.",
       "<b>This is the whole computer.</b> Switchable billions of times per second and shrunk to the extreme, <b>billions</b> of them fit in a single CPU. Combining them builds the logic gates — see the other tabs!",
     ],
     gates:{TRANS:"The transistor", NON:"NOT", ET:"AND", OU:"OR"},
@@ -225,13 +230,13 @@ const I18N = {
         "1":"A = 1: a voltage reaches the gate. The channel becomes conducting — current flows through the transistor and the bulb lights up!",
       },
       NON:{
-        "0":"The transistor is off (A = 0): current flows through the bulb, it lights up. Q = 1",
-        "1":"The transistor conducts (A = 1): current is diverted straight to ground, the bulb goes off. Q = 0",
+        "0":"The transistor is off (A = 0): current limited by R flows through the bulb, which lights up. Q = 1",
+        "1":"The transistor conducts (A = 1): it pulls the output close to ground and the bulb goes off. Resistor R limits the current. Q = 0",
       },
       ET:{
-        "00":"Both transistors are off: no current can flow. Q = 0",
-        "01":"Transistor A is off: current is cut at the very first transistor — B conducts but receives nothing. Q = 0",
-        "10":"Transistor A conducts, but B is off: current is cut before the bulb. Q = 0",
+        "00":"Both transistors are off: the loop is open and current is zero throughout the circuit. Q = 0",
+        "01":"A is off: the loop is open and current is zero everywhere, even though B is conducting. Q = 0",
+        "10":"A is conducting, but B is off: the loop is open and current is zero throughout the circuit. Q = 0",
         "11":"Current flows! Both series transistors conduct: the bulb lights up. Q = 1",
       },
       OU:{
@@ -257,8 +262,8 @@ const W = (d, hot) => `<path class="${hot ? "wireHot" : "wireBase"}" d="${d}"/>`
 const WC = (d, on) => `<path class="${on ? "cmdOn" : "cmdBase"}" d="${d}"/>`;
 const TR = (x, y, on, rot) => `
   <g transform="translate(${x},${y})${rot ? ` rotate(${rot})` : ""}">
-    <rect x="-8" y="-26" width="96" height="52" rx="10" fill="#fff" stroke="#D8D5CB" stroke-width="2"/>
-    <line x1="0" y1="0" x2="80" y2="0" stroke="#D96A08" stroke-width="5" stroke-dasharray="7 7" opacity="${on ? 1 : 0}"/>
+    <rect x="-8" y="-26" width="96" height="52" rx="10" fill="#fff" stroke="${on ? "#155E4C" : "#D8D5CB"}" stroke-width="2"/>
+    <line class="channel" x1="0" y1="0" x2="80" y2="0" stroke="${on ? "#155E4C" : "#D8D5CB"}" stroke-width="5"/>
     <line x1="40" y1="-20" x2="40" y2="20" stroke="#155E4C" stroke-width="4"/>
     <circle cx="0" cy="0" r="5" fill="#fff" stroke="#155E4C" stroke-width="3"/>
     <circle cx="80" cy="0" r="5" fill="#fff" stroke="#155E4C" stroke-width="3"/>
@@ -286,8 +291,8 @@ function scene(){
     c += TR(260, 105, a);
     c += LAB(300, 62, `A = ${a} · ${stA}`, a);
   } else if(gate === "ET"){
-    c += W("M 104 105 L 220 105", a);
-    c += W("M 300 105 L 410 105", a);
+    c += W("M 104 105 L 220 105", s);
+    c += W("M 300 105 L 410 105", s);
     c += W("M 490 105 L 620 105 L 620 164", s);
     c += RETURN(s);
     c += WC("M 260 246 L 260 133", a);
@@ -391,18 +396,23 @@ function applyLang(){try{localStorage.setItem("fj-lang",lang);document.cookie="f
   $("langBtn").textContent = lang === "fr" ? "English" : "Français";
   $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
   $("instruction").textContent = T().instruction;
+  $("modelNote").textContent = T().modelNote;
   $("panelTitle").textContent = T().panelTitle;
   renderGatebar(); render();
 }
 
 $("langBtn").onclick = () => { lang = lang === "fr" ? "en" : "fr"; applyLang(); };
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 $("fsBtn").onclick = () => {
-  if(document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen().catch(()=>{});
+  if(isFs()){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+  else{
+    const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(() => {}); }
+  }
 };
-document.addEventListener("fullscreenchange", () => {
-  $("fsLabel").textContent = document.fullscreenElement ? T().fsExit : T().fs;
-});
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
 
 $("swB").style.display = "none";
 applyLang();
