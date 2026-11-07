@@ -87,6 +87,10 @@ footer a:hover{text-decoration:underline}
         <input id="speed" type="range" min="1" max="20" value="8">
       </span>
     </div>
+    <div class="panel" style="margin-top:12px;padding:10px 14px">
+      <h2 id="graphTitle" style="font-size:14px;color:var(--primary);margin-bottom:6px"></h2>
+      <canvas id="graph" width="900" height="130" style="width:100%;height:90px;display:block"></canvas>
+    </div>
     <div id="inspect"></div>
   </div>
 
@@ -124,6 +128,7 @@ const I18N = {
     neigh:"Compter les voisins",
     chif:"Mode chif.02",
     gen:"Génération", alive:"Cellules vivantes", speed:"Vitesse",
+    graphTitle:"Population au fil des générations",
     patTitle:"Motifs célèbres",
     rulesTitle:"Règles du jeu",
     surv:"Survie : une cellule vivante survit avec…", birth:"Naissance : une cellule morte naît avec…",
@@ -162,6 +167,7 @@ const I18N = {
     neigh:"Count the neighbours",
     chif:"Chif.02 mode",
     gen:"Generation", alive:"Living cells", speed:"Speed",
+    graphTitle:"Population over generations",
     patTitle:"Famous patterns",
     rulesTitle:"Rules of the game",
     surv:"Survival: a living cell survives with…", birth:"Birth: a dead cell is born with…",
@@ -206,6 +212,7 @@ let gen = 0, playing = false, timer = null, speed = 8;
 let surv = new Set([2,3]), birth = new Set([3]);
 let neighMode = false, selected = null;
 let chifMode = false;
+let histo = [];
 let ncounts = new Uint8Array(COLS*ROWS);
 
 const idx = (c,r) => r*COLS+c;
@@ -224,8 +231,9 @@ function etape(){
     ng[idx(c,r)] = v ? (surv.has(n)?1:0) : (birth.has(n)?1:0);
   }
   grid = ng; gen++;
-  if(selected) showInspect(selected.c, selected.r);
-  render(); stats();
+  histo.push(vivantes());
+  if(selected) showInspect(selected.c,selected.r);
+  render(); stats(); drawGraph();
 }
 function vivantes(){ let n=0; for(let i=0;i<grid.length;i++) n+=grid[i]; return n; }
 
@@ -268,6 +276,29 @@ function render(){
     ctx.strokeRect(selected.c*CW+1,selected.r*CH+1,CW-2,CH-2);
   }
 }
+function drawGraph(){
+  const g=$("graph"), gc=g.getContext("2d");
+  const W=g.width=g.clientWidth*2, H=g.height=g.clientHeight*2;
+  gc.clearRect(0,0,W,H);
+  gc.fillStyle="#FFFFFF"; gc.fillRect(0,0,W,H);
+  if(histo.length<2) return;
+  const max=Math.max(...histo,1);
+  const step=W/Math.max(histo.length-1,1);
+  // ligne zéro
+  gc.strokeStyle="#D8D5CB"; gc.lineWidth=1.5;
+  gc.beginPath(); gc.moveTo(0,H-8); gc.lineTo(W,H-8); gc.stroke();
+  // courbe
+  gc.strokeStyle="#155E4C"; gc.lineWidth=3; gc.lineJoin="round";
+  gc.beginPath();
+  histo.forEach((v,i)=>{
+    const x=i*step, y=H-8-(H-20)*v/max;
+    i?gc.lineTo(x,y):gc.moveTo(x,y);
+  });
+  gc.stroke();
+  // valeur max en étiquette
+  gc.fillStyle="#6E726B"; gc.font="700 20px 'Quattrocento Sans',sans-serif";
+  gc.fillText("max "+max, 8, 24);
+}
 function stats(){
   $("stGen").innerHTML = T().gen+" : <b>"+gen+"</b>";
   $("stAlive").innerHTML = T().alive+" : <b>"+vivantes()+"</b>";
@@ -284,6 +315,7 @@ cv.addEventListener("pointerdown", e=>{
   e.preventDefault();
   const {c,r}=cellFromEvent(e);
   if(c<0||c>=COLS||r<0||r>=ROWS) return;
+  $("graphTitle").textContent=T().graphTitle;
   if(neighMode){ selected={c,r}; showInspect(c,r); render(); return; }
   drawing=true; drawVal=grid[idx(c,r)]?0:1;
   grid[idx(c,r)]=drawVal; render(); stats();
@@ -333,7 +365,8 @@ function placer(nom){
   const wc=Math.max(...p.map(q=>q[0])), hc=Math.max(...p.map(q=>q[1]));
   const oc=Math.floor((COLS-wc)/2), orr=Math.floor((ROWS-hc)/2);
   for(const [dc,dr] of p) grid[idx(oc+dc,orr+dr)]=1;
-  render(); stats();
+  histo=[vivantes()];
+  render(); stats(); drawGraph();
 }
 function buildPatterns(){
   const g=$("patGrid"); g.innerHTML="";
@@ -413,11 +446,11 @@ function setPlaying(p){
 }
 $("playBtn").onclick=()=>setPlaying(!playing);
 $("stepBtn").onclick=()=>{ setPlaying(false); etape(); };
-$("clearBtn").onclick=()=>{ setPlaying(false); grid=new Uint8Array(COLS*ROWS); gen=0; selected=null; $("inspect").style.display="none"; render(); stats(); };
+$("clearBtn").onclick=()=>{ setPlaying(false); grid=new Uint8Array(COLS*ROWS); gen=0; selected=null; $("inspect").style.display="none"; histo=[0]; render(); stats(); drawGraph(); };
 $("randBtn").onclick=()=>{
   grid=new Uint8Array(COLS*ROWS);
   for(let i=0;i<grid.length;i++) grid[i]=Math.random()<0.22?1:0;
-  gen=0; render(); stats();
+  gen=0; histo=[vivantes()]; render(); stats(); drawGraph();
 };
 $("chifBtn").onclick=()=>{
   chifMode=!chifMode;
@@ -456,6 +489,7 @@ function applyLang(){
   $("neighBtn").textContent=T().neigh;
   $("chifBtn").textContent=T().chif;
   buildPatterns(); buildPresets();
+  $("graphTitle").textContent=T().graphTitle;
   if(neighMode){
     if(selected) showInspect(selected.c,selected.r);
     else $("inspect").textContent=T().inspectOn;
@@ -488,6 +522,7 @@ ruleLabel();
 syncPresets();
 applyLang();
 placer("planeur");
+addEventListener("resize", drawGraph);
 </script>
 </body>
 </html>
