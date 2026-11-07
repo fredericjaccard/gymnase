@@ -103,7 +103,7 @@ fr:{
   {tag:"Niveau 3 · Raisonner",title:"RAM ou SSD : faites le bon choix",questions:[
    {prompt:"Vous ouvrez plusieurs applications en même temps. Quelle mémoire de travail est alors davantage utilisée ?",options:[{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"gpu",name:"Carte graphique (GPU)",icon:"GPU"},{id:"psu",name:"Alimentation",icon:"⚡"}],answer:"ram",explain:"Les applications ouvertes et leurs données de travail occupent la RAM."},
    {prompt:"Vous enregistrez un document pour le retrouver après avoir éteint l’ordinateur. Où est-il conservé ?",options:[{id:"ram",name:"Mémoire vive (RAM)",icon:"RAM"},{id:"cpu",name:"Processeur (CPU)",icon:"CPU"},{id:"ssd",name:"Stockage (SSD)",icon:"SSD"},{id:"fan",name:"Ventilateur",icon:"AIR"}],answer:"ssd",explain:"L’enregistrement copie le document vers un stockage durable, ici le SSD."},
-   {type:"sequence",title:"Remettez le trajet dans l’ordre",prompt:"Vous utilisez le raccourci clavier Ctrl+S (PC) ou Cmd+S (Mac) pour enregistrer un texte. Cliquez sur les étapes dans le bon ordre, jusqu’à l’affichage du message « Texte enregistré ».",options:[{id:"output",name:"L’écran affiche « Texte enregistré »",icon:""},{id:"input",name:"Le clavier envoie la commande",icon:""},{id:"storage",name:"Le SSD enregistre le texte",icon:""},{id:"processing",name:"Le CPU traite la demande",icon:""}],answer:["input","processing","storage","output"],explain:"Le clavier envoie la commande d’enregistrement (entrée), le CPU traite la demande, le SSD enregistre le texte, puis l’écran confirme l’enregistrement (sortie)."}
+   {type:"sequence",title:"Remettez le trajet dans l’ordre",prompt:"Vous appuyez sur une touche, l’ordinateur traite et enregistre le texte, puis affiche une confirmation. Cliquez sur les étapes dans le bon ordre.",options:[{id:"output",name:"L’écran affiche une confirmation",icon:"4"},{id:"input",name:"Le clavier envoie un code",icon:"1"},{id:"storage",name:"Le SSD enregistre le texte",icon:"3"},{id:"processing",name:"Le CPU traite le texte",icon:"2"}],answer:["input","processing","storage","output"],explain:"Le trajet est : entrée → traitement → enregistrement → sortie."}
   ]}
  ]
 },
@@ -133,7 +133,7 @@ en:{
   {tag:"Level 3 · Reason",title:"RAM or SSD: make the right choice",questions:[
    {prompt:"You open several applications at the same time. Which working memory is used more?",options:[{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"gpu",name:"Graphics card (GPU)",icon:"GPU"},{id:"psu",name:"Power supply",icon:"⚡"}],answer:"ram",explain:"Open applications and their working data occupy RAM."},
    {prompt:"You save a document to retrieve it after switching off the computer. Where is it kept?",options:[{id:"ram",name:"Main memory (RAM)",icon:"RAM"},{id:"cpu",name:"Processor (CPU)",icon:"CPU"},{id:"ssd",name:"Storage (SSD)",icon:"SSD"},{id:"fan",name:"Fan",icon:"AIR"}],answer:"ssd",explain:"Saving copies the document to permanent storage, here the SSD."},
-   {type:"sequence",title:"Put the journey in order",prompt:"You use the keyboard shortcut Ctrl+S (PC) or Cmd+S (Mac) to save a text. Click the steps in the correct order, until the message “Text saved” appears.",options:[{id:"output",name:"The screen displays “Text saved”",icon:""},{id:"input",name:"The keyboard sends the command",icon:""},{id:"storage",name:"The SSD saves the text",icon:""},{id:"processing",name:"The CPU processes the request",icon:""}],answer:["input","processing","storage","output"],explain:"The keyboard sends the save command (input), the CPU processes the request, the SSD saves the text, then the screen confirms the save (output)."}
+   {type:"sequence",title:"Put the journey in order",prompt:"You press a key, the computer processes and saves the text, then displays a confirmation. Click the steps in the correct order.",options:[{id:"output",name:"The screen displays a confirmation",icon:"4"},{id:"input",name:"The keyboard sends a code",icon:"1"},{id:"storage",name:"The SSD saves the text",icon:"3"},{id:"processing",name:"The CPU processes the text",icon:"2"}],answer:["input","processing","storage","output"],explain:"The journey is: input → processing → saving → output."}
   ]}
  ]
 }};
@@ -159,7 +159,7 @@ function renderQuestion(){
  $("progressBar").style.width=((qIndex+(answered?1:0))/level.questions.length*100)+"%";$("miniTip").textContent=T().miniTip;
  $("answers").innerHTML="";$("sequenceArea").hidden=q.type!=="sequence";
  q.options.forEach(opt=>{
-  const b=document.createElement("button");b.type="button";b.className="answer";b.dataset.id=opt.id;b.innerHTML=`${q.type==="sequence"?"":`<span class="answerIcon">${opt.icon}</span>`}<span>${opt.name}</span>`;
+  const b=document.createElement("button");b.type="button";b.className="answer";b.dataset.id=opt.id;b.innerHTML=`<span class="answerIcon">${opt.icon}</span><span>${opt.name}</span>`;
   if(q.type==="sequence"){
    if(sequence.includes(opt.id)){b.disabled=true;b.classList.add("dimmed");}
    if(answered){b.disabled=true;if(q.answer.includes(opt.id))b.classList.add("correct");}
