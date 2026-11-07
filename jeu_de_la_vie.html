@@ -31,8 +31,9 @@ button.acc:hover{filter:brightness(1.08)}
 .panel h2{font-size:15px;color:var(--primary);margin-bottom:10px}
 .gridWrap{position:relative;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
 canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
-.stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted)}
-.stats b{color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block;min-width:6.5ch;text-align:right}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted);align-items:center}
+.stats>span{white-space:nowrap}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block;min-width:6.5ch;text-align:left}
 #patInfo,#presetInfo{margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.45;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;display:none}
 #patWarn{margin-top:8px;font-size:13.5px;color:var(--error);background:var(--accentLight);border:1.5px solid var(--error);border-radius:10px;padding:8px 12px;display:none}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
