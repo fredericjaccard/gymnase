@@ -203,20 +203,21 @@ let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]
 const T = () => I18N[lang];
 
 /* ---------- Grille ---------- */
-const COLS = 75, ROWS = 46;
+const COLS = 100, ROWS = 60;            // fenêtre visible (cellules à l'écran)
+const OX = 0, OY = 0;                    // origine logique de la fenêtre (monde sans borne)
 const cv = $("cv"), ctx = cv.getContext("2d");
 cv.width = 900; cv.height = Math.round(900*ROWS/COLS);
 const CW = cv.width/COLS, CH = cv.height/ROWS;
-let grid = new Uint8Array(COLS*ROWS);
+let live = new Set();   // cellules vivantes ("c,r") ; le monde est sans borne
 let gen = 0, playing = false, timer = null, speed = 8;
 let surv = new Set([2,3]), birth = new Set([3]);
 let neighMode = false, selected = null;
 let chifMode = false;
 let histo = [];
-let ncounts = new Uint8Array(COLS*ROWS);
+let ncounts = new Map();   // nombre de voisins vivants par cellule (génération courante)
 
-const idx = (c,r) => r*COLS+c;
-const alive = (c,r) => (c>=0 && c<COLS && r>=0 && r<ROWS) ? grid[idx(c,r)] : 0;
+const key = (c,r) => c+","+r;
+const alive = (c,r) => live.has(key(c,r));
 function voisins(c,r){
   let n=0;
   for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++)
@@ -224,18 +225,26 @@ function voisins(c,r){
   return n;
 }
 function etape(){
-  const ng = new Uint8Array(COLS*ROWS);
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const n=voisins(c,r), v=grid[idx(c,r)];
-    ncounts[idx(c,r)] = n;
-    ng[idx(c,r)] = v ? (surv.has(n)?1:0) : (birth.has(n)?1:0);
+  const counts = new Map();
+  for(const k of live){
+    const p = k.split(","), c = +p[0], r = +p[1];
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      if(!dr && !dc) continue;
+      const kk = key(c+dc, r+dr);
+      counts.set(kk, (counts.get(kk)||0)+1);
+    }
   }
-  grid = ng; gen++;
+  const ng = new Set();
+  for(const [kk,n] of counts){
+    if(live.has(kk) ? surv.has(n) : birth.has(n)) ng.add(kk);
+  }
+  ncounts = counts;
+  live = ng; gen++;
   histo.push(vivantes());
   if(selected) showInspect(selected.c,selected.r);
   render(); stats(); drawGraph();
 }
-function vivantes(){ let n=0; for(let i=0;i<grid.length;i++) n+=grid[i]; return n; }
+function vivantes(){ return live.size; }
 
 function render(){
   if(chifMode){
@@ -245,13 +254,13 @@ function render(){
     for(let r=0;r<=ROWS;r++){ ctx.moveTo(0,r*CH+.5); ctx.lineTo(cv.width,r*CH+.5); }
     ctx.stroke();
     ctx.shadowBlur = 7;
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(!grid[idx(c,r)]) continue;
-      const n = ncounts[idx(c,r)];
+    for(let r=OY;r<OY+ROWS;r++) for(let c=OX;c<OX+COLS;c++){
+      if(!live.has(key(c,r))) continue;
+      const n = ncounts.get(key(c,r))||0;
       const hue = (n*47 + gen*97) % 360;
       ctx.shadowColor = "hsl("+hue+",100%,60%)";
       ctx.fillStyle = "hsl("+hue+",100%,"+(50+n*4)+"%)";
-      ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+      ctx.fillRect((c-OX)*CW+1,(r-OY)*CH+1,CW-2,CH-2);
     }
     ctx.shadowBlur = 0;
     return;
@@ -265,15 +274,15 @@ function render(){
     ctx.fillStyle="rgba(217,106,8,.18)";
     for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
       const c=selected.c+dc, r=selected.r+dr;
-      if(c>=0&&c<COLS&&r>=0&&r<ROWS) ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+      if(c>=OX&&c<OX+COLS&&r>=OY&&r<OY+ROWS) ctx.fillRect((c-OX)*CW+1,(r-OY)*CH+1,CW-2,CH-2);
     }
   }
   ctx.fillStyle="#155E4C";
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-    if(grid[idx(c,r)]) ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+  for(let r=OY;r<OY+ROWS;r++) for(let c=OX;c<OX+COLS;c++)
+    if(live.has(key(c,r))) ctx.fillRect((c-OX)*CW+1,(r-OY)*CH+1,CW-2,CH-2);
   if(neighMode && selected){
     ctx.strokeStyle="#D96A08"; ctx.lineWidth=2.5;
-    ctx.strokeRect(selected.c*CW+1,selected.r*CH+1,CW-2,CH-2);
+    ctx.strokeRect((selected.c-OX)*CW+1,(selected.r-OY)*CH+1,CW-2,CH-2);
   }
 }
 function drawGraph(){
@@ -308,29 +317,32 @@ function stats(){
 let drawing=false, drawVal=1;
 function cellFromEvent(e){
   const rect=cv.getBoundingClientRect();
-  return { c:Math.floor((e.clientX-rect.left)/rect.width*COLS),
-           r:Math.floor((e.clientY-rect.top)/rect.height*ROWS) };
+  return { c:OX+Math.floor((e.clientX-rect.left)/rect.width*COLS),
+           r:OY+Math.floor((e.clientY-rect.top)/rect.height*ROWS) };
 }
 cv.addEventListener("pointerdown", e=>{
   e.preventDefault();
   const {c,r}=cellFromEvent(e);
-  if(c<0||c>=COLS||r<0||r>=ROWS) return;
+  if(c<OX||c>=OX+COLS||r<OY||r>=OY+ROWS) return;
   $("graphTitle").textContent=T().graphTitle;
   if(neighMode){ selected={c,r}; showInspect(c,r); render(); return; }
-  drawing=true; drawVal=grid[idx(c,r)]?0:1;
-  grid[idx(c,r)]=drawVal; render(); stats();
+  drawing=true; const k=key(c,r);
+  drawVal=live.has(k)?0:1;
+  if(drawVal) live.add(k); else live.delete(k);
+  render(); stats();
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener("pointermove", e=>{
   if(!drawing) return;
   const {c,r}=cellFromEvent(e);
-  if(c<0||c>=COLS||r<0||r>=ROWS) return;
-  if(grid[idx(c,r)]!==drawVal){ grid[idx(c,r)]=drawVal; render(); stats(); }
+  if(c<OX||c>=OX+COLS||r<OY||r>=OY+ROWS) return;
+  const k2=key(c,r);
+  if((live.has(k2)?1:0)!==drawVal){ if(drawVal) live.add(k2); else live.delete(k2); render(); stats(); }
 });
 addEventListener("pointerup", ()=>drawing=false);
 
 function showInspect(c,r){
-  const n=voisins(c,r), v=grid[idx(c,r)];
+  const n=voisins(c,r), v=live.has(key(c,r));
   const dest = v ? (surv.has(n)?T().dVit:T().dMort) : (birth.has(n)?T().dNait:T().dRien);
   $("inspect").style.display="block";
   $("inspect").textContent = T().inspect(v,n,dest);
@@ -357,14 +369,14 @@ const PATTERNS = {
 function isConway(){ return surv.size===2 && surv.has(2) && surv.has(3) && birth.size===1 && birth.has(3); }
 function placer(nom){
   setPlaying(false);
-  grid=new Uint8Array(COLS*ROWS); gen=0;
+  live=new Set(); gen=0;
   const w=$("patWarn");
   if(!isConway()){ w.textContent=T().patWarn; w.style.display="block"; }
   else w.style.display="none";
   const p=PATTERNS[nom];
   const wc=Math.max(...p.map(q=>q[0])), hc=Math.max(...p.map(q=>q[1]));
-  const oc=Math.floor((COLS-wc)/2), orr=Math.floor((ROWS-hc)/2);
-  for(const [dc,dr] of p) grid[idx(oc+dc,orr+dr)]=1;
+  const oc=OX+Math.floor((COLS-wc)/2), orr=OY+Math.floor((ROWS-hc)/2);
+  for(const [dc,dr] of p) live.add(key(oc+dc,orr+dr));
   histo=[vivantes()];
   render(); stats(); drawGraph();
 }
@@ -446,10 +458,11 @@ function setPlaying(p){
 }
 $("playBtn").onclick=()=>setPlaying(!playing);
 $("stepBtn").onclick=()=>{ setPlaying(false); etape(); };
-$("clearBtn").onclick=()=>{ setPlaying(false); grid=new Uint8Array(COLS*ROWS); gen=0; selected=null; $("inspect").style.display="none"; histo=[0]; render(); stats(); drawGraph(); };
+$("clearBtn").onclick=()=>{ setPlaying(false); live=new Set(); gen=0; selected=null; $("inspect").style.display="none"; histo=[0]; render(); stats(); drawGraph(); };
 $("randBtn").onclick=()=>{
-  grid=new Uint8Array(COLS*ROWS);
-  for(let i=0;i<grid.length;i++) grid[i]=Math.random()<0.22?1:0;
+  live=new Set();
+  for(let r=OY;r<OY+ROWS;r++) for(let c=OX;c<OX+COLS;c++)
+    if(Math.random()<0.22) live.add(key(c,r));
   gen=0; histo=[vivantes()]; render(); stats(); drawGraph();
 };
 $("chifBtn").onclick=()=>{
