@@ -48,11 +48,14 @@ button:disabled{cursor:default;opacity:.65}
 .photo-frame{position:relative;border-radius:13px;overflow:hidden;background:var(--ink);border:1px solid var(--line)}
 .photo-frame img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
 .photo-frame.case-photo{max-width:680px;margin:0 auto}
-.hotspot{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);width:46px;height:46px;min-height:46px;padding:0;border-radius:50%;border:3px solid var(--accent);background:var(--card);color:var(--accent);font-size:23px;display:grid;place-items:center;box-shadow:0 0 0 4px var(--card)}
-.hotspot:hover{background:var(--accentLight)}
+.hotspot{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--accent);font-size:17px;display:grid;place-items:center;box-shadow:none;isolation:isolate}
+.hotspot::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid rgba(217,106,8,.52);background:rgba(247,246,242,.52);box-shadow:0 0 0 1px rgba(247,246,242,.25);z-index:-1}
+.hotspot:hover{background:transparent}
+.hotspot:hover::before{background:rgba(253,235,216,.70)}
 .hotspot:active{transform:translate(-50%,-50%) scale(.96)}
-.hotspot.found{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px var(--primaryLight)}
-.hotspot.current{border-width:4px}
+.hotspot.found{background:transparent;border:0;color:#fff;box-shadow:none}
+.hotspot.found::before{background:rgba(21,94,76,.62);border-color:rgba(21,94,76,.68);box-shadow:0 0 0 1px rgba(227,240,234,.35)}
+.hotspot.current::before{border-width:3px}
 .side-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:15px}
 .side-card h3{font-size:16px}
 .side-card p{font-size:14px;color:var(--muted)}
@@ -100,7 +103,7 @@ footer a:hover{text-decoration:underline}
   body{padding:14px}h1{font-size:23px}h2{font-size:21px}.hdrBtns{width:100%}.hdrBtns button{flex:1}
   .builder-note{align-items:flex-start}.mission-nav{grid-template-columns:1fr;gap:7px}.mission-tab{min-height:48px}
   .panel{padding:14px}.mission-head{display:block}.counter{display:inline-block;margin-top:9px}
-  .side-card{display:block}.check-list{margin-top:12px}.hotspot{width:44px;height:44px;min-height:44px;font-size:21px;box-shadow:0 0 0 2px var(--card)}
+  .side-card{display:block}.check-list{margin-top:12px}.hotspot{width:44px;height:44px;min-height:44px;font-size:15px;box-shadow:none}.hotspot::before{width:24px;height:24px;box-shadow:0 0 0 1px rgba(247,246,242,.25)}
   .match-grid{gap:14px}.next-row button{width:100%}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
@@ -169,12 +172,12 @@ const I18N = {
     gpuWrong:"Cette zone ne correspond pas à la carte graphique. Observez la photo et cherchez encore.",
     gpuBigFact:"Elle est vraiment grande par rapport aux autres composants !",
     gpuSizeQuestion:"Pourquoi est-elle si grande ?",
-    gpuSizeAnswers:["Elle doit accueillir un GPU, de la mémoire vidéo et un système de refroidissement volumineux.","Parce qu’elle doit contenir tous les fichiers de l’utilisateur.","Parce que sa taille augmente directement la capacité de la RAM.","Parce que le connecteur PCIe occupe, à lui seul, presque toute la longueur de la carte."],
+    gpuSizeAnswers:["Parce qu’elle doit contenir tous les fichiers de l’utilisateur.","Parce que sa taille augmente directement la capacité de la RAM.","Parce que le connecteur PCIe occupe, à lui seul, presque toute la longueur de la carte.","Elle doit accueillir un GPU, de la mémoire vidéo et un système de refroidissement volumineux."],
     gpuSizeWrong:[
-      "",
       "Les fichiers sont conservés par le SSD, pas par la carte graphique : ce n’est pas ce stockage qui explique sa taille.",
       "La carte graphique possède sa propre mémoire vidéo, mais sa taille n’augmente pas la capacité de la RAM du système.",
-      "Le connecteur PCIe ne mesure que quelques centimètres et n’occupe pas toute la carte : le refroidissement et les composants électroniques occupent bien plus de place."
+      "Le connecteur PCIe ne mesure que quelques centimètres et n’occupe pas toute la carte : le refroidissement et les composants électroniques occupent bien plus de place.",
+      ""
     ],
     gpuSizeRight:"Exact ! Les calculs graphiques produisent beaucoup de chaleur : le refroidissement occupe une grande partie de la carte.",
     gpuCostQuestion:"Et pourquoi les cartes graphiques performantes sont-elles devenues si chères ?",
@@ -240,12 +243,12 @@ const I18N = {
     gpuWrong:"That area does not show the graphics card. Look at the photo and try again.",
     gpuBigFact:"It is really large compared with the other components!",
     gpuSizeQuestion:"Why is it so large?",
-    gpuSizeAnswers:["It has to house a GPU, video memory and a bulky cooling system.","Because it has to hold all the user’s files.","Because its size directly increases RAM capacity.","Because the PCIe connector alone takes up almost the entire length of the card."],
+    gpuSizeAnswers:["Because it has to hold all the user’s files.","Because its size directly increases RAM capacity.","Because the PCIe connector alone takes up almost the entire length of the card.","It has to house a GPU, video memory and a bulky cooling system."],
     gpuSizeWrong:[
-      "",
       "Files are stored by the SSD, not the graphics card: file storage does not explain its size.",
       "The graphics card has its own video memory, but its size does not increase the system’s RAM capacity.",
-      "The PCIe connector is only a few centimetres long and does not fill the whole card: cooling and electronic components take up much more space."
+      "The PCIe connector is only a few centimetres long and does not fill the whole card: cooling and electronic components take up much more space.",
+      ""
     ],
     gpuSizeRight:"Exactly! Graphics processing produces a lot of heat, so cooling takes up much of the card.",
     gpuCostQuestion:"And why have powerful graphics cards become so expensive?",
@@ -319,7 +322,7 @@ function renderMission1(){
   const current=ITEMS1.find(it=>!found1.has(it.id));
   const fact=lastFact1?T().partsData[lastFact1]:null;
   $("app").innerHTML=`<div class="mission-head"><div><h2>${esc(T().m1Title)}</h2><p>${esc(T().m1Intro)}</p></div><div class="counter">${found1.size} / ${ITEMS1.length} ${esc(T().found)}</div></div>
-  <div class="workspace"><div><div class="photo-frame"><img src="${PHOTOS.motherboard}" alt="${esc(T().altBoard)}">${photoHotspots(ITEMS1,found1)}</div><div class="photo-credit">${esc(T().photoCredit)}</div></div>
+  <div class="workspace"><div><div class="photo-frame"><img src="${PHOTOS.motherboard}" alt="${esc(T().altBoard)}">${mission1Done()?"":photoHotspots(ITEMS1,found1)}</div><div class="photo-credit">${esc(T().photoCredit)}</div></div>
   <aside class="side-card"><div>${current?`<div class="target-box"><span class="small">${esc(T().find)}</span><strong>${esc(T().partsData[current.id].name)}</strong></div>`:""}${fact?`<h3>${esc(fact.short)}</h3><p>${esc(fact.fact)}</p>`:""}</div>${listHtml(ITEMS1,found1)}</aside></div>
   ${mission1Done()?`<div class="feedback success" role="status">${esc(T().m1Done)}</div>`:feedbackHtml()}
   ${mission1Done()?`<div class="next-row"><button type="button" class="accent" id="nextBtn">${esc(T().next)}</button></div>`:""}`;
@@ -337,7 +340,7 @@ function renderMission2(){
   const fact=lastFact2?T().partsData[lastFact2]:null;
   const showQuestion=found2.size===ITEMS2.length;
   $("app").innerHTML=`<div class="mission-head"><div><h2>${esc(T().m2Title)}</h2><p>${esc(T().m2Intro)}</p></div><div class="counter">${found2.size} / ${ITEMS2.length} ${esc(T().found)}</div></div>
-  <div class="workspace"><div><div class="photo-frame case-photo"><img src="${PHOTOS.caseBack}" alt="${esc(T().altCase)}">${photoHotspots(ITEMS2,found2)}</div><div class="photo-credit">${esc(T().photoCredit)}</div></div>
+  <div class="workspace"><div><div class="photo-frame case-photo"><img src="${PHOTOS.caseBack}" alt="${esc(T().altCase)}">${showQuestion?"":photoHotspots(ITEMS2,found2)}</div><div class="photo-credit">${esc(T().photoCredit)}</div></div>
   <aside class="side-card"><div>${current?`<div class="target-box"><span class="small">${esc(T().find)}</span><strong>${esc(T().partsData[current.id].name)}</strong></div>`:""}${fact?`<h3>${esc(fact.short)}</h3><p>${esc(fact.fact)}</p>`:""}</div>${listHtml(ITEMS2,found2)}</aside></div>
   ${showQuestion?`<div class="question"><h3>${esc(T().cableQuestion)}</h3><div class="answers">${T().cableAnswers.map((a,i)=>`<button type="button" class="answer ${mission2Done()&&i===1?"correct":""}" data-answer="${i}" ${mission2Done()?"disabled":""}>${esc(a)}</button>`).join("")}</div></div>`:""}
   ${mission2Done()?`<div class="feedback success answer-feedback" role="status"><strong>${esc(T().correctAnswer)}</strong>${esc(T().m2Done)}</div>`:feedback&&showQuestion?`<div class="feedback ${feedback.kind} answer-feedback" role="status"><strong>${esc(T().tryAgain)}</strong>${esc(feedback.text)}</div>`:feedbackHtml()}
@@ -357,8 +360,8 @@ function renderMission2(){
 }
 function renderMission3(){
   const done=matches3.size===4;
-  const gpuQuestionFeedback=gpuFeedback?`<div class="feedback error answer-feedback" role="status"><strong>${esc(T().tryAgain)}</strong>${esc(gpuFeedback.text)}</div>`:"";
-  const gpuZoneFeedback=!gpuFound&&gpuFeedback?`<div class="feedback error" role="status"><strong>${esc(T().tryAgain)}</strong>${esc(gpuFeedback.text)}</div>`:"";
+  const gpuQuestionFeedback=gpuFeedback?`<div class="feedback error answer-feedback" role="status"><strong>${esc(T().tryAgain)}</strong> ${esc(gpuFeedback.text)}</div>`:"";
+  const gpuZoneFeedback=!gpuFound&&gpuFeedback?`<div class="feedback error" role="status"><strong>${esc(T().tryAgain)}</strong> ${esc(gpuFeedback.text)}</div>`:"";
   $("app").innerHTML=`<div class="mission-head"><div><h2>${esc(T().m3Title)}</h2><p>${esc(T().m3Intro)}</p></div><div class="counter">${matches3.size} / 4 ${esc(T().matched)}</div></div>
   <div class="match-grid"><div class="match-col"><h3>${esc(T().parts)}</h3><div class="part-list">${PARTS3.map(id=>`<button type="button" class="part-btn ${selectedPart===id?"selected":""} ${matches3.has(id)?"matched":""}" data-part="${id}" ${matches3.has(id)?"disabled":""}>${esc(T().partsData[id].short)}</button>`).join("")}</div></div>
   <div class="match-col"><h3>${esc(T().roles)}</h3><div class="role-list">${ROLES3.map(id=>`<button type="button" class="role-btn ${matches3.has(id)?"matched":""}" data-role="${id}" ${matches3.has(id)?"disabled":""}>${esc(T().roleData[id])}</button>`).join("")}</div></div></div>
@@ -367,7 +370,7 @@ function renderMission3(){
     ${gpuCostSolved?`<div class="final-banner"><h2>${esc(T().finalTitle)}</h2><p>${esc(T().finalText)}</p></div>`:""}
     <h3>${esc(T().gpuTitle)}</h3>
     ${!gpuFound?`<div class="gpu-instruction">${esc(T().gpuInstruction)}</div>${gpuZoneFeedback}`:""}
-    <div class="final-photo"><img src="${PHOTOS.finalPC}" alt="${esc(T().altFinal)}">${GPU_ZONES.map((z,i)=>!gpuFound||z.id==="gpu"?`<button type="button" class="hotspot ${gpuFound&&z.id==="gpu"?"found":""}" style="--x:${z.x}%;--y:${z.y}%" data-gpu-zone="${z.id}" aria-label="${esc(gpuFound&&z.id==="gpu"?T().partsData.gpu.short:T().zone+" "+(i+1))}">${gpuFound&&z.id==="gpu"?"✓":"+"}</button>`:"").join("")}</div>
+    <div class="final-photo"><img src="${PHOTOS.finalPC}" alt="${esc(T().altFinal)}">${gpuCostSolved?"":GPU_ZONES.map((z,i)=>!gpuFound||z.id==="gpu"?`<button type="button" class="hotspot ${gpuFound&&z.id==="gpu"?"found":""}" style="--x:${z.x}%;--y:${z.y}%" data-gpu-zone="${z.id}" aria-label="${esc(gpuFound&&z.id==="gpu"?T().partsData.gpu.short:T().zone+" "+(i+1))}">${gpuFound&&z.id==="gpu"?"✓":"+"}</button>`:"").join("")}</div>
     <div class="photo-credit">${esc(T().finalCaption)}</div>
     ${gpuFound?`<div class="question"><h3>${esc(T().gpuBigFact)}</h3>
       ${!gpuSizeSolved?`<div class="question"><h3>${esc(T().gpuSizeQuestion)}</h3><div class="answers">${T().gpuSizeAnswers.map((a,i)=>`<button type="button" class="answer" data-gpu-size="${i}">${esc(a)}</button>`).join("")}</div>${gpuQuestionFeedback}</div>`:!gpuCostSolved?`<div class="feedback success answer-feedback"><strong>${esc(T().correctAnswer)}</strong>${esc(T().gpuSizeRight)}</div>`:""}
@@ -388,7 +391,7 @@ function renderMission3(){
     else{gpuFeedback={kind:"error",text:T().gpuWrong};render();}
   });
   document.querySelectorAll("[data-gpu-size]").forEach(b=>b.onclick=()=>{
-    if(Number(b.dataset.gpuSize)===0){gpuSizeSolved=true;gpuFeedback=null;render();}
+    if(Number(b.dataset.gpuSize)===3){gpuSizeSolved=true;gpuFeedback=null;render();}
     else{gpuFeedback={kind:"error",text:T().gpuSizeWrong[Number(b.dataset.gpuSize)]};render();}
   });
   document.querySelectorAll("[data-gpu-cost]").forEach(b=>b.onclick=()=>{
