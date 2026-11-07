@@ -32,7 +32,7 @@ button.acc:hover{filter:brightness(1.08)}
 .gridWrap{position:relative;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
 canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
 .stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted)}
-.stats b{color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block;min-width:3.2ch}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block;min-width:6.5ch;text-align:right}
 #patInfo,#presetInfo{margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.45;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;display:none}
 #patWarn{margin-top:8px;font-size:13.5px;color:var(--error);background:var(--accentLight);border:1.5px solid var(--error);border-radius:10px;padding:8px 12px;display:none}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -308,9 +308,14 @@ function drawGraph(){
   gc.fillStyle="#6E726B"; gc.font="700 20px 'Quattrocento Sans',sans-serif";
   gc.fillText("max "+max, 8, 24);
 }
+function fmt(n){
+  const s=String(n);
+  const sep = lang==="fr" ? "\u202F" : ",";
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+}
 function stats(){
-  $("stGen").innerHTML = T().gen+" : <b>"+gen+"</b>";
-  $("stAlive").innerHTML = T().alive+" : <b>"+vivantes()+"</b>";
+  $("stGen").innerHTML = T().gen+" : <b>"+fmt(gen)+"</b>";
+  $("stAlive").innerHTML = T().alive+" : <b>"+fmt(vivantes())+"</b>";
 }
 
 /* ---------- Interaction grille ---------- */
