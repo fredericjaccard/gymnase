@@ -50,6 +50,17 @@ input[type=range]{accent-color:var(--primary);flex:1;height:34px}
 footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
 footer a{color:var(--muted);font-weight:400;text-decoration:none}
 footer a:hover{text-decoration:underline}
+#infoOverlay{position:fixed;inset:0;background:rgba(32,36,31,.45);display:none;align-items:flex-start;justify-content:center;z-index:40;overflow-y:auto;padding:30px 16px}
+#infoPanel{background:var(--bg);border:2px solid var(--primary);border-radius:14px;max-width:720px;width:100%;padding:18px 22px;box-shadow:0 12px 40px rgba(32,36,31,.25)}
+#infoHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+#infoHead h2{font-size:20px;color:var(--primary)}
+#infoBody{font-size:14.5px;line-height:1.55;color:var(--ink)}
+#infoBody h3{font-size:15px;color:var(--primary);margin:14px 0 5px}
+#infoBody h3:first-child{margin-top:0}
+#infoBody p{margin:6px 0}
+#infoBody ul{margin:6px 0 6px 20px}
+#infoBody li{margin:3px 0}
+#infoBody b{color:var(--primary)}
 :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:900px){.zone{grid-template-columns:1fr}}
 @media(max-width:640px){body{padding:14px}h1{font-size:22px}.hdrBtns{width:100%}.patGrid{grid-template-columns:1fr 1fr}}
@@ -78,6 +89,7 @@ footer a:hover{text-decoration:underline}
       <button id="clearBtn" type="button"></button>
       <button id="neighBtn" type="button"></button>
       <button id="chifBtn" type="button"></button>
+      <button id="infoBtn" type="button"></button>
     </div>
     <div class="gridWrap"><canvas id="cv" width="900" height="560"></canvas></div>
     <div class="stats">
@@ -116,6 +128,12 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
+<div id="infoOverlay" role="dialog" aria-modal="true">
+  <div id="infoPanel">
+    <div id="infoHead"><h2 id="infoTitle"></h2><button id="infoClose" type="button"></button></div>
+    <div id="infoBody"></div>
+  </div>
+</div>
 <footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
 <script>
 const $ = id => document.getElementById(id);
@@ -153,6 +171,45 @@ const I18N = {
       canon:"Le canon à planeurs de Gosper : il fabrique un nouveau planeur toutes les 30 générations, pour toujours.",
       diehard:"7 cellules qui semblent anodines… et pourtant le motif survit 130 générations avant de disparaître complètement !"
     },
+    infoBtn:"Information", infoClose:"Fermer", infoHtml:`<h3>Un « jeu » sans joueurs</h3>
+<p>Le jeu de la vie n'est pas vraiment un jeu : personne ne joue, il n'y a ni gagnant ni perdant. C'est un <b>automate cellulaire</b> : une grille de cellules, vivantes ou mortes, qui évoluent toutes en même temps selon des règles fixes. On choisit la configuration de départ, on lance… et on regarde ce qui se passe.</p>
+<h3>Les règles (B3/S23)</h3>
+<p>À chaque génération, on compte pour chaque cellule ses 8 voisines :</p>
+<ul>
+<li><b>Naissance (B3)</b> : une cellule morte entourée d'exactement <b>3</b> voisines vivantes devient vivante.</li>
+<li><b>Survie (S23)</b> : une cellule vivante avec <b>2 ou 3</b> voisines vivantes reste vivante ; sinon elle meurt (d'isolement avec 0 ou 1 voisine, ou d'étouffement avec 4 ou plus).</li>
+</ul>
+<p>Ces deux phrases suffisent à produire des comportements d'une richesse surprenante : motifs fixes (bloc), oscillateurs (clignotant, pulsar), vaisseaux qui se déplacent (planeur), et même des « canons » qui produisent des planeurs sans fin.</p>
+<h3>Un peu d'histoire</h3>
+<ul>
+<li><b>Années 1940</b> : le mathématicien John von Neumann cherche à décrire des machines capables de s'auto-reproduire et imagine les premiers automates cellulaires.</li>
+<li><b>1970</b> : le mathématicien britannique <b>John Horton Conway</b> invente le jeu de la vie, en cherchant les règles les plus simples donnant des comportements intéressants. Il le présente comme un passe-temps, souvent joué à la main sur des plateaux de go.</li>
+<li><b>Octobre 1970</b> : Martin Gardner publie le jeu dans sa rubrique de <i>Scientific American</i>. C'est un succès immédiat : on raconte que des millions d'heures de calcul ont été « gaspillées » à le faire tourner dans les universités et les entreprises — probablement l'un des programmes les plus exécutés de l'histoire à l'époque.</li>
+<li><b>Quelques semaines plus tard</b>, des lecteurs découvrent le <b>planeur</b>, puis le <b>canon de Gosper</b> (Bill Gosper, MIT), qui prouve que la population peut croître indéfiniment.</li>
+<li><b>Années 1980 et après</b> : on démontre que le jeu de la vie est <b>complet au sens de Turing</b> : on peut y construire des portes logiques, de la mémoire… et donc un ordinateur complet. Des ordinateurs entiers ont effectivement été construits avec des planeurs, capables de calculer des nombres premiers.</li>
+<li><b>2020</b> : John Horton Conway meurt à 82 ans, des suites de la Covid-19.</li>
+</ul>
+<h3>Pourquoi est-ce célèbre ?</h3>
+<p>Le jeu de la vie est l'exemple le plus connu d'<b>émergence</b> : des règles locales très simples, appliquées partout en même temps, font apparaître des structures complexes que personne n'avait programmées — des vaisseaux, des usines, des calculatrices. C'est une idée centrale en science : la complexité du monde (fourmis, neurones, écosystèmes, villes) peut naître de règles locales simples.</p>
+<h3>D'autres règles, d'autres mondes</h3>
+<p>Les règles de Conway ne sont qu'une possibilité parmi des milliers : chaque combinaison de conditions de naissance (B) et de survie (S) définit un « univers » différent. On en a catalogué énormément ; la plupart sont ennuyeuses (tout meurt, ou tout explose), mais quelques-unes sont célèbres. Quatre sont proposées dans l'application :</p>
+<ul>
+<li><b>Conway (B3/S23)</b> — la règle originale : équilibre remarquable entre mort et croissance, oscillateurs, vaisseaux, canons. C'est la plus étudiée de toutes.</li>
+<li><b>HighLife (B36/S23)</b> — identique à Conway, plus une naissance possible avec 6 voisins. Ce petit ajout change tout pour certains motifs : il existe en HighLife un « réplicateur », un motif qui produit des copies de lui-même — introuvable sous les règles de Conway.</li>
+<li><b>Jour &amp; nuit (B3678/S34678)</b> — une règle dite « inversible » : échanger les cellules vivantes et mortes donne un monde qui se comporte pareil. Résultat : les grandes zones vides se remplissent d'elles-mêmes, et l'univers ressemble à une mosaïque de régions « jour » et « nuit » inversées les unes des autres.</li>
+<li><b>Labyrinthe (B3/S12345)</b> — ici, presque toute cellule vivante survit. Les motifs aléatoires se figent rapidement en structures filandreuses qui évoquent des couloirs de labyrinthe ou des réseaux de neurones.</li>
+</ul>
+<p>Essayez la même configuration de départ (par exemple « Aléatoire ») sous plusieurs règles : le contraste est saisissant, et c'est la meilleure démonstration que <b>ce sont les règles qui créent le monde</b>.</p>
+<h3>Quelques motifs à essayer dans l'application</h3>
+<ul>
+<li><b>Bloc</b> : ne bouge jamais (motif stable).</li>
+<li><b>Clignotant</b> : alterne entre deux formes (période 2).</li>
+<li><b>Pulsar</b> : oscillateur spectaculaire de période 3.</li>
+<li><b>Planeur</b> : se déplace en diagonale, d'une case toutes les 4 générations.</li>
+<li><b>R-pentomino</b> : seulement 5 cellules… mais 1&nbsp;103 générations de chaos avant de se stabiliser !</li>
+<li><b>Diehard</b> : disparaît complètement après environ 130 générations.</li>
+<li><b>Canon de Gosper</b> : produit un planeur toutes les 30 générations, sans jamais s'arrêter.</li>
+</ul>`,
     presetInfo:{
       conway:"Les règles originales de Conway (1970) : naissance avec 3 voisins, survie avec 2 ou 3. Un équilibre parfait entre mort et expansion.",
       highlife:"Comme Conway, mais une cellule naît aussi avec 6 voisins : des structures en expansion lente apparaissent.",
@@ -192,6 +249,45 @@ const I18N = {
       canon:"Gosper's glider gun: it manufactures a new glider every 30 generations, forever.",
       diehard:"7 innocent-looking cells… yet the pattern survives 130 generations before vanishing completely!"
     },
+    infoBtn:"Information", infoClose:"Close", infoHtml:`<h3>A "game" with no players</h3>
+<p>The Game of Life is not really a game: nobody plays, there is no winner and no loser. It is a <b>cellular automaton</b>: a grid of cells, alive or dead, that all evolve at the same time following fixed rules. You choose the starting configuration, press play… and watch what happens.</p>
+<h3>The rules (B3/S23)</h3>
+<p>At each generation, the 8 neighbours of every cell are counted:</p>
+<ul>
+<li><b>Birth (B3)</b>: a dead cell with exactly <b>3</b> living neighbours becomes alive.</li>
+<li><b>Survival (S23)</b>: a living cell with <b>2 or 3</b> living neighbours stays alive; otherwise it dies (from isolation with 0 or 1 neighbour, or from overcrowding with 4 or more).</li>
+</ul>
+<p>These two sentences are enough to produce surprisingly rich behaviour: still lifes (block), oscillators (blinker, pulsar), moving spaceships (glider), and even "guns" that produce gliders forever.</p>
+<h3>A bit of history</h3>
+<ul>
+<li><b>1940s</b>: mathematician John von Neumann studies machines able to reproduce themselves and imagines the first cellular automata.</li>
+<li><b>1970</b>: British mathematician <b>John Horton Conway</b> invents the Game of Life, looking for the simplest rules that give interesting behaviour. He presents it as a pastime, often played by hand on go boards.</li>
+<li><b>October 1970</b>: Martin Gardner publishes the game in his <i>Scientific American</i> column. It is an instant hit: reportedly millions of computer hours were "wasted" running it in universities and companies — probably one of the most-run programs in history at the time.</li>
+<li><b>A few weeks later</b>, readers discover the <b>glider</b>, then the <b>Gosper glider gun</b> (Bill Gosper, MIT), proving that the population can grow forever.</li>
+<li><b>1980s and beyond</b>: the Game of Life is proven to be <b>Turing complete</b>: you can build logic gates, memory… and therefore a full computer. Real computers made of gliders have been built, capable of computing prime numbers.</li>
+<li><b>2020</b>: John Horton Conway dies at 82, from Covid-19.</li>
+</ul>
+<h3>Why is it famous?</h3>
+<p>The Game of Life is the best-known example of <b>emergence</b>: very simple local rules, applied everywhere at once, give rise to complex structures nobody programmed — spaceships, factories, calculators. This is a central idea in science: the complexity of the world (ants, neurons, ecosystems, cities) can arise from simple local rules.</p>
+<h3>Other rules, other worlds</h3>
+<p>Conway's rules are just one possibility among thousands: every combination of birth (B) and survival (S) conditions defines a different "universe". A great many have been catalogued; most are boring (everything dies, or everything explodes), but a few are famous. Four are available in the app:</p>
+<ul>
+<li><b>Conway (B3/S23)</b> — the original rule: a remarkable balance between death and growth, with oscillators, spaceships and guns. It is the most studied rule of all.</li>
+<li><b>HighLife (B36/S23)</b> — identical to Conway, plus a birth possible with 6 neighbours. This small addition changes everything for some patterns: HighLife has a "replicator", a pattern that produces copies of itself — no such pattern is known under Conway's rules.</li>
+<li><b>Day &amp; Night (B3678/S34678)</b> — a so-called "self-complementary" rule: swapping alive and dead cells gives a world that behaves the same way. As a result, large empty regions fill in by themselves, and the universe looks like a mosaic of inverted "day" and "night" regions.</li>
+<li><b>Maze (B3/S12345)</b> — here, almost every living cell survives. Random patterns quickly freeze into winding structures that look like maze corridors or networks of neurons.</li>
+</ul>
+<p>Try the same starting configuration (for example "Random") under several rules: the contrast is striking, and it is the best demonstration that <b>the rules are what create the world</b>.</p>
+<h3>Some patterns to try in the app</h3>
+<ul>
+<li><b>Block</b>: never moves (still life).</li>
+<li><b>Blinker</b>: alternates between two shapes (period 2).</li>
+<li><b>Pulsar</b>: a spectacular period-3 oscillator.</li>
+<li><b>Glider</b>: moves diagonally, one cell every 4 generations.</li>
+<li><b>R-pentomino</b>: only 5 cells… but 1,103 generations of chaos before settling down!</li>
+<li><b>Diehard</b>: vanishes completely after about 130 generations.</li>
+<li><b>Gosper gun</b>: produces one glider every 30 generations, forever.</li>
+</ul>`,
     presetInfo:{
       conway:"Conway's original rules (1970): birth with 3 neighbours, survival with 2 or 3. A perfect balance between death and expansion.",
       highlife:"Like Conway, but a cell is also born with 6 neighbours: slowly expanding structures appear.",
@@ -507,6 +603,10 @@ function applyLang(){
   $("clearBtn").textContent=T().clear;
   $("neighBtn").textContent=T().neigh;
   $("chifBtn").textContent=T().chif;
+  $("infoBtn").textContent=T().infoBtn;
+  $("infoClose").textContent=T().infoClose;
+  $("infoTitle").textContent=T().infoBtn;
+  $("infoBody").innerHTML=T().infoHtml;
   buildPatterns(); buildPresets();
   $("graphTitle").textContent=T().graphTitle;
   if(neighMode){
@@ -523,6 +623,11 @@ $("langBtn").onclick=()=>{
   }catch(e){}
   applyLang();
 };
+$("infoBtn").onclick=()=>{ $("infoOverlay").style.display="flex"; $("infoBtn").blur(); };
+function closeInfo(){ $("infoOverlay").style.display="none"; if(document.activeElement&&document.activeElement.blur) document.activeElement.blur(); }
+$("infoClose").onclick=closeInfo;
+$("infoOverlay").addEventListener("click",e=>{ if(e.target===$("infoOverlay")) closeInfo(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeInfo(); });
 function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
 $("fsBtn").onclick=()=>{
   const el=document.documentElement;
