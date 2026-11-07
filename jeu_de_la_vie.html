@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Simulateur interactif du jeu de la vie de Conway : motifs célèbres, comptage des voisins et règles personnalisables.">
+<title>Le jeu de la vie · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1200px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:44px}
+button:hover{background:var(--primaryLight)}
+button.on{background:var(--primary);color:#fff}
+button.acc{background:var(--accent);border-color:var(--accent);color:#fff}
+button.acc:hover{filter:brightness(1.08)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;color:var(--primary)}
+.zone{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:14px}
+.panel h2{font-size:15px;color:var(--primary);margin-bottom:10px}
+.gridWrap{position:relative;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:14px;color:var(--muted)}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block;min-width:3.2ch}
+#patInfo,#presetInfo{margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.45;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;display:none}
+#patWarn{margin-top:8px;font-size:13.5px;color:var(--error);background:var(--accentLight);border:1.5px solid var(--error);border-radius:10px;padding:8px 12px;display:none}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.patGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.patGrid button{min-height:44px;font-size:13px;padding:6px 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.chip{min-width:40px;min-height:40px;padding:4px;border-radius:8px;font-size:14px}
+.chip.on{background:var(--primary);color:#fff}
+.rlab{font-size:13px;font-weight:700;color:var(--muted)}
+.ruleRead{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.speedRow{display:flex;align-items:center;gap:10px;margin-top:4px}
+input[type=range]{accent-color:var(--primary);flex:1;height:34px}
+#inspect{display:none;margin-top:12px;background:var(--primaryLight);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--primary)}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:900px){.zone{grid-template-columns:1fr}}
+@media(max-width:640px){body{padding:14px}h1{font-size:22px}.hdrBtns{width:100%}.patGrid{grid-template-columns:1fr 1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="zone">
+  <div>
+    <div class="controls">
+      <button id="playBtn" type="button"></button>
+      <button id="stepBtn" type="button"></button>
+      <button id="randBtn" type="button"></button>
+      <button id="clearBtn" type="button"></button>
+      <button id="neighBtn" type="button"></button>
+      <button id="chifBtn" type="button"></button>
+    </div>
+    <div class="gridWrap"><canvas id="cv" width="900" height="560"></canvas></div>
+    <div class="stats">
+      <span id="stGen"></span>
+      <span id="stAlive"></span>
+      <span class="speedRow" style="flex:1;min-width:200px">
+        <span id="speedLab" class="rlab"></span>
+        <input id="speed" type="range" min="1" max="20" value="8">
+      </span>
+    </div>
+    <div id="inspect"></div>
+  </div>
+
+  <div>
+    <div class="panel" style="margin-bottom:16px">
+      <h2 id="patTitle"></h2>
+      <div class="patGrid" id="patGrid"></div>
+      <div id="patInfo"></div>
+      <div id="patWarn"></div>
+    </div>
+    <div class="panel">
+      <h2 id="rulesTitle"></h2>
+      <div class="ruleRead" id="ruleRead"></div>
+      <div class="rlab" id="birthLab"></div>
+      <div class="chips" id="birthChips"></div>
+      <div class="rlab" id="survLab"></div>
+      <div class="chips" id="survChips"></div>
+      <div class="rlab" id="presetLab" style="margin-top:4px"></div>
+      <div class="chips" id="presetChips"></div>
+      <div id="presetInfo"></div>
+    </div>
+  </div>
+</div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+  fr:{
+    kicker:"Algorithmique", title:"Le jeu de la vie",
+    instruction:"Cliquez sur la grille (ou faites glisser) pour activer des cellules, choisissez un motif célèbre à placer, puis lancez la simulation. Activez « Compter les voisins » pour examiner une cellule en détail.",
+    fs:"Plein écran", fsExit:"Quitter", backList:"← Toutes les applications",
+    play:"Lecture", pause:"Pause", step:"1 génération", rand:"Aléatoire", clear:"Tout effacer",
+    neigh:"Compter les voisins",
+    chif:"Mode chif.02",
+    gen:"Génération", alive:"Cellules vivantes", speed:"Vitesse",
+    patTitle:"Motifs célèbres",
+    rulesTitle:"Règles du jeu",
+    surv:"Survie : une cellule vivante survit avec…", birth:"Naissance : une cellule morte naît avec…",
+    presets:"Configurations célèbres :",
+    patWarn:"Attention : ce motif est conçu pour la règle de Conway B3/S23. Avec la règle actuelle, son comportement sera différent.",
+    inspectOn:"Cliquez sur une cellule pour voir ses 8 voisins.",
+    inspect:(vivante,n,dest)=>`Cette cellule est ${vivante?"vivante":"morte"} : ${n} voisin${n>1?"s":""} vivant${n>1?"s":""} → ${dest}`,
+    dMort:"elle meurt", dNait:"elle naît", dVit:"elle reste vivante", dRien:"elle reste morte",
+    patterns:{bloc:"Bloc", clignotant:"Clignotant", crapaud:"Crapaud", phare:"Phare",
+      planeur:"Planeur", vaisseau:"Vaisseau léger", pulsar:"Pulsar", rpento:"R-pentomino", canon:"Canon de Gosper", diehard:"Diehard"},
+    presetsNames:{conway:"Conway B3/S23", highlife:"HighLife B36/S23", daynight:"Jour & nuit B3678/S34678", laby:"Labyrinthe B3/S12345"},
+    patInfo:{
+      bloc:"Structure immobile : rien ne change jamais. Chaque cellule a exactement 3 voisins.",
+      clignotant:"Oscillateur de période 2 : il alterne entre horizontal et vertical, indéfiniment.",
+      crapaud:"Oscillateur de période 2 : les 4 cellules du milieu « respirent ».",
+      phare:"Oscillateur de période 2 : deux blocs qui se touchent par un coin, comme un gyrophare.",
+      planeur:"La star du jeu de la vie : il se déplace en diagonale d'une case toutes les 4 générations, indéfiniment.",
+      vaisseau:"Un vaisseau spatial : il glisse horizontalement d'une case toutes les 2 générations.",
+      pulsar:"Grand oscillateur de période 3, spectaculaire : 48 cellules qui pulsent en cercle.",
+      rpento:"Seulement 5 cellules, mais le motif explose pendant plus de 1 000 générations avant de se stabiliser !",
+      canon:"Le canon à planeurs de Gosper : il fabrique un nouveau planeur toutes les 30 générations, pour toujours.",
+      diehard:"7 cellules qui semblent anodines… et pourtant le motif survit 130 générations avant de disparaître complètement !"
+    },
+    presetInfo:{
+      conway:"Les règles originales de Conway (1970) : naissance avec 3 voisins, survie avec 2 ou 3. Un équilibre parfait entre mort et expansion.",
+      highlife:"Comme Conway, mais une cellule naît aussi avec 6 voisins : des structures en expansion lente apparaissent.",
+      daynight:"Naissance avec 3, 6, 7 ou 8 voisins, survie avec 3, 4, 6, 7 ou 8 : les grandes zones vides se remplissent, créant des continents de cellules.",
+      laby:"Naissance avec 3 voisins, survie toujours : les cellules ne meurent jamais et dessinent des couloirs de labyrinthe."
+    }
+  },
+  en:{
+    kicker:"ALGORITHMS", title:"The Game of Life",
+    instruction:"Click on the grid (or drag) to switch cells on, pick a famous pattern to place, then run the simulation. Turn on “Count the neighbours” to examine a cell in detail.",
+    fs:"Fullscreen", fsExit:"Exit", backList:"← All applications",
+    play:"Play", pause:"Pause", step:"1 generation", rand:"Random", clear:"Clear all",
+    neigh:"Count the neighbours",
+    chif:"Chif.02 mode",
+    gen:"Generation", alive:"Living cells", speed:"Speed",
+    patTitle:"Famous patterns",
+    rulesTitle:"Rules of the game",
+    surv:"Survival: a living cell survives with…", birth:"Birth: a dead cell is born with…",
+    presets:"Famous rule sets:",
+    patWarn:"Warning: this pattern is designed for Conway's rule B3/S23. With the current rule, it will behave differently.",
+    inspectOn:"Click a cell to see its 8 neighbours.",
+    inspect:(alive,n,dest)=>`This cell is ${alive?"alive":"dead"}: ${n} living neighbour${n>1?"s":""} → ${dest}`,
+    dMort:"it dies", dNait:"it is born", dVit:"it stays alive", dRien:"it stays dead",
+    patterns:{bloc:"Block", clignotant:"Blinker", crapaud:"Toad", phare:"Beacon",
+      planeur:"Glider", vaisseau:"Lightweight spaceship", pulsar:"Pulsar", rpento:"R-pentomino", canon:"Gosper glider gun", diehard:"Diehard"},
+    presetsNames:{conway:"Conway B3/S23", highlife:"HighLife B36/S23", daynight:"Day & Night B3678/S34678", laby:"Maze B3/S12345"},
+    patInfo:{
+      bloc:"Still life: nothing ever changes. Every cell has exactly 3 neighbours.",
+      clignotant:"Period-2 oscillator: it flips between horizontal and vertical forever.",
+      crapaud:"Period-2 oscillator: the 4 middle cells “breathe”.",
+      phare:"Period-2 oscillator: two blocks touching at a corner, like a lighthouse beam.",
+      planeur:"The star of the Game of Life: it glides one cell diagonally every 4 generations, forever.",
+      vaisseau:"A spaceship: it slides one cell horizontally every 2 generations.",
+      pulsar:"A spectacular period-3 oscillator: 48 cells pulsing in a ring.",
+      rpento:"Only 5 cells, but the pattern explodes for over 1,000 generations before settling!",
+      canon:"Gosper's glider gun: it manufactures a new glider every 30 generations, forever.",
+      diehard:"7 innocent-looking cells… yet the pattern survives 130 generations before vanishing completely!"
+    },
+    presetInfo:{
+      conway:"Conway's original rules (1970): birth with 3 neighbours, survival with 2 or 3. A perfect balance between death and expansion.",
+      highlife:"Like Conway, but a cell is also born with 6 neighbours: slowly expanding structures appear.",
+      daynight:"Birth with 3, 6, 7 or 8 neighbours, survival with 3, 4, 6, 7 or 8: large empty areas fill up, creating continents of cells.",
+      laby:"Birth with 3 neighbours, survival always: cells never die and draw maze corridors."
+    }
+  }
+};
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+
+/* ---------- Grille ---------- */
+const COLS = 75, ROWS = 46;
+const cv = $("cv"), ctx = cv.getContext("2d");
+cv.width = 900; cv.height = Math.round(900*ROWS/COLS);
+const CW = cv.width/COLS, CH = cv.height/ROWS;
+let grid = new Uint8Array(COLS*ROWS);
+let gen = 0, playing = false, timer = null, speed = 8;
+let surv = new Set([2,3]), birth = new Set([3]);
+let neighMode = false, selected = null;
+let chifMode = false;
+let ncounts = new Uint8Array(COLS*ROWS);
+
+const idx = (c,r) => r*COLS+c;
+const alive = (c,r) => (c>=0 && c<COLS && r>=0 && r<ROWS) ? grid[idx(c,r)] : 0;
+function voisins(c,r){
+  let n=0;
+  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++)
+    if(dr||dc) n+=alive(c+dc,r+dr);
+  return n;
+}
+function etape(){
+  const ng = new Uint8Array(COLS*ROWS);
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const n=voisins(c,r), v=grid[idx(c,r)];
+    ncounts[idx(c,r)] = n;
+    ng[idx(c,r)] = v ? (surv.has(n)?1:0) : (birth.has(n)?1:0);
+  }
+  grid = ng; gen++;
+  if(selected) showInspect(selected.c, selected.r);
+  render(); stats();
+}
+function vivantes(){ let n=0; for(let i=0;i<grid.length;i++) n+=grid[i]; return n; }
+
+function render(){
+  if(chifMode){
+    ctx.fillStyle="#0B0F0D"; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle="rgba(255,255,255,.06)"; ctx.lineWidth=1; ctx.beginPath();
+    for(let c=0;c<=COLS;c++){ ctx.moveTo(c*CW+.5,0); ctx.lineTo(c*CW+.5,cv.height); }
+    for(let r=0;r<=ROWS;r++){ ctx.moveTo(0,r*CH+.5); ctx.lineTo(cv.width,r*CH+.5); }
+    ctx.stroke();
+    ctx.shadowBlur = 7;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(!grid[idx(c,r)]) continue;
+      const n = ncounts[idx(c,r)];
+      const hue = (n*47 + gen*97) % 360;
+      ctx.shadowColor = "hsl("+hue+",100%,60%)";
+      ctx.fillStyle = "hsl("+hue+",100%,"+(50+n*4)+"%)";
+      ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+    }
+    ctx.shadowBlur = 0;
+    return;
+  }
+  ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.strokeStyle="#D8D5CB"; ctx.lineWidth=1; ctx.beginPath();
+  for(let c=0;c<=COLS;c++){ ctx.moveTo(c*CW+.5,0); ctx.lineTo(c*CW+.5,cv.height); }
+  for(let r=0;r<=ROWS;r++){ ctx.moveTo(0,r*CH+.5); ctx.lineTo(cv.width,r*CH+.5); }
+  ctx.stroke();
+  if(neighMode && selected){
+    ctx.fillStyle="rgba(217,106,8,.18)";
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      const c=selected.c+dc, r=selected.r+dr;
+      if(c>=0&&c<COLS&&r>=0&&r<ROWS) ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+    }
+  }
+  ctx.fillStyle="#155E4C";
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+    if(grid[idx(c,r)]) ctx.fillRect(c*CW+1,r*CH+1,CW-2,CH-2);
+  if(neighMode && selected){
+    ctx.strokeStyle="#D96A08"; ctx.lineWidth=2.5;
+    ctx.strokeRect(selected.c*CW+1,selected.r*CH+1,CW-2,CH-2);
+  }
+}
+function stats(){
+  $("stGen").innerHTML = T().gen+" : <b>"+gen+"</b>";
+  $("stAlive").innerHTML = T().alive+" : <b>"+vivantes()+"</b>";
+}
+
+/* ---------- Interaction grille ---------- */
+let drawing=false, drawVal=1;
+function cellFromEvent(e){
+  const rect=cv.getBoundingClientRect();
+  return { c:Math.floor((e.clientX-rect.left)/rect.width*COLS),
+           r:Math.floor((e.clientY-rect.top)/rect.height*ROWS) };
+}
+cv.addEventListener("pointerdown", e=>{
+  e.preventDefault();
+  const {c,r}=cellFromEvent(e);
+  if(c<0||c>=COLS||r<0||r>=ROWS) return;
+  if(neighMode){ selected={c,r}; showInspect(c,r); render(); return; }
+  drawing=true; drawVal=grid[idx(c,r)]?0:1;
+  grid[idx(c,r)]=drawVal; render(); stats();
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener("pointermove", e=>{
+  if(!drawing) return;
+  const {c,r}=cellFromEvent(e);
+  if(c<0||c>=COLS||r<0||r>=ROWS) return;
+  if(grid[idx(c,r)]!==drawVal){ grid[idx(c,r)]=drawVal; render(); stats(); }
+});
+addEventListener("pointerup", ()=>drawing=false);
+
+function showInspect(c,r){
+  const n=voisins(c,r), v=grid[idx(c,r)];
+  const dest = v ? (surv.has(n)?T().dVit:T().dMort) : (birth.has(n)?T().dNait:T().dRien);
+  $("inspect").style.display="block";
+  $("inspect").textContent = T().inspect(v,n,dest);
+}
+
+/* ---------- Motifs ---------- */
+const PATTERNS = {
+  bloc:[[0,0],[1,0],[0,1],[1,1]],
+  clignotant:[[0,0],[1,0],[2,0]],
+  crapaud:[[1,0],[2,0],[3,0],[0,1],[1,1],[2,1]],
+  phare:[[0,0],[1,0],[0,1],[3,2],[2,3],[3,3]],
+  planeur:[[1,0],[2,1],[0,2],[1,2],[2,2]],
+  vaisseau:[[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]],
+  pulsar:(function(){const p=[];const seg=[2,3,4,8,9,10];
+    for(const r of [0,5,7,12]) for(const c of seg) p.push([c,r]);
+    for(const c of [0,5,7,12]) for(const r of seg) p.push([c,r]);
+    return p;})(),
+  rpento:[[1,0],[2,0],[0,1],[1,1],[1,2]],
+  diehard:[[6,0],[0,1],[1,1],[1,2],[5,2],[6,2],[7,2]],
+  canon:[[24,0],[22,1],[24,1],[12,2],[13,2],[20,2],[21,2],[34,2],[35,2],
+    [11,3],[15,3],[20,3],[21,3],[34,3],[35,3],[0,4],[1,4],[10,4],[16,4],[20,4],[21,4],
+    [0,5],[1,5],[10,5],[14,5],[16,5],[17,5],[22,5],[24,5],[10,6],[16,6],[24,6],[11,7],[15,7],[12,8],[13,8]]
+};
+function isConway(){ return surv.size===2 && surv.has(2) && surv.has(3) && birth.size===1 && birth.has(3); }
+function placer(nom){
+  setPlaying(false);
+  grid=new Uint8Array(COLS*ROWS); gen=0;
+  const w=$("patWarn");
+  if(!isConway()){ w.textContent=T().patWarn; w.style.display="block"; }
+  else w.style.display="none";
+  const p=PATTERNS[nom];
+  const wc=Math.max(...p.map(q=>q[0])), hc=Math.max(...p.map(q=>q[1]));
+  const oc=Math.floor((COLS-wc)/2), orr=Math.floor((ROWS-hc)/2);
+  for(const [dc,dr] of p) grid[idx(oc+dc,orr+dr)]=1;
+  render(); stats();
+}
+function buildPatterns(){
+  const g=$("patGrid"); g.innerHTML="";
+  for(const k of Object.keys(PATTERNS)){
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=T().patterns[k];
+    b.onclick=()=>{
+      placer(k);
+      const el=$("patInfo");
+      el.textContent=T().patInfo[k];
+      el.style.display="block";
+    };
+    g.appendChild(b);
+  }
+}
+
+/* ---------- Règles ---------- */
+function syncPresets(){
+  const keys=Object.keys(PRESETS);
+  [...$("presetChips").children].forEach((b,i)=>{
+    const [B,S]=PRESETS[keys[i]];
+    const on = birth.size===B.length && B.every(x=>birth.has(x))
+            && surv.size===S.length && S.every(x=>surv.has(x));
+    b.classList.toggle("on", on);
+  });
+}
+function rulesChanged(){
+  ruleLabel();
+  syncPresets();
+  if(isConway()) $("patWarn").style.display="none";
+  if(selected) showInspect(selected.c,selected.r);
+}
+function buildChips(el, set, cb){
+  el.innerHTML="";
+  for(let d=0;d<=8;d++){
+    const b=document.createElement("button");
+    b.type="button"; b.className="chip"+(set.has(d)?" on":""); b.textContent=d;
+    b.onclick=()=>{ set.has(d)?set.delete(d):set.add(d); b.classList.toggle("on"); cb(); };
+    el.appendChild(b);
+  }
+}
+function ruleLabel(){
+  $("ruleRead").textContent = "B"+[...birth].sort().join("")+"/S"+[...surv].sort().join("");
+}
+const PRESETS={conway:[[3],[2,3]],highlife:[[3,6],[2,3]],daynight:[[3,6,7,8],[3,4,6,7,8]],laby:[[3],[1,2,3,4,5]]};
+function buildPresets(){
+  const g=$("presetChips"); g.innerHTML="";
+  for(const k of Object.keys(PRESETS)){
+    const b=document.createElement("button");
+    b.type="button"; b.className="chip"; b.style.minWidth="auto"; b.style.padding="4px 10px";
+    const nom=T().presetsNames[k];
+    const sep=nom.indexOf(" B");
+    b.innerHTML = sep<0 ? nom : nom.slice(0,sep)+' <span style="font-weight:400">'+nom.slice(sep+1)+"</span>";
+    b.onclick=()=>{
+      birth=new Set(PRESETS[k][0]); surv=new Set(PRESETS[k][1]);
+      buildChips($("birthChips"),birth,rulesChanged);
+      buildChips($("survChips"),surv,rulesChanged);
+      syncPresets();
+      const el=$("presetInfo");
+      el.textContent=T().presetInfo[k];
+      el.style.display="block";
+      if(selected) showInspect(selected.c,selected.r);
+    };
+    g.appendChild(b);
+  }
+  syncPresets();
+}
+
+/* ---------- Contrôles ---------- */
+function setPlaying(p){
+  playing=p;
+  $("playBtn").textContent = playing?T().pause:T().play;
+  $("playBtn").classList.toggle("on",playing);
+  if(playing){ timer=setInterval(etape, 1000/speed); }
+  else if(timer){ clearInterval(timer); timer=null; }
+}
+$("playBtn").onclick=()=>setPlaying(!playing);
+$("stepBtn").onclick=()=>{ setPlaying(false); etape(); };
+$("clearBtn").onclick=()=>{ setPlaying(false); grid=new Uint8Array(COLS*ROWS); gen=0; selected=null; $("inspect").style.display="none"; render(); stats(); };
+$("randBtn").onclick=()=>{
+  grid=new Uint8Array(COLS*ROWS);
+  for(let i=0;i<grid.length;i++) grid[i]=Math.random()<0.22?1:0;
+  gen=0; render(); stats();
+};
+$("chifBtn").onclick=()=>{
+  chifMode=!chifMode;
+  $("chifBtn").classList.toggle("on",chifMode);
+  render();
+};
+$("neighBtn").onclick=()=>{
+  neighMode=!neighMode;
+  $("neighBtn").classList.toggle("on",neighMode);
+  if(!neighMode){ selected=null; $("inspect").style.display="none"; }
+  else $("inspect").textContent=T().inspectOn, $("inspect").style.display="block";
+  render();
+};
+$("speed").oninput=e=>{ speed=+e.target.value; if(playing){ clearInterval(timer); timer=setInterval(etape,1000/speed); } };
+
+/* ---------- Langue / plein écran ---------- */
+function applyLang(){
+  document.documentElement.lang=lang;
+  $("kicker").textContent=T().kicker;
+  $("title").textContent=T().title;
+  $("instruction").textContent=T().instruction;
+  $("langBtn").textContent=lang==="fr"?"English":"Français";
+  $("fsLabel").textContent=isFs()?T().fsExit:T().fs;
+  $("backLink").textContent=T().backList;
+  document.title=T().title+" · Gymnase — Frédéric Jaccard";
+  $("patTitle").textContent=T().patTitle;
+  $("rulesTitle").textContent=T().rulesTitle;
+  $("survLab").textContent=T().surv;
+  $("birthLab").textContent=T().birth;
+  $("presetLab").textContent=T().presets;
+  $("speedLab").textContent=T().speed;
+  $("playBtn").textContent=playing?T().pause:T().play;
+  $("stepBtn").textContent=T().step;
+  $("randBtn").textContent=T().rand;
+  $("clearBtn").textContent=T().clear;
+  $("neighBtn").textContent=T().neigh;
+  $("chifBtn").textContent=T().chif;
+  buildPatterns(); buildPresets();
+  if(neighMode){
+    if(selected) showInspect(selected.c,selected.r);
+    else $("inspect").textContent=T().inspectOn;
+  }
+  stats();
+}
+$("langBtn").onclick=()=>{
+  lang=lang==="fr"?"en":"fr";
+  try{
+    localStorage.setItem("fj-lang",lang);
+    document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  }catch(e){}
+  applyLang();
+};
+function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+$("fsBtn").onclick=()=>{
+  const el=document.documentElement;
+  if(isFs()) (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+  else{ const req=el.requestFullscreen||el.webkitRequestFullscreen;
+        if(req){ const r=req.call(el); if(r&&r.catch) r.catch(()=>{}); } }
+};
+function syncFsLabel(){ $("fsLabel").textContent=isFs()?T().fsExit:T().fs; }
+document.addEventListener("fullscreenchange",syncFsLabel);
+document.addEventListener("webkitfullscreenchange",syncFsLabel);
+
+/* ---------- Init ---------- */
+buildChips($("survChips"),surv,rulesChanged);
+buildChips($("birthChips"),birth,rulesChanged);
+ruleLabel();
+syncPresets();
+applyLang();
+placer("planeur");
+</script>
+</body>
+</html>

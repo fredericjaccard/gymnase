@@ -74,6 +74,7 @@ button:disabled{cursor:default;opacity:.65}
 .answer-feedback{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
 .answer-feedback strong{display:block;margin-bottom:3px}
 .gpu-instruction{background:var(--primaryLight);color:var(--primary);border-radius:10px;padding:11px 13px;margin:12px 0;font-weight:700}
+.gpu-zone-feedback{margin-bottom:22px}
 .next-row{display:flex;justify-content:flex-end;margin-top:16px;gap:10px;flex-wrap:wrap}
 .photo-credit{font-size:12px;color:var(--muted);margin-top:8px}
 .question{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
@@ -199,8 +200,8 @@ const I18N = {
     zone:"Zone photo", partsData:{
       cpu:{name:"Le processeur (CPU)",short:"Processeur (CPU)",fact:"Le processeur exécute les instructions des programmes. Ici, il est déjà placé dans son socket."},
       ram:{name:"Les barrettes de RAM",short:"Barrettes de RAM",fact:"La mémoire vive conserve temporairement les données et les programmes en cours d’utilisation."},
-      ssd:{name:"Le SSD M.2",short:"SSD M.2",fact:"Ce SSD M.2 est surprenamment petit ! Il n’est pas encore monté : il est encore dans son emballage, à droite de la carte mère. Une fois installé, il conservera les fichiers et les programmes, même lorsque le PC est éteint."},
-      pcie:{name:"Le port PCIe",short:"Port PCIe",fact:"Ce port PCIe accueille une carte d’extension, par exemple la carte graphique."},
+      ssd:{name:"Le SSD M.2",short:"SSD M.2",fact:"Ce SSD M.2 est étonnamment petit ! M.2 désigne son format et son type de connecteur, pas sa capacité ni sa vitesse : cette petite carte se branche directement dans un emplacement M.2 de la carte mère. Tous les SSD ne sont pas si petits : les modèles 2,5 pouces, par exemple, sont plus grands et se relient avec des câbles. Celui-ci n’est pas encore monté : il est encore dans son emballage, à droite de la carte mère. Une fois installé, il conservera les fichiers et les programmes, même lorsque le PC est éteint."},
+      pcie:{name:"Le port PCIe",short:"Port PCIe",fact:"PCIe signifie Peripheral Component Interconnect Express. Ce connecteur d’extension de la carte mère permet de brancher un composant, par exemple la carte graphique, et de le faire communiquer avec le reste de l’ordinateur."},
       heatsink:{name:"Le dissipateur",short:"Dissipateur",fact:"Un dissipateur évacue la chaleur d’un composant pour limiter sa température."},
       psu:{name:"L’alimentation",short:"Alimentation",fact:"L’alimentation fournit aux composants les tensions électriques dont ils ont besoin."},
       power:{name:"Les câbles d’alimentation",short:"Câbles d’alimentation",fact:"Ces câbles relient l’alimentation à la carte mère et aux autres composants."},
@@ -270,8 +271,8 @@ const I18N = {
     zone:"Photo area", partsData:{
       cpu:{name:"The processor (CPU)",short:"Processor (CPU)",fact:"The processor executes program instructions. Here, it is already seated in its socket."},
       ram:{name:"The RAM modules",short:"RAM modules",fact:"RAM temporarily holds the data and programs currently in use."},
-      ssd:{name:"The M.2 SSD",short:"M.2 SSD",fact:"This M.2 SSD is surprisingly small! It is not installed yet: it is still in its packaging, to the right of the motherboard. Once installed, it will store files and programs even when the PC is switched off."},
-      pcie:{name:"The PCIe slot",short:"PCIe slot",fact:"This PCIe slot holds an expansion card, such as the graphics card."},
+      ssd:{name:"The M.2 SSD",short:"M.2 SSD",fact:"This M.2 SSD is surprisingly small! M.2 describes its form factor and connector type, not its capacity or speed: this small card plugs directly into an M.2 slot on the motherboard. Not all SSDs are this small: 2.5-inch models, for example, are larger and connect with cables. This one is not installed yet: it is still in its packaging, to the right of the motherboard. Once installed, it will store files and programs even when the PC is switched off."},
+      pcie:{name:"The PCIe slot",short:"PCIe slot",fact:"PCIe stands for Peripheral Component Interconnect Express. This expansion connector on the motherboard allows a component, such as the graphics card, to be connected and communicate with the rest of the computer."},
       heatsink:{name:"The heatsink",short:"Heatsink",fact:"A heatsink moves heat away from a component to limit its temperature."},
       psu:{name:"The power supply",short:"Power supply",fact:"The power supply provides the electrical voltages needed by the components."},
       power:{name:"The power cables",short:"Power cables",fact:"These cables connect the power supply to the motherboard and other components."},
@@ -361,7 +362,7 @@ function renderMission2(){
 function renderMission3(){
   const done=matches3.size===4;
   const gpuQuestionFeedback=gpuFeedback?`<div class="feedback error answer-feedback" role="status"><strong>${esc(T().tryAgain)}</strong> ${esc(gpuFeedback.text)}</div>`:"";
-  const gpuZoneFeedback=!gpuFound&&gpuFeedback?`<div class="feedback error" role="status"><strong>${esc(T().tryAgain)}</strong> ${esc(gpuFeedback.text)}</div>`:"";
+  const gpuZoneFeedback=!gpuFound&&gpuFeedback?`<div class="feedback error gpu-zone-feedback" role="status"><strong>${esc(T().tryAgain)}</strong> ${esc(gpuFeedback.text)}</div>`:"";
   $("app").innerHTML=`<div class="mission-head"><div><h2>${esc(T().m3Title)}</h2><p>${esc(T().m3Intro)}</p></div><div class="counter">${matches3.size} / 4 ${esc(T().matched)}</div></div>
   <div class="match-grid"><div class="match-col"><h3>${esc(T().parts)}</h3><div class="part-list">${PARTS3.map(id=>`<button type="button" class="part-btn ${selectedPart===id?"selected":""} ${matches3.has(id)?"matched":""}" data-part="${id}" ${matches3.has(id)?"disabled":""}>${esc(T().partsData[id].short)}</button>`).join("")}</div></div>
   <div class="match-col"><h3>${esc(T().roles)}</h3><div class="role-list">${ROLES3.map(id=>`<button type="button" class="role-btn ${matches3.has(id)?"matched":""}" data-role="${id}" ${matches3.has(id)?"disabled":""}>${esc(T().roleData[id])}</button>`).join("")}</div></div></div>
