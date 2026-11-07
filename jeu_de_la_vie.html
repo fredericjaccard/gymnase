@@ -392,6 +392,7 @@ function buildPresets(){
       buildChips($("birthChips"),birth,rulesChanged);
       buildChips($("survChips"),surv,rulesChanged);
       syncPresets();
+      rulesChanged();
       const el=$("presetInfo");
       el.textContent=T().presetInfo[k];
       el.style.display="block";
