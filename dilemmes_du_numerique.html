@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Jeu de cartes de dilemmes éthiques du numérique : pour chaque situation, choisissez une option, découvrez les arguments des deux côtés et exportez un résumé pour nourrir le débat de classe.">
+<title>Dilemmes du numérique · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:860px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:44px}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;color:var(--primary)}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* ---------- Zone de jeu ---------- */
+.progressWrap{margin-bottom:12px}
+.progressMeta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:4px}
+.progressTrack{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.progressFill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;
+  border-top:4px solid var(--accent)}
+.cardTitle{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:10px}
+.cardSit{font-size:16px;line-height:1.5;margin-bottom:18px}
+.choiceRow{display:flex;gap:12px;flex-wrap:wrap}
+.choiceRow button{flex:1 1 240px;font-size:15px;padding:12px 14px}
+
+/* état révélé */
+.verdict{margin:14px 0 6px;font-size:14px;font-weight:700;color:var(--accent)}
+.argCols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.argBox{border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.45}
+.argBox h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.argFor{background:var(--primaryLight);border:1px solid var(--primary)}
+.argFor h3{color:var(--primary)}
+.argAgainst{background:var(--bg);border:1px solid var(--line)}
+.argAgainst h3{color:var(--muted)}
+.argBox ul{list-style:none}
+.argBox li{margin-bottom:8px;padding-left:16px;position:relative}
+.argBox li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.argFor li::before{background:var(--primary)}
+.noAnswer{background:var(--accentLight);border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:16px}
+.nextRow{display:flex;justify-content:flex-end}
+
+/* ---------- Résumé ---------- */
+.sumPanel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;border-top:4px solid var(--primary)}
+.sumPanel h2{font-size:20px;color:var(--primary);margin-bottom:8px}
+.sumIntro{font-size:15px;margin-bottom:16px}
+.sumItem{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg)}
+.sumItem .t{font-weight:700;color:var(--primary);margin-bottom:4px}
+.sumItem .c{font-size:14px;margin-bottom:6px}
+.sumItem .c b{color:var(--accent)}
+.sumItem .a{font-size:13px;color:var(--muted)}
+.sumActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.sumActions button.accentBtn{background:var(--primary);color:#fff;border-color:var(--primary)}
+.sumActions button.accentBtn:hover{filter:brightness(.92)}
+.copyMsg{font-size:14px;color:var(--primary);font-weight:700;margin-top:10px;min-height:18px}
+textarea.sumText{width:100%;min-height:150px;margin-top:12px;border:1px solid var(--line);border-radius:10px;
+  padding:10px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--muted)}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  .argCols{grid-template-columns:1fr}
+  .card,.sumPanel{padding:16px}
+  .cardTitle{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div id="stage"></div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ================================================================
+   I18N — interface (le contenu des cartes est dans DILEMMAS)
+   ================================================================ */
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Dilemmes du numérique",
+    instruction: "Piochez une carte, lisez la situation et choisissez l’option qui vous semble la mieux défendable. Les arguments des deux côtés s’affichent ensuite : à vous d’alimenter le débat ! En fin de partie, exportez votre résumé pour la classe.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    cardOf: (n, t) => "Carte " + n + " sur " + t,
+    youChose: "Vous avez choisi :",
+    forYour: "Pour votre choix",
+    otherSide: "L’autre point de vue",
+    noAnswer: "Il n’existe pas de bonne réponse : c’est le débat qui compte.",
+    nextBtn: "Carte suivante",
+    seeSummary: "Voir le résumé",
+    againBtn: "Recommencer",
+    endTitle: "Votre résumé",
+    endIntro: "Voici la trace de vos choix, prête à nourrir le débat de classe. Copiez-la ou téléchargez-la, puis discutez des situations qui ont le plus divisé.",
+    copyBtn: "Copier le résumé",
+    copied: "Résumé copié dans le presse-papiers.",
+    copyFail: "La copie a échoué : sélectionnez le texte ci-dessous et copiez-le manuellement.",
+    dlBtn: "Télécharger (.txt)",
+    yourChoice: "Votre choix",
+    openText: "Ouvrir le débat",
+    sumHeader: "Dilemmes du numérique — Résumé pour le débat",
+    sumChoice: "Choix",
+    sumFor: "Arguments pour",
+    sumAgainst: "Arguments contre (autre point de vue)",
+    questionLine: "Question pour le débat",
+    undecided: "Non tranché"
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Digital dilemmas",
+    instruction: "Draw a card, read the situation and pick the option you find most defensible. Arguments on both sides are then revealed — now feed the debate! At the end of the game, export your summary for the class.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    cardOf: (n, t) => "Card " + n + " of " + t,
+    youChose: "You chose:",
+    forYour: "For your choice",
+    otherSide: "The other side",
+    noAnswer: "There is no right answer: the debate is what matters.",
+    nextBtn: "Next card",
+    seeSummary: "View summary",
+    againBtn: "Start over",
+    endTitle: "Your summary",
+    endIntro: "Here is a record of your choices, ready to fuel the class debate. Copy or download it, then discuss the situations that proved most divisive.",
+    copyBtn: "Copy summary",
+    copied: "Summary copied to the clipboard.",
+    copyFail: "Copying failed: select the text below and copy it manually.",
+    dlBtn: "Download (.txt)",
+    yourChoice: "Your choice",
+    openText: "Open the debate",
+    sumHeader: "Digital dilemmas — Debate summary",
+    sumChoice: "Choice",
+    sumFor: "Arguments for",
+    sumAgainst: "Arguments against (the other side)",
+    questionLine: "Question for the debate",
+    undecided: "Undecided"
+  }
+};
+
+/* ================================================================
+   CONTENU — 8 dilemmes. Pour chaque option :
+   l = libellé, p = arguments en faveur, c = arguments contre
+   (les arguments contre une option nourrissent l'autre côté).
+   ================================================================ */
+const DILEMMAS = [
+  {
+    fr: {
+      t: "La localisation en permanence",
+      s: "Votre application de transports publics propose des itinéraires optimaux et des alertes en temps réel. Pour cela, elle vous demande d’activer la localisation en permanence, même lorsque vous ne l’utilisez pas.",
+      q: "Que gagne-t-on vraiment à échanger sa vie privée contre du confort ?",
+      a: {
+        l: "J’accepte",
+        p: ["Gain de temps réel : horaires exacts, correspondances adaptées à votre position.",
+            "En cas d’urgence, votre position peut être transmise aux secours."],
+        c: ["Vos déplacements sont enregistrés en continu : qui y a accès, et pendant combien de temps ?",
+            "Ces données précieuses peuvent être revendues ou servir à vous profiler (publicité, assurances)."]
+      },
+      b: {
+        l: "Je refuse",
+        p: ["Vous gardez le contrôle de vos déplacements : aucune piste permanente ne vous suit.",
+            "Vous limitez les risques de fuite ou de revente de vos données personnelles."],
+        c: ["Vous perdez les alertes utiles et les itinéraires vraiment en temps réel.",
+            "Il faut saisir sa position à la main : moins pratique au quotidien."]
+      }
+    },
+    en: {
+      t: "Always-on location",
+      s: "Your public transport app offers optimal routes and real-time alerts. To do this, it asks you to enable location access permanently, even when you are not using it.",
+      q: "What do we really gain by trading privacy for convenience?",
+      a: {
+        l: "I accept",
+        p: ["Real time savings: accurate schedules and connections matched to your position.",
+            "In an emergency, your location can be shared with rescue services."],
+        c: ["Your movements are recorded continuously: who has access, and for how long?",
+            "This valuable data may be resold or used to profile you (advertising, insurance)."]
+      },
+      b: {
+        l: "I refuse",
+        p: ["You stay in control of your movements: no permanent trail follows you.",
+            "You reduce the risks of leaks or resale of your personal data."],
+        c: ["You lose useful alerts and truly real-time routing.",
+            "You must enter your position manually: less convenient day to day."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "Dénoncer un ami",
+      s: "Vous découvrez qu’un ami de classe a rendu un devoir écrit en grande partie par une IA générative, sans le mentionner. Le règlement prévoit une sanction, mais il n’y a aucune preuve si personne ne dit rien.",
+      q: "Quand la loyauté envers un ami prime-t-elle sur l’équité pour tous ?",
+      a: {
+        l: "J’en parle au professeur",
+        p: ["L’honnêteté académique est un contrat collectif : tricher dévalue le travail de tous.",
+            "Si les fausses notes passent, le niveau réel de la classe n’est plus évalué correctement."],
+        c: ["On vous reprochera de dénoncer : la confiance de votre groupe peut être brisée.",
+            "Vous ne connaissez pas toute la situation : peut-être avait-il une autorisation ou des circonstances particulières."]
+      },
+      b: {
+        l: "Je n’en dis rien",
+        p: ["La loyauté envers un ami compte : on ne résout pas tout par la délation.",
+            "Ce n’est pas votre rôle de police : c’est au professeur de vérifier les travaux."],
+        c: ["Vous laissez passer une injustice envers les élèves qui ont travaillé honnêtement.",
+            "Si la triche éclate plus tard et que vous saviez, votre silence peut vous engager."]
+      }
+    },
+    en: {
+      t: "Reporting a friend",
+      s: "You discover that a classmate has handed in work largely written by a generative AI, without mentioning it. School rules provide for a sanction, but there is no evidence if nobody says anything.",
+      q: "When does loyalty to a friend outweigh fairness for everyone?",
+      a: {
+        l: "I tell the teacher",
+        p: ["Academic honesty is a collective contract: cheating devalues everyone’s work.",
+            "If fake grades go through, the class’s real level is no longer assessed correctly."],
+        c: ["You may be accused of snitching: your group’s trust can be broken.",
+            "You don’t know the whole story: perhaps they had permission or special circumstances."]
+      },
+      b: {
+        l: "I stay silent",
+        p: ["Loyalty to a friend matters: not everything should be settled by denunciation.",
+            "It is not your job to police others: checking work is the teacher’s role."],
+        c: ["You let an injustice pass against students who worked honestly.",
+            "If the cheating surfaces later and you knew, your silence may implicate you."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "Le Wi-Fi public",
+      s: "Vous devez régler une facture en ligne. Votre connexion mobile est défaillante et le seul réseau disponible est le Wi-Fi public gratuit de la gare.",
+      q: "Jusqu’où le pratique doit-il primer sur la sécurité ?",
+      a: {
+        l: "Je me connecte",
+        p: ["C’est rapide et gratuit, et parfois le seul choix disponible sur le moment.",
+            "Avec un site en HTTPS, les échanges sont chiffrés et difficiles à lire."],
+        c: ["Un réseau public peut être piégé : de faux hotspots imitent le vrai nom du réseau.",
+            "Même en HTTPS, la métadonnée « qui parle à qui » reste visible et exploitable."]
+      },
+      b: {
+        l: "J’attends un réseau sûr",
+        p: ["Vos identifiants et données bancaires ne transitent pas par un réseau inconnu.",
+            "Éviter le réseau piégé coûte peu : la facture peut attendre quelques heures."],
+        c: ["Vous perdez du temps et devez reporter une tâche pourtant urgente.",
+            "La peur excessive bloque aussi : le risque réel d’un hotspot honnête est faible."]
+      }
+    },
+    en: {
+      t: "Public Wi-Fi",
+      s: "You need to pay a bill online. Your mobile connection is failing and the only available network is the station’s free public Wi-Fi.",
+      q: "How far should convenience take priority over security?",
+      a: {
+        l: "I connect",
+        p: ["It is fast and free, and sometimes the only option available right now.",
+            "With an HTTPS site, the exchange is encrypted and hard to read."],
+        c: ["A public network can be trapped: fake hotspots mimic the real network’s name.",
+            "Even over HTTPS, the metadata of “who talks to whom” stays visible and exploitable."]
+      },
+      b: {
+        l: "I wait for a safe network",
+        p: ["Your credentials and banking data never travel through an unknown network.",
+            "Avoiding a trapped hotspot costs little: the bill can wait a few hours."],
+        c: ["You lose time and must postpone a task that was actually urgent.",
+            "Excessive fear is also a problem: the real risk of an honest hotspot is low."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "Une photo d’un ami",
+      s: "En soirée, vous avez pris une photo très drôle d’un ami qui ne la connaît pas encore. La publier rapporterait beaucoup de réactions… et peut-être des moqueries.",
+      q: "Qui décide de l’image que l’on donne de soi en ligne ?",
+      a: {
+        l: "Je publie",
+        p: ["C’est vous qui avez pris la photo : vous en êtes le propriétaire.",
+            "L’ambiance est bon enfant et tout le monde publie ce genre de clichés."],
+        c: ["Le droit à l’image protège chacun : publier sans accord est une atteinte, pas une blague.",
+            "Une image en ligne ne disparaît plus : elle peut nuire à son auteur pendant des années (études, emploi)."]
+      },
+      b: {
+        l: "Je demande son accord",
+        p: ["Le respect de l’autre passe par son consentement, même pour une image « anodine ».",
+            "Vous prévenez tout conflit futur : une photo acceptée ne se retourne jamais contre vous."],
+        c: ["Cela demande un effort et peut « tuer » la spontanéité du moment.",
+            "Votre ami dira peut-être non, et l’humour de la soirée retombe."]
+      }
+    },
+    en: {
+      t: "A photo of a friend",
+      s: "At a party you took a very funny photo of a friend who hasn’t seen it yet. Posting it would get plenty of reactions… and perhaps some mockery.",
+      q: "Who decides the image of ourselves we give online?",
+      a: {
+        l: "I post it",
+        p: ["You took the photo: you own it.",
+            "The mood is friendly and everyone posts this kind of picture."],
+        c: ["The right to one’s image protects everyone: posting without consent is a violation, not a joke.",
+            "An image online never disappears: it can harm its subject for years (studies, jobs)."]
+      },
+      b: {
+        l: "I ask for consent",
+        p: ["Respecting someone means asking their consent, even for an “innocent” picture.",
+            "You prevent future conflict: an accepted photo can never be turned against you."],
+        c: ["It takes effort and may “kill” the spontaneity of the moment.",
+            "Your friend may say no, and the evening’s fun deflates."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "L’application de santé gratuite",
+      s: "Une application gratuite promet d’améliorer votre sommeil et votre concentration. En échange, elle demande l’accès à vos données de santé, à votre micro et à vos habitudes d’écran.",
+      q: "Si un service est gratuit, qui est le produit ?",
+      a: {
+        l: "J’installe l’application",
+        p: ["Des conseils personnalisés peuvent vraiment améliorer le sommeil et la concentration.",
+            "L’application est gratuite : à part un peu de temps, que risquez-vous concrètement ?"],
+        c: ["Les données de santé sont parmi les plus sensibles : fuite ou revente, et elles vous suivent toute la vie.",
+            "« Gratuit » cache un modèle économique : vos données sont très probablement le produit vendu."]
+      },
+      b: {
+        l: "Je refuse",
+        p: ["Vous protégez vos données les plus intimes et refusez un modèle qui vous instrumentalise.",
+            "Les conseils de base (régularité, écrans le soir) existent ailleurs sans accès à vos données."],
+        c: ["Vous renoncez à un suivi personnalisé qui aurait pu vous aider concrètement.",
+            "Refuser systématiquement, c’est aussi se priver d’outils utiles par principe."]
+      }
+    },
+    en: {
+      t: "The free health app",
+      s: "A free app promises to improve your sleep and focus. In exchange, it asks for access to your health data, your microphone and your screen habits.",
+      q: "If a service is free, who is the product?",
+      a: {
+        l: "I install it",
+        p: ["Personalised advice can genuinely improve sleep and concentration.",
+            "The app is free: apart from a little time, what do you actually risk?"],
+        c: ["Health data is among the most sensitive: if leaked or resold, it follows you for life.",
+            "“Free” hides a business model: your data is very likely the product being sold."]
+      },
+      b: {
+        l: "I refuse",
+        p: ["You protect your most intimate data and reject a model that turns you into a commodity.",
+            "Basic advice (regular hours, no screens at night) exists elsewhere without data access."],
+        c: ["You give up personalised tracking that could have genuinely helped you.",
+            "Refusing systematically also means missing out on useful tools on principle."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "La caméra connectée",
+      s: "Partant en vacances, vous hésitez à installer une caméra d’intérieur bon marché pour garder un œil sur votre animal et votre appartement.",
+      q: "Un objet connecté chez soi protège-t-il… ou espionne-t-il ?",
+      a: {
+        l: "J’installe la caméra",
+        p: ["Tranquillité : vous vérifiez votre logement à distance en temps réel.",
+            "En cas d’effraction ou d’incident, les enregistrements servent de preuve."],
+        c: ["Les caméras bon marché sont régulièrement piratées : des inconnus peuvent regarder chez vous.",
+            "Les images transitent par un cloud à l’étranger, soumis à d’autres lois."]
+      },
+      b: {
+        l: "Je refuse",
+        p: ["Aucun risque d’être espionné chez soi par un objet piraté.",
+            "Vous évitez une dépendance à un cloud et à un fabricant que vous ne contrôlez pas."],
+        c: ["En cas d’incident, vous n’avez ni alerte ni preuve vidéo.",
+            "Le sentiment de sécurité de votre foyer s’en trouve réduit."]
+      }
+    },
+    en: {
+      t: "The smart camera",
+      s: "Going on holiday, you hesitate to install a cheap indoor camera to keep an eye on your pet and your flat.",
+      q: "Does a connected device at home protect… or spy?",
+      a: {
+        l: "I install it",
+        p: ["Peace of mind: you check your home remotely in real time.",
+            "In case of a break-in or incident, the recordings serve as evidence."],
+        c: ["Cheap cameras are regularly hacked: strangers can watch inside your home.",
+            "Footage transits through a foreign cloud, subject to other laws."]
+      },
+      b: {
+        l: "I refuse",
+        p: ["No risk of being spied on at home through a hacked device.",
+            "You avoid dependence on a cloud and a manufacturer you don’t control."],
+        c: ["If something happens, you have neither an alert nor video evidence.",
+            "Your household’s feeling of security is reduced."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "Le détecteur de plagiat",
+      s: "L’école installe un logiciel qui analyse tous les travaux rendus pour détecter plagiat et usage d’IA. L’outil se trompe parfois et accuse à tort des élèves honnêtes.",
+      q: "La surveillance peut-elle être juste si elle se trompe ?",
+      a: {
+        l: "C’est une bonne chose",
+        p: ["L’équité est restaurée : l’effort des honnêtes n’est plus dévalué par la triche.",
+            "La simple dissuasion encourage tout le monde à travailler sérieusement."],
+        c: ["Un outil qui se trompe produit des fausses accusations : qui répare le tort ?",
+            "La surveillance permanente transforme la relation de confiance élèves–école."]
+      },
+      b: {
+        l: "C’est inquiétant",
+        p: ["Les erreurs de détection mettent les élèves en position de prouver leur innocence.",
+            "Analyser tous les textes, c’est instituer une surveillance de masse au gymnase."],
+        c: ["Sans outil, la triche organisée reste impunie et pénalise les élèves honnêtes.",
+            "Les professeurs n’ont pas le temps de tout vérifier à la main."]
+      }
+    },
+    en: {
+      t: "The plagiarism detector",
+      s: "The school installs software that analyses all submitted work to detect plagiarism and AI use. The tool sometimes errs and wrongly accuses honest students.",
+      q: "Can surveillance be fair if it makes mistakes?",
+      a: {
+        l: "It’s a good thing",
+        p: ["Fairness is restored: honest students’ effort is no longer devalued by cheating.",
+            "Deterrence alone encourages everyone to work seriously."],
+        c: ["A tool that errs produces false accusations: who repairs the harm?",
+            "Permanent surveillance transforms the trust relationship between students and school."]
+      },
+      b: {
+        l: "It’s worrying",
+        p: ["Detection errors put students in a position of having to prove their innocence.",
+            "Analysing every text establishes mass surveillance at school."],
+        c: ["Without a tool, organised cheating goes unpunished and penalises honest students.",
+            "Teachers do not have time to check everything by hand."]
+      }
+    }
+  },
+  {
+    fr: {
+      t: "Tout accepter pour lire",
+      s: "Un article qui vous intéresse est masqué par un bandeau de cookies : « Tout accepter » en un seul clic, tandis que le refus demande de traverser plusieurs écrans.",
+      q: "Le consentement vaut-il quelque chose s’il est orienté ?",
+      a: {
+        l: "J’accepte tout",
+        p: ["Un clic, et vous lisez immédiatement l’article qui vous intéresse.",
+            "Les cookies de suivi financent la presse et les services gratuits que vous utilisez."],
+        c: ["Vous acceptez un profilage fin : publicité ciblée, scores, manipulation de vos choix.",
+            "Un consentement obtenu par la facilité n’est pas un vrai consentement."]
+      },
+      b: {
+        l: "Je refuse, quitte à partir",
+        p: ["Vous refusez le profilage et montrez que le consentement doit être éclairé.",
+            "Chercher la même information ailleurs prend deux minutes et vaut le coup."],
+        c: ["Vous renoncez à l’article et perdez du temps à chercher une source équivalente.",
+            "Les sites gratuits vivent de la publicité : tout refuser met ce modèle en danger."]
+      }
+    },
+    en: {
+      t: "Accept all to read",
+      s: "An article you want to read is hidden behind a cookie banner: “Accept all” in one click, while refusing requires navigating several screens.",
+      q: "Is consent worth anything if it is steered?",
+      a: {
+        l: "I accept all",
+        p: ["One click, and you immediately read the article you are interested in.",
+            "Tracking cookies fund the press and the free services you use."],
+        c: ["You accept fine-grained profiling: targeted ads, scores, manipulation of your choices.",
+            "Consent obtained through convenience is not real consent."]
+      },
+      b: {
+        l: "I refuse, even if I leave",
+        p: ["You refuse profiling and show that consent must be informed.",
+            "Finding the same information elsewhere takes two minutes and is worth it."],
+        c: ["You give up the article and lose time looking for an equivalent source.",
+            "Free sites live off advertising: refusing everything puts that model at risk."]
+      }
+    }
+  }
+];
+
+/* ================================================================
+   LOGIQUE — tirage de cartes, révélation, résumé exportable
+   ================================================================ */
+const state = {
+  order: [],      // ordre mélangé des indices de DILEMMAS
+  pos: 0,         // position dans l'ordre
+  picked: null,   // "a" | "b" | null pour la carte courante
+  log: []         // {idx, choice} pour le résumé
+};
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function newGame() {
+  state.order = shuffle(DILEMMAS.map((_, i) => i));
+  state.pos = 0;
+  state.picked = null;
+  state.log = [];
+  render();
+}
+
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function render() {
+  const st = $("stage");
+  st.innerHTML = "";
+  if (state.pos >= state.order.length) { renderSummary(st); return; }
+  renderCard(st);
+}
+
+function renderCard(st) {
+  const t = T();
+  const idx = state.order[state.pos];
+  const d = DILEMMAS[idx][lang];
+  const total = state.order.length;
+
+  const pw = el("div", "progressWrap");
+  const meta = el("div", "progressMeta");
+  meta.innerHTML = "<span>" + esc(t.cardOf(state.pos + 1, total)) + "</span>";
+  const track = el("div", "progressTrack");
+  const fill = el("div", "progressFill");
+  fill.style.width = Math.round((state.pos / total) * 100) + "%";
+  track.appendChild(fill);
+  pw.appendChild(meta); pw.appendChild(track);
+  st.appendChild(pw);
+
+  const card = el("div", "card");
+  card.appendChild(el("div", "cardTitle", esc(d.t)));
+  card.appendChild(el("div", "cardSit", esc(d.s)));
+
+  if (!state.picked) {
+    const row = el("div", "choiceRow");
+    const ba = el("button", null, esc(d.a.l)); ba.type = "button";
+    const bb = el("button", null, esc(d.b.l)); bb.type = "button";
+    ba.onclick = () => pick("a");
+    bb.onclick = () => pick("b");
+    row.appendChild(ba); row.appendChild(bb);
+    card.appendChild(row);
+  } else {
+    const mine = d[state.picked];
+    const verdict = el("div", "verdict", esc(t.youChose) + " « " + esc(mine.l) + " »");
+    card.appendChild(verdict);
+
+    const cols = el("div", "argCols");
+    const forBox = el("div", "argBox argFor");
+    forBox.appendChild(el("h3", null, esc(t.forYour)));
+    const ulF = document.createElement("ul");
+    mine.p.forEach(a => ulF.appendChild(el("li", null, esc(a))));
+    forBox.appendChild(ulF);
+
+    const againstBox = el("div", "argBox argAgainst");
+    againstBox.appendChild(el("h3", null, esc(t.otherSide)));
+    const ulA = document.createElement("ul");
+    mine.c.forEach(a => ulA.appendChild(el("li", null, esc(a))));
+    againstBox.appendChild(ulA);
+
+    cols.appendChild(forBox); cols.appendChild(againstBox);
+    card.appendChild(cols);
+
+    card.appendChild(el("div", "noAnswer", esc(t.noAnswer) + " " + esc(t.questionLine) + " : « " + esc(d.q) + " »"));
+
+    const nextRow = el("div", "nextRow");
+    const nb = el("button", null, esc(state.pos + 1 >= total ? t.seeSummary : t.nextBtn));
+    nb.type = "button";
+    nb.onclick = nextCard;
+    nextRow.appendChild(nb);
+    card.appendChild(nextRow);
+  }
+  st.appendChild(card);
+}
+
+function pick(choice) {
+  if (state.picked) return;
+  state.picked = choice;
+  state.log.push({ idx: state.order[state.pos], choice: choice });
+  render();
+}
+
+function nextCard() {
+  state.pos++;
+  state.picked = null;
+  render();
+}
+
+/* ---------- Résumé ---------- */
+function summaryText() {
+  const t = T();
+  const lines = [];
+  lines.push(t.sumHeader);
+  lines.push("".padEnd(t.sumHeader.length, "="));
+  lines.push("");
+  state.log.forEach((e, i) => {
+    const d = DILEMMAS[e.idx][lang];
+    const mine = d[e.choice];
+    lines.push((i + 1) + ". " + d.t);
+    lines.push("   " + t.sumChoice + " : " + mine.l);
+    lines.push("   " + t.sumFor + " : " + mine.p.join(" / "));
+    lines.push("   " + t.sumAgainst + " : " + mine.c.join(" / "));
+    lines.push("   " + t.questionLine + " : " + d.q);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+function renderSummary(st) {
+  const t = T();
+  const panel = el("div", "sumPanel");
+  panel.appendChild(el("h2", null, esc(t.endTitle)));
+  panel.appendChild(el("div", "sumIntro", esc(t.endIntro)));
+
+  state.log.forEach(e => {
+    const d = DILEMMAS[e.idx][lang];
+    const mine = d[e.choice];
+    const item = el("div", "sumItem");
+    item.appendChild(el("div", "t", esc(d.t)));
+    item.appendChild(el("div", "c", esc(t.yourChoice) + " : <b>" + esc(mine.l) + "</b>"));
+    item.appendChild(el("div", "a", esc(t.sumFor) + " — " + esc(mine.p.join(" · "))));
+    item.appendChild(el("div", "a", esc(t.sumAgainst) + " — " + esc(mine.c.join(" · "))));
+    panel.appendChild(item);
+  });
+
+  const actions = el("div", "sumActions");
+  const cb = el("button", "accentBtn", esc(t.copyBtn)); cb.type = "button";
+  cb.onclick = copySummary;
+  const db = el("button", null, esc(t.dlBtn)); db.type = "button";
+  db.onclick = downloadSummary;
+  const rb = el("button", null, esc(t.againBtn)); rb.type = "button";
+  rb.onclick = newGame;
+  actions.appendChild(cb); actions.appendChild(db); actions.appendChild(rb);
+  panel.appendChild(actions);
+
+  panel.appendChild(el("div", "copyMsg", "", ""));
+  panel.appendChild(el("textarea", "sumText", esc(summaryText())));
+  const ta = panel.lastChild;
+  ta.readOnly = true;
+  ta.setAttribute("aria-label", t.sumHeader);
+
+  st.appendChild(panel);
+}
+
+function copySummary() {
+  const t = T();
+  const msg = document.querySelector(".copyMsg");
+  const done = ok => {
+    if (msg) msg.textContent = ok ? t.copied : t.copyFail;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(summaryText()).then(() => done(true), () => manualCopy(done));
+  } else {
+    manualCopy(done);
+  }
+}
+
+function manualCopy(done) {
+  const ta = document.querySelector(".sumText");
+  if (!ta) { done(false); return; }
+  ta.removeAttribute("readonly");
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.setAttribute("readonly", "readonly");
+  window.getSelection().removeAllRanges();
+  done(ok);
+}
+
+function downloadSummary() {
+  const blob = new Blob([summaryText()], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = lang === "fr" ? "dilemmes_du_numerique_resume.txt" : "digital_dilemmas_summary.txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ================================================================
+   LANGUE + PLEIN ÉCRAN (gabarit)
+   ================================================================ */
+let lang = (function () {
+  try {
+    var c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);
+    if (c && (c[1] === "fr" || c[1] === "en")) return c[1];
+  } catch (e) {}
+  try {
+    var s = localStorage.getItem("fj-lang");
+    if (s === "fr" || s === "en") return s;
+  } catch (e) {}
+  return "fr";
+})();
+const T = () => I18N[lang];
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  render(); // contenu dynamique régénéré
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const eldoc = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = eldoc.requestFullscreen || eldoc.webkitRequestFullscreen;
+    if (req) { const r = req.call(eldoc); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+newGame();
+</script>
+</body>
+</html>

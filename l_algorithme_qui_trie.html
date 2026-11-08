@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Un algorithme fictif trie des CV de façon discriminatoire : inspectez les données, retirez des variables, rééquilibrez l'échantillon et mesurez l'équité.">
+<title>L'algorithme qui trie · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1200px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);color:var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.panel h2{font-size:17px;color:var(--primary);margin-bottom:8px}
+.note{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+.twrap{overflow-x:auto;max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:var(--bg)}
+th{position:sticky;top:0;background:var(--primaryLight);color:var(--primary);text-align:left;padding:7px 8px;font-size:13px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);white-space:nowrap}
+tr.added td{background:var(--accentLight)}
+.chip{display:inline-block;padding:1px 9px;border-radius:999px;font-weight:700;font-size:12.5px}
+.chipA{background:var(--primaryLight);color:var(--primary)}
+.chipB{background:var(--accentLight);color:var(--accent)}
+.yes{color:var(--primary);font-weight:700}
+.no{color:var(--error);font-weight:700}
+.badge{font-size:11px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:0 5px;margin-left:6px}
+.count{font-size:13.5px;color:var(--muted);margin-top:8px}
+.srow{display:grid;grid-template-columns:minmax(170px,auto) 1fr 34px;align-items:center;gap:10px;margin-bottom:12px}
+.srow label{font-size:14.5px}
+.srow .val{font-weight:700;color:var(--accent);text-align:right}
+input[type=range]{accent-color:var(--accent);width:100%;height:28px}
+input[type=checkbox]{accent-color:var(--primary);width:20px;height:20px;flex:none}
+.vrow{display:grid;grid-template-columns:auto minmax(150px,1fr) 130px 52px;align-items:center;gap:10px;min-height:44px;padding:3px 0;border-top:1px solid var(--line)}
+.vrow:first-of-type{border-top:none}
+.vrow label{font-size:14.5px;cursor:pointer}
+.wbar{position:relative;height:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.wbar::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--muted)}
+.wfill{position:absolute;top:1px;bottom:1px;border-radius:5px}
+.wval{font-size:13.5px;font-weight:700;text-align:right}
+details{margin-top:10px;font-size:13.5px;color:var(--muted)}
+summary{cursor:pointer;font-weight:700;color:var(--primary);padding:6px 0}
+.mrow{display:grid;grid-template-columns:96px 1fr 46px;align-items:center;gap:10px;margin-bottom:8px}
+.mbar{height:16px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mfill{height:100%;border-radius:8px}
+.mA{background:var(--primary)}
+.mB{background:var(--accent)}
+.mval{font-weight:700;text-align:right;font-size:14px}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.kpi{flex:1;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;text-align:center}
+.kpi .big{font-size:22px;font-weight:700;color:var(--primary)}
+.kpi .lbl{font-size:12.5px;color:var(--muted)}
+.stchip{display:inline-block;margin-top:4px;padding:1px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.ok{background:var(--primaryLight);color:var(--primary)}
+.bad{background:var(--accentLight);color:var(--error)}
+.objline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;margin-top:4px}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 10px}
+.dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--line);background:var(--bg)}
+.dot.in{background:var(--primary);border-color:var(--primary)}
+.drow{display:grid;grid-template-columns:80px 1fr;align-items:center;gap:8px}
+.drow .g{font-weight:700;font-size:14px}
+.legend{font-size:12.5px;color:var(--muted);margin-top:2px}
+.success{display:none;margin-top:12px;border:2px solid var(--primary);background:var(--primaryLight);border-radius:12px;padding:12px 16px}
+.success h3{color:var(--primary);font-size:16px;margin-bottom:4px}
+.success p{font-size:14px}
+#resetBtn{margin-top:4px}
+.panel.locked{opacity:.55}
+input[type=range]:disabled{opacity:.4;cursor:not-allowed}
+input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
+input[type=checkbox]:disabled+label{opacity:.55;cursor:not-allowed}
+.instruction strong{color:var(--accent)}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .srow{grid-template-columns:1fr 34px}
+  .srow label{grid-column:1/-1}
+  input[type=range]{height:44px}
+  .vrow{grid-template-columns:auto 1fr;grid-template-rows:auto auto}
+  .wbar{grid-column:2}
+  .wval{grid-column:2;text-align:left}
+  th,td{padding:6px 6px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction"><strong id="stageTag"></strong> <span id="instruction"></span></div>
+
+<div class="grid">
+  <div class="col">
+    <section class="panel" aria-labelledby="hData">
+      <h2 id="hData"></h2>
+      <p class="note" id="dataNote"></p>
+      <div class="twrap">
+        <table id="cvTable"></table>
+      </div>
+      <p class="count" id="sampleCount"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="hBal">
+      <h2 id="hBal"></h2>
+      <p class="note" id="balNote"></p>
+      <div class="srow">
+        <label for="slB" id="slBLabel"></label>
+        <input type="range" id="slB" min="0" max="5" step="1" value="0">
+        <span class="val" id="slBVal">0</span>
+      </div>
+      <div class="srow">
+        <label for="slA" id="slALabel"></label>
+        <input type="range" id="slA" min="0" max="5" step="1" value="0">
+        <span class="val" id="slAVal">0</span>
+      </div>
+      <button id="resetBtn" type="button"></button>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel" aria-labelledby="hVars">
+      <h2 id="hVars"></h2>
+      <p class="note" id="varsNote"></p>
+      <div id="varList"></div>
+      <details>
+        <summary id="howTitle"></summary>
+        <p id="howText" style="margin-top:6px"></p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="hRes">
+      <h2 id="hRes"></h2>
+      <p class="note" id="resNote"></p>
+      <div class="mrow">
+        <span class="g" id="lblA"></span>
+        <div class="mbar"><div class="mfill mA" id="barA" style="width:0%"></div></div>
+        <span class="mval" id="valA">–</span>
+      </div>
+      <div class="mrow">
+        <span class="g" id="lblB"></span>
+        <div class="mbar"><div class="mfill mB" id="barB" style="width:0%"></div></div>
+        <span class="mval" id="valB">–</span>
+      </div>
+      <div class="drow" style="margin-top:6px"><span class="g" id="dotLblA"></span><div class="dots" id="dotsA"></div></div>
+      <div class="drow"><span class="g" id="dotLblB"></span><div class="dots" id="dotsB"></div></div>
+      <p class="legend" id="dotsLegend"></p>
+      <div class="kpis">
+        <div class="kpi">
+          <div class="big" id="kpiGap">–</div>
+          <div class="lbl" id="kpiGapLbl"></div><br>
+          <span class="stchip" id="gapChip"></span>
+        </div>
+        <div class="kpi">
+          <div class="big" id="kpiPert">–</div>
+          <div class="lbl" id="kpiPertLbl"></div><br>
+          <span class="stchip" id="pertChip"></span>
+        </div>
+      </div>
+      <div class="objline">
+        <span id="objText" style="font-weight:700"></span>
+        <span class="stchip" id="objGapChip"></span>
+        <span class="stchip" id="objPertChip"></span>
+      </div>
+      <div class="success" id="successBox">
+        <h3 id="successTitle"></h3>
+        <p id="takeaway"></p>
+        <button id="nextBtn" type="button" style="display:none;margin-top:10px;background:var(--accent);border-color:var(--accent);color:#fff"></button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- Données (fixes, vérifiées par le calcul) ---------- */
+/* CV : [groupe 0=A/1=B, diplôme 0..2, expérience 0..8, test 0..10, quartier 0=Nord/1=Sud, club 0=robotique/1=théâtre, (embauché)] */
+const BASE = [[0,2,6,9,0,0,1],[0,2,5,8,0,0,1],[0,1,7,8,0,1,1],[0,2,4,7,1,0,1],[0,1,6,7,0,0,1],[0,2,3,8,0,0,1],[0,1,5,6,0,1,1],[0,0,8,7,0,0,1],[0,2,2,9,1,1,1],[0,1,4,6,0,0,1],[0,0,2,4,0,1,0],[0,1,1,3,1,0,0],[0,0,3,5,0,0,0],[0,1,2,4,0,1,0],[1,2,7,10,1,1,1],[1,2,6,9,1,1,1],[1,2,5,9,0,1,1],[1,2,5,8,1,1,0],[1,1,6,8,1,1,0],[1,2,4,7,1,0,0],[1,1,5,7,0,1,0],[1,1,4,6,1,1,0],[1,0,3,5,1,1,0],[1,0,2,4,1,1,0]];
+const ADDB = [[1,2,6,8,1,1,1],[1,1,6,8,1,1,1],[1,2,4,8,1,0,1],[1,1,5,7,0,1,1],[1,2,5,7,1,1,1],[1,1,7,7,1,1,1],[1,2,3,8,0,1,1],[1,1,4,7,1,0,1]];
+const ADDA = [[0,2,5,8,0,0,0],[0,1,6,8,0,1,0],[0,2,4,7,1,0,0],[0,1,5,7,0,0,0],[0,2,6,7,0,0,0],[0,1,4,7,0,1,0],[0,2,3,8,0,0,0],[0,1,7,6,1,1,0]];
+const VAL = [[0,1,1,10,0,1],[1,1,1,10,1,1],[0,1,3,9,0,0],[1,1,3,9,1,1],[0,1,3,3,0,0],[1,1,3,3,1,1],[0,2,2,6,0,0],[1,2,2,6,1,0],[0,2,4,8,0,0],[1,2,4,8,1,1],[0,1,6,7,0,0],[1,1,6,7,1,1],[0,1,6,9,0,0],[1,1,6,9,1,1],[0,2,4,9,0,0],[1,2,4,9,1,1],[0,0,4,5,0,0],[1,0,4,5,1,0],[0,1,3,10,0,0],[1,1,3,10,1,1],[0,1,5,8,0,0],[1,1,5,8,1,0],[0,1,8,5,0,0],[1,1,8,5,1,0],[0,2,3,6,0,0],[1,2,3,6,0,1],[0,1,2,3,0,0],[1,1,2,3,1,0],[0,1,4,3,0,0],[1,1,4,3,1,0],[0,2,5,6,0,0],[1,2,5,6,1,1],[0,1,3,10,0,0],[1,1,3,10,1,0],[0,2,8,3,1,0],[1,2,8,3,0,1],[0,2,3,4,0,0],[1,2,3,4,1,0],[0,1,1,3,0,0],[1,1,1,3,1,1]];
+const VARS = ["grp","dip","exp","tst","qrt","clb"];
+const RANGE = {grp:1, dip:2, exp:8, tst:10, qrt:1, clb:1};
+
+/* ---------- I18N ---------- */
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "L’algorithme qui trie",
+    stage1tag: "Étape 1 sur 2 — Réparez les données.",
+    instruction1: "L’entreprise fictive DataTri laisse un algorithme trier 40 CV : les 20 meilleurs scores sont convoqués. Mais il a appris sur d’anciennes décisions humaines biaisées… Rééquilibrez l’échantillon pour rendre le tri équitable. Objectif : écart ≤ 10 points et pertinence ≥ 80 %.",
+    stage2tag: "Étape 2 sur 2 — Réparez le modèle.",
+    instruction2: "Nouveau départ, mêmes données biaisées. Cette fois l’échantillon est figé : choisissez les variables que l’algorithme a le droit d’utiliser. Objectif identique : écart ≤ 10 points et pertinence ≥ 80 %.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    hData: "Les données d’entraînement",
+    dataNote: "24 anciens CV avec la décision prise à l’époque. Cherchez le motif…",
+    hBal: "Rééquilibrer l’échantillon",
+    balNote: "Ajoutez des contre-exemples à l’historique : des profils que l’entreprise aurait dû traiter autrement.",
+    lockedSliders: "Verrouillé : à cette étape, les données ne changent plus.",
+    hVars: "Les variables du modèle",
+    varsNote: "Cochez les variables utilisées. Certaines semblent neutres mais trahissent indirectement le groupe : ce sont des « proxies ». La barre montre le poids appris (variable ramenée de 0 à 1) : à droite il favorise, à gauche il pénalise.",
+    lockedVars: "Les cases sont verrouillées pour l’instant : observez les poids appris ci-dessous — vous pourrez les modifier à l’étape 2.",
+    hRes: "Les résultats sur 40 nouveaux CV",
+    resNote: "Les 20 meilleurs scores sont convoqués (20 CV du groupe A, 20 du groupe B). La pertinence mesure la part des profils réellement les plus compétents (diplôme, expérience, test) parmi les convoqués.",
+    howTitle: "Comment l’algorithme apprend-il ?",
+    howText: "Pour chaque variable cochée (ramenée entre 0 et 1), il calcule : poids = moyenne chez les embauché·e·s − moyenne chez les refusé·e·s. Le score d’un CV est la somme des poids multipliés par les valeurs. Rien de magique : il reproduit ce que les données lui montrent.",
+    th: ["#", "Groupe", "Diplôme", "Exp.", "Test", "Quartier", "Club", "Décision"],
+    groupA: "Groupe A", groupB: "Groupe B",
+    hired: "embauché·e", rejected: "refusé·e",
+    north: "Nord", south: "Sud", robotics: "robotique", drama: "théâtre",
+    addedBadge: "ajouté",
+    sampleCount: (n, a) => `Échantillon : ${n} CV (dont ${a} ajoutés)`,
+    slB: "Profils B embauchés ajoutés",
+    slA: "Profils A refusés ajoutés",
+    reset: "Réinitialiser",
+    vname: {grp: "Groupe (A/B)", dip: "Diplôme (0–2)", exp: "Expérience (0–8 ans)", tst: "Test (0–10)", qrt: "Quartier (Nord/Sud)", clb: "Club (robotique/théâtre)"},
+    noVar: "Cochez au moins une variable pour que l’algorithme puisse noter les CV.",
+    invitedLegend: "● convoqué·e   ○ non convoqué·e",
+    gapLbl: "Écart entre les groupes",
+    gapPts: n => `${fmtInt(n)} point${n > 1 ? "s" : ""}`,
+    pertLbl: "Pertinence (bons profils retenus)",
+    fair: "Équitable", unfair: "Discriminatoire",
+    pertOk: "≥ 80 % : objectif atteint", pertKo: "< 80 % : trop de bons profils perdus",
+    objText: "Objectif :",
+    objGap: "écart ≤ 10 points", objPert: "pertinence ≥ 80 %",
+    successTitle1: "Étape 1 réussie — le tri est devenu équitable !",
+    takeaway1: "Un historique biaisé produit un algorithme biaisé : vous l’avez corrigé par les données. À l’étape 2, l’échantillon sera figé — il faudra agir sur les variables.",
+    nextStage: "Passer à l’étape 2",
+    successTitle2: "Étape 2 réussie — l’algorithme est équitable et pertinent !",
+    takeaway2: "À retenir : un algorithme n’est pas neutre, il reproduit les biais de ses données d’entraînement. Retirer la variable sensible ne suffit pas si des proxies la trahissent ; il faut des variables légitimes et des données représentatives."
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "The sorting algorithm",
+    stage1tag: "Step 1 of 2 — Fix the data.",
+    instruction1: "The fictional company DataTri lets an algorithm screen 40 CVs: the 20 best scores get an interview. But it learned from biased past human decisions… Rebalance the sample to make the screening fair. Goal: gap ≤ 10 points and relevance ≥ 80%.",
+    stage2tag: "Step 2 of 2 — Fix the model.",
+    instruction2: "Fresh start, same biased data. This time the sample is frozen: choose which variables the algorithm may use. Same goal: gap ≤ 10 points and relevance ≥ 80%.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    hData: "Training data",
+    dataNote: "24 past CVs with the decision made back then. Look for the pattern…",
+    hBal: "Rebalance the sample",
+    balNote: "Add counter-examples to the records: profiles the company should have treated differently.",
+    lockedSliders: "Locked: at this step, the data no longer changes.",
+    hVars: "Model variables",
+    varsNote: "Tick the variables to use. Some look neutral but indirectly betray the group: they are called “proxies”. The bar shows the learned weight (variable scaled to 0–1): right favours, left penalises.",
+    lockedVars: "The boxes are locked for now: observe the learned weights below — you can change them in step 2.",
+    hRes: "Results on 40 new CVs",
+    resNote: "The 20 best scores get an interview (20 CVs from group A, 20 from group B). Relevance measures the share of the truly most qualified profiles (degree, experience, test) among those invited.",
+    howTitle: "How does the algorithm learn?",
+    howText: "For each ticked variable (scaled to 0–1), it computes: weight = mean among hired − mean among rejected. A CV’s score is the sum of weights times values. No magic: it reproduces whatever the data shows.",
+    th: ["#", "Group", "Degree", "Exp.", "Test", "District", "Club", "Decision"],
+    groupA: "Group A", groupB: "Group B",
+    hired: "hired", rejected: "rejected",
+    north: "North", south: "South", robotics: "robotics", drama: "drama",
+    addedBadge: "added",
+    sampleCount: (n, a) => `Sample: ${n} CVs (${a} added)`,
+    slB: "Added hired B profiles",
+    slA: "Added rejected A profiles",
+    reset: "Reset",
+    vname: {grp: "Group (A/B)", dip: "Degree (0–2)", exp: "Experience (0–8 yrs)", tst: "Test (0–10)", qrt: "District (North/South)", clb: "Club (robotics/drama)"},
+    noVar: "Tick at least one variable so the algorithm can score CVs.",
+    invitedLegend: "● invited   ○ not invited",
+    gapLbl: "Gap between groups",
+    gapPts: n => `${fmtInt(n)} point${n > 1 ? "s" : ""}`,
+    pertLbl: "Relevance (right profiles selected)",
+    fair: "Fair", unfair: "Discriminatory",
+    pertOk: "≥ 80%: goal reached", pertKo: "< 80%: too many good profiles lost",
+    objText: "Goal:",
+    objGap: "gap ≤ 10 points", objPert: "relevance ≥ 80%",
+    successTitle1: "Step 1 complete — the screening is now fair!",
+    takeaway1: "A biased history produces a biased algorithm: you fixed it through the data. In step 2, the sample will be frozen — you will have to act on the variables.",
+    nextStage: "Go to step 2",
+    successTitle2: "Step 2 complete — the algorithm is fair and relevant!",
+    takeaway2: "Remember: an algorithm is not neutral, it reproduces the biases of its training data. Removing the sensitive variable is not enough if proxies betray it; you need legitimate variables and representative data."
+  }
+};
+let lang = (function () {
+  try {
+    var c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);
+    if (c && (c[1] === "fr" || c[1] === "en")) return c[1];
+  } catch (e) {}
+  try {
+    var s = localStorage.getItem("fj-lang");
+    if (s === "fr" || s === "en") return s;
+  } catch (e) {}
+  return "fr";
+})();
+const T = () => I18N[lang];
+function fmtInt(n) { return String(n); }
+function fmtW(x) {
+  let s = (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(2);
+  return lang === "fr" ? s.replace(".", ",") : s;
+}
+
+/* ---------- État ---------- */
+let stage = 1;
+let active = {grp:true, dip:true, exp:true, tst:true, qrt:true, clb:true};
+let nB = 0, nA = 0;
+
+/* ---------- Modèle : poids = moyenne(embauchés) − moyenne(refusés), variables normalisées ---------- */
+function trainSet() {
+  const t = BASE.map(c => ({c:c, added:false}));
+  for (let i = 0; i < nB; i++) t.push({c:ADDB[i], added:true});
+  for (let i = 0; i < nA; i++) t.push({c:ADDA[i], added:true});
+  return t;
+}
+function learn(train) {
+  const idx = {grp:0, dip:1, exp:2, tst:3, qrt:4, clb:5};
+  const hired = train.filter(r => r.c[6] === 1), refused = train.filter(r => r.c[6] === 0);
+  const w = {};
+  for (const v of VARS) {
+    if (!active[v]) continue;
+    const i = idx[v];
+    const mh = hired.reduce((s, r) => s + r.c[i], 0) / hired.length;
+    const mr = refused.reduce((s, r) => s + r.c[i], 0) / refused.length;
+    w[v] = mh - mr;
+  }
+  return w;
+}
+const qual = cv => 2 * cv[1] + cv[2] + cv[3];
+const trueTop = new Set(
+  VAL.map((cv, i) => ({q:-qual(cv), i})).sort((a, b) => (a.q - b.q) || (a.i - b.i)).slice(0, 20).map(o => o.i)
+);
+function evaluate() {
+  const train = trainSet();
+  const w = learn(train);
+  const idx = {grp:0, dip:1, exp:2, tst:3, qrt:4, clb:5};
+  const act = VARS.filter(v => active[v]);
+  const scored = VAL.map((cv, i) => ({
+    s: act.reduce((sum, v) => sum + w[v] * cv[idx[v]] / RANGE[v], 0), i
+  })).sort((a, b) => (b.s - a.s) || (a.i - b.i));
+  const acc = scored.slice(0, 20).map(o => o.i);
+  const accSet = new Set(acc);
+  const nAccA = acc.filter(i => VAL[i][0] === 0).length;
+  const tauxA = 5 * nAccA, tauxB = 5 * (20 - nAccA);
+  const gap = Math.abs(tauxA - tauxB);
+  let hit = 0;
+  for (const i of acc) if (trueTop.has(i)) hit++;
+  const pert = Math.round(100 * hit / 20);
+  return {train, w, act, accSet, tauxA, tauxB, gap, pert};
+}
+
+/* ---------- Rendu ---------- */
+function renderTable(train) {
+  const t = T();
+  let html = "<thead><tr>" + t.th.map(h => `<th>${h}</th>`).join("") + "</tr></thead><tbody>";
+  train.forEach((r, k) => {
+    const c = r.c;
+    const g = c[0] === 0
+      ? `<span class="chip chipA">${t.groupA}</span>`
+      : `<span class="chip chipB">${t.groupB}</span>`;
+    const dec = c[6] === 1
+      ? `<span class="yes">✓ ${t.hired}</span>`
+      : `<span class="no">✗ ${t.rejected}</span>`;
+    const q = c[4] === 0 ? t.north : t.south;
+    const cl = c[5] === 0 ? t.robotics : t.drama;
+    const bd = r.added ? `<span class="badge">+ ${t.addedBadge}</span>` : "";
+    html += `<tr class="${r.added ? "added" : ""}"><td>${k + 1}${bd}</td><td>${g}</td><td>${c[1]}</td><td>${c[2]}</td><td>${c[3]}</td><td>${q}</td><td>${cl}</td><td>${dec}</td></tr>`;
+  });
+  $("cvTable").innerHTML = html + "</tbody>";
+  $("sampleCount").textContent = t.sampleCount(train.length, nB + nA);
+}
+function renderVars(w, act) {
+  const t = T();
+  const list = $("varList");
+  list.innerHTML = "";
+  if (act.length === 0) {
+    const p = document.createElement("p");
+    p.className = "note";
+    p.style.color = "var(--error)";
+    p.textContent = t.noVar;
+    list.appendChild(p);
+  }
+  const maxAbs = Math.max(0.01, ...act.map(v => Math.abs(w[v])));
+  for (const v of VARS) {
+    const row = document.createElement("div");
+    row.className = "vrow";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "cb_" + v;
+    cb.checked = active[v];
+    cb.disabled = (stage === 1);
+    cb.setAttribute("aria-label", t.vname[v]);
+    cb.onchange = () => { active[v] = cb.checked; render(); };
+    const lb = document.createElement("label");
+    lb.htmlFor = "cb_" + v;
+    lb.textContent = t.vname[v];
+    const bar = document.createElement("div");
+    bar.className = "wbar";
+    const val = document.createElement("span");
+    val.className = "wval";
+    if (active[v]) {
+      const wv = w[v];
+      const pct = Math.abs(wv) / maxAbs * 50;
+      const fill = document.createElement("div");
+      fill.className = "wfill";
+      fill.style.background = wv >= 0 ? "var(--primary)" : "var(--error)";
+      if (wv >= 0) { fill.style.left = "50%"; fill.style.width = pct + "%"; }
+      else { fill.style.width = pct + "%"; fill.style.left = (50 - pct) + "%"; }
+      bar.appendChild(fill);
+      val.textContent = fmtW(wv);
+      val.style.color = wv >= 0 ? "var(--primary)" : "var(--error)";
+    } else {
+      val.textContent = "–";
+      val.style.color = "var(--muted)";
+      bar.style.opacity = ".45";
+    }
+    row.append(cb, lb, bar, val);
+    list.appendChild(row);
+  }
+}
+function renderResults(r) {
+  const t = T();
+  $("barA").style.width = r.tauxA + "%";
+  $("barB").style.width = r.tauxB + "%";
+  $("valA").textContent = r.tauxA + " %";
+  $("valB").textContent = r.tauxB + " %";
+  const mk = (elId, group) => {
+    const box = $(elId);
+    box.innerHTML = "";
+    VAL.forEach((cv, i) => {
+      if (cv[0] !== group) return;
+      const d = document.createElement("span");
+      d.className = "dot" + (r.accSet.has(i) ? " in" : "");
+      box.appendChild(d);
+    });
+  };
+  mk("dotsA", 0);
+  mk("dotsB", 1);
+  $("kpiGap").textContent = t.gapPts(r.gap);
+  const gapOk = r.gap <= 10;
+  $("gapChip").textContent = gapOk ? t.fair : t.unfair;
+  $("gapChip").className = "stchip " + (gapOk ? "ok" : "bad");
+  $("kpiGap").style.color = gapOk ? "var(--primary)" : "var(--error)";
+  $("kpiPert").textContent = r.pert + " %";
+  const pertOk = r.pert >= 80;
+  $("pertChip").textContent = pertOk ? t.pertOk : t.pertKo;
+  $("pertChip").className = "stchip " + (pertOk ? "ok" : "bad");
+  $("kpiPert").style.color = pertOk ? "var(--primary)" : "var(--error)";
+  $("objGapChip").textContent = (gapOk ? "✓ " : "✗ ") + t.objGap;
+  $("objGapChip").className = "stchip " + (gapOk ? "ok" : "bad");
+  $("objPertChip").textContent = (pertOk ? "✓ " : "✗ ") + t.objPert;
+  $("objPertChip").className = "stchip " + (pertOk ? "ok" : "bad");
+  const win = gapOk && pertOk;
+  $("successBox").style.display = win ? "block" : "none";
+  $("successTitle").textContent = stage === 1 ? t.successTitle1 : t.successTitle2;
+  $("takeaway").textContent = stage === 1 ? t.takeaway1 : t.takeaway2;
+  $("nextBtn").style.display = (win && stage === 1) ? "inline-block" : "none";
+}
+function render() {
+  const r = evaluate();
+  renderTable(r.train);
+  renderVars(r.w, r.act);
+  renderResults(r);
+}
+function syncStage() {
+  $("slB").disabled = (stage === 2);
+  $("slA").disabled = (stage === 2);
+  $("slB").closest(".panel").classList.toggle("locked", stage === 2);
+  $("varList").closest(".panel").classList.toggle("locked", stage === 1);
+  $("balNote").textContent = stage === 2 ? T().lockedSliders : T().balNote;
+  $("varsNote").textContent = stage === 1 ? T().lockedVars : T().varsNote;
+}
+function resetStage() {
+  nB = 0; nA = 0;
+  $("slB").value = 0; $("slA").value = 0;
+  $("slBVal").textContent = "0"; $("slAVal").textContent = "0";
+  active = {grp:true, dip:true, exp:true, tst:true, qrt:true, clb:true};
+}
+
+/* ---------- Langue ---------- */
+function applyLang() {
+  const t = T();
+  document.documentElement.lang = lang;
+  $("kicker").textContent = t.kicker;
+  $("title").textContent = t.title;
+  $("stageTag").textContent = stage === 1 ? t.stage1tag : t.stage2tag;
+  $("instruction").textContent = stage === 1 ? t.instruction1 : t.instruction2;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? t.fsExit : t.fs;
+  $("backLink").textContent = t.backList;
+  document.title = t.title + " · Gymnase — Frédéric Jaccard";
+  $("hData").textContent = t.hData;
+  $("dataNote").textContent = t.dataNote;
+  $("hBal").textContent = t.hBal;
+  $("hVars").textContent = t.hVars;
+  $("hRes").textContent = t.hRes;
+  $("resNote").textContent = t.resNote;
+  $("howTitle").textContent = t.howTitle;
+  $("howText").textContent = t.howText;
+  $("slBLabel").textContent = t.slB;
+  $("slALabel").textContent = t.slA;
+  $("resetBtn").textContent = t.reset;
+  $("lblA").textContent = t.groupA;
+  $("lblB").textContent = t.groupB;
+  $("dotLblA").textContent = t.groupA;
+  $("dotLblB").textContent = t.groupB;
+  $("dotsLegend").textContent = t.invitedLegend;
+  $("kpiGapLbl").textContent = t.gapLbl;
+  $("kpiPertLbl").textContent = t.pertLbl;
+  $("objText").textContent = t.objText;
+  $("nextBtn").textContent = t.nextStage;
+  syncStage();
+  render();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+
+/* ---------- Plein écran (compatible Safari) ---------- */
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+/* ---------- Contrôles ---------- */
+$("slB").oninput = () => { nB = +$("slB").value; $("slBVal").textContent = $("slB").value; render(); };
+$("slA").oninput = () => { nA = +$("slA").value; $("slAVal").textContent = $("slA").value; render(); };
+$("resetBtn").onclick = () => {
+  resetStage();
+  render();
+};
+$("nextBtn").onclick = () => {
+  stage = 2;
+  resetStage();
+  applyLang();
+  window.scrollTo({top: 0, behavior: "smooth"});
+};
+
+applyLang();
+</script>
+</body>
+</html>

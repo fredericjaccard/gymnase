@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Simulez une journée ordinaire en ligne et découvrez le profil publicitaire assemblé à partir de vos traces — puis vérifiez s'il vous ressemble.">
+<title>Le profil à rebours · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:980px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+h2{font-size:19px;color:var(--primary);margin:18px 0 8px}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+footer{margin-top:20px;text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* progression de la journée */
+.progress{display:flex;gap:6px;margin-bottom:16px}
+.pstep{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+.dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);background:var(--card);margin:0 auto 4px}
+.dot.done{background:var(--primary);border-color:var(--primary)}
+.dot.now{border-color:var(--accent);background:var(--accentLight)}
+
+/* moment de la journée */
+.moment{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.momentHead{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.mtime{font-weight:700;color:var(--accent);font-size:15px}
+.mq{font-size:17px;font-weight:700}
+.choices{display:grid;gap:10px;margin-top:12px}
+.choice{text-align:left;font-weight:400;font-size:15px;padding:12px 14px;min-height:44px;line-height:1.35}
+.choice:hover{border-color:var(--accent)}
+
+/* journal du traceur */
+.traces{background:var(--card);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted)}
+.traces b{color:var(--ink)}
+.traces ul{list-style:none;margin-top:8px}
+.traces li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.traces li:last-child{border-bottom:none}
+
+/* profil révélé */
+.profileGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
+.pcard{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px}
+.pcard h3{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px;font-weight:700}
+.pval{font-size:20px;font-weight:700;color:var(--primary)}
+.conf{font-size:13px;color:var(--muted);margin-top:4px}
+.barTrack{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+.barFill{height:100%;background:var(--accent);border-radius:99px}
+.intRow{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:14px}
+.intRow .nm{width:130px;flex:none}
+.intRow .tr{flex:1;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.intRow .fl{height:100%;background:var(--primary);border-radius:99px}
+.note{background:var(--accentLight);border:2px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:14px;margin:12px 0}
+
+/* quiz réalité */
+.qa{margin:14px 0}
+.qaLabel{font-weight:700;margin-bottom:8px}
+.optRow{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font-weight:400;min-height:44px}
+.opt.selected{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btnAccent{background:var(--accent);border-color:var(--accent);color:#fff;min-height:44px;font-size:15px}
+.btnAccent:hover{background:var(--accent);filter:brightness(1.06)}
+.btnAccent:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.center{text-align:center;margin:18px 0}
+
+/* résultats */
+.resultRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;margin:8px 0;font-size:14px;flex-wrap:wrap}
+.resultRow.ok{background:var(--primaryLight);border:2px solid var(--primary)}
+.resultRow.ko{background:var(--accentLight);border:2px solid var(--error)}
+.badge{font-weight:700;white-space:nowrap}
+.ok .badge{color:var(--primary)}
+.ko .badge{color:var(--error)}
+.verdict{font-size:16px;font-weight:700;color:var(--primary);margin:14px 0 4px}
+.takeaway{background:var(--primaryLight);border-radius:12px;padding:14px 16px;margin-top:14px}
+.takeaway h3{color:var(--primary);margin-bottom:8px}
+.takeaway ul{padding-left:20px}
+.takeaway li{margin:6px 0;font-size:14px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fade{animation:fadeIn .45s ease}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .pstep{font-size:9px}
+  .intRow .nm{width:104px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<main id="app"></main>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+const AGE_KEYS = ["ado","jeune","adulte","senior"];
+const INC_KEYS = ["modeste","moyen","confortable"];
+const INT_KEYS = ["sport","musique","tech","jeux","cuisine","mode","lecture","voyage"];
+
+const MOMENTS = [
+  { time:"07:04", emoji:"⏰",
+    q:{fr:"Premier geste sur votre téléphone au réveil ?", en:"First thing on your phone after waking up?"},
+    choices:[
+      { label:{fr:"Vous ouvrez les réseaux sociaux pour rattraper les notifications", en:"You open social media to catch up on notifications"},
+        trace:{fr:"appli sociale ouverte dès le réveil — heure et appareil enregistrés", en:"social app opened at wake-up — time and device logged"},
+        sig:{age:{ado:2,jeune:1}, inc:{}, int:{}} },
+      { label:{fr:"Vous cherchez la météo et l'état du trafic", en:"You check the weather and the traffic"},
+        trace:{fr:"recherche « météo + trafic » — position approximative déduite", en:"“weather + traffic” search — rough location inferred"},
+        sig:{age:{adulte:2,senior:1}, inc:{}, int:{}} },
+      { label:{fr:"Vous lancez une vidéo de gaming", en:"You start a gaming video"},
+        trace:{fr:"vidéo de jeu regardée — sujet et durée enregistrés", en:"gaming video watched — topic and watch time logged"},
+        sig:{age:{ado:2,jeune:1}, inc:{}, int:{jeux:2}} }
+    ]},
+  { time:"07:42", emoji:"🚌",
+    q:{fr:"Comment rejoignez-vous votre destination ?", en:"How do you get to your destination?"},
+    choices:[
+      { label:{fr:"Transports publics, billet acheté sur l'appli", en:"Public transport, ticket bought in the app"},
+        trace:{fr:"billet de transport acheté — itinéraire GPS suivi", en:"transit ticket bought — GPS route tracked"},
+        sig:{age:{ado:1,jeune:1}, inc:{modeste:1,moyen:1}, int:{voyage:1}} },
+      { label:{fr:"Voiture — vous comparez les prix de l'essence", en:"Car — you compare fuel prices"},
+        trace:{fr:"recherche « essence la moins chère » — trajet suivi", en:"“cheapest fuel” search — commute tracked"},
+        sig:{age:{adulte:2}, inc:{modeste:1,moyen:1}, int:{}} },
+      { label:{fr:"Vélo, avec l'appli de suivi d'activité", en:"Bike, with a fitness tracking app"},
+        trace:{fr:"activité physique enregistrée — parcours et rythme", en:"workout logged — route and pace recorded"},
+        sig:{age:{jeune:1,adulte:1}, inc:{moyen:1,confortable:1}, int:{sport:2}} }
+    ]},
+  { time:"08:10", emoji:"🎧",
+    q:{fr:"Que passez-vous dans vos écouteurs ?", en:"What's playing in your headphones?"},
+    choices:[
+      { label:{fr:"Une playlist rap / hip-hop", en:"A rap / hip-hop playlist"},
+        trace:{fr:"playlist rap écoutée — préférences musicales enregistrées", en:"rap playlist played — music taste logged"},
+        sig:{age:{ado:2,jeune:1}, inc:{}, int:{musique:2}} },
+      { label:{fr:"Un podcast d'actualité économique", en:"A business news podcast"},
+        trace:{fr:"podcast économique — sujets suivis enregistrés", en:"business podcast — followed topics logged"},
+        sig:{age:{adulte:2,senior:1}, inc:{confortable:1}, int:{lecture:1}} },
+      { label:{fr:"De la musique lo-fi pour réviser", en:"Lo-fi music to study"},
+        trace:{fr:"musique lo-fi — session de révision repérée", en:"lo-fi music — study session detected"},
+        sig:{age:{ado:1,jeune:2}, inc:{modeste:1}, int:{musique:1}} }
+    ]},
+  { time:"12:15", emoji:"🍽️",
+    q:{fr:"Que cherchez-vous pour le déjeuner ?", en:"What do you search for lunch?"},
+    choices:[
+      { label:{fr:"« menu étudiant pas cher »", en:"“cheap student meal”"},
+        trace:{fr:"recherche « menu pas cher » — restaurants proches listés", en:"“cheap meal” search — nearby restaurants listed"},
+        sig:{age:{ado:1,jeune:1}, inc:{modeste:2}, int:{}} },
+      { label:{fr:"« recette healthy express »", en:"“quick healthy recipe”"},
+        trace:{fr:"recherche recette — habitudes alimentaires enregistrées", en:"recipe search — eating habits logged"},
+        sig:{age:{jeune:1,adulte:1}, inc:{}, int:{cuisine:2}} },
+      { label:{fr:"Les avis d'un restaurant gastronomique", en:"Reviews of a fine-dining restaurant"},
+        trace:{fr:"avis restaurant haut de gamme — budget estimé", en:"upscale restaurant reviews — budget estimated"},
+        sig:{age:{adulte:2}, inc:{confortable:2}, int:{cuisine:1}} }
+    ]},
+  { time:"16:30", emoji:"🛍️",
+    q:{fr:"Un petit achat en ligne passe par là…", en:"Time for a little online shopping…"},
+    choices:[
+      { label:{fr:"Des sneakers en édition limitée", en:"Limited-edition sneakers"},
+        trace:{fr:"sneakers consultées — marques et budget enregistrés", en:"sneakers viewed — brands and budget logged"},
+        sig:{age:{ado:1,jeune:1}, inc:{moyen:1,confortable:1}, int:{mode:2}} },
+      { label:{fr:"Des composants pour monter un PC", en:"Parts to build a PC"},
+        trace:{fr:"composants PC comparés — centre d'intérêt technique", en:"PC parts compared — technical interest flagged"},
+        sig:{age:{}, inc:{moyen:1}, int:{tech:2,jeux:1}} },
+      { label:{fr:"Un roman de poche d'occasion", en:"A second-hand paperback novel"},
+        trace:{fr:"livre d'occasion acheté — genres littéraires enregistrés", en:"used book bought — literary genres logged"},
+        sig:{age:{adulte:1}, inc:{modeste:1}, int:{lecture:2}} },
+      { label:{fr:"De l'équipement de randonnée", en:"Hiking gear"},
+        trace:{fr:"matériel de rando — destinations probables déduites", en:"hiking gear — likely destinations inferred"},
+        sig:{age:{adulte:1}, inc:{moyen:1}, int:{voyage:2,sport:1}} }
+    ]},
+  { time:"19:20", emoji:"❤️",
+    q:{fr:"Sur les réseaux sociaux, vous likez…", en:"On social media, you like…"},
+    choices:[
+      { label:{fr:"des highlights de foot et de basket", en:"football and basketball highlights"},
+        trace:{fr:"likes sportifs — sports et équipes favoris", en:"sports likes — favourite sports and teams"},
+        sig:{age:{ado:1,jeune:1}, inc:{}, int:{sport:2}} },
+      { label:{fr:"des tutos maquillage et mode", en:"makeup and fashion tutorials"},
+        trace:{fr:"likes beauté — marques suivies enregistrées", en:"beauty likes — followed brands logged"},
+        sig:{age:{ado:1,jeune:1}, inc:{}, int:{mode:2}} },
+      { label:{fr:"des vidéos d'astronomie et de sciences", en:"astronomy and science videos"},
+        trace:{fr:"likes sciences — curiosités repérées", en:"science likes — curiosities spotted"},
+        sig:{age:{jeune:1,adulte:1}, inc:{}, int:{tech:2}} },
+      { label:{fr:"les clips des dernières sorties musicales", en:"the latest music videos"},
+        trace:{fr:"likes musique — artistes favoris enregistrés", en:"music likes — favourite artists logged"},
+        sig:{age:{ado:2}, inc:{}, int:{musique:2}} }
+    ]},
+  { time:"21:45", emoji:"📺",
+    q:{fr:"Dernier écran avant de dormir ?", en:"Last screen before sleep?"},
+    choices:[
+      { label:{fr:"Un épisode de série pour ados", en:"An episode of a teen series"},
+        trace:{fr:"série ado regardée — heure de coucher estimée", en:"teen series watched — bedtime estimated"},
+        sig:{age:{ado:2}, inc:{}, int:{}} },
+      { label:{fr:"Un documentaire sur l'économie mondiale", en:"A documentary on the global economy"},
+        trace:{fr:"documentaire éco — sujets de fond suivis", en:"economics documentary — deep topics followed"},
+        sig:{age:{adulte:2,senior:1}, inc:{confortable:1}, int:{lecture:1}} },
+      { label:{fr:"Un stream de jeux vidéo", en:"A video game stream"},
+        trace:{fr:"stream de jeu — jeux favoris enregistrés", en:"game stream — favourite games logged"},
+        sig:{age:{ado:1,jeune:1}, inc:{}, int:{jeux:2}} },
+      { label:{fr:"Un match en direct", en:"A live match"},
+        trace:{fr:"match en direct — abonnements probables déduits", en:"live match — likely subscriptions inferred"},
+        sig:{age:{jeune:1,adulte:1}, inc:{}, int:{sport:2}} }
+    ]}
+];
+
+const I18N = {
+  fr: {
+    kicker:"ENJEUX SOCIAUX",
+    title:"Le profil à rebours",
+    instruction:"Vivez une journée ordinaire en ligne : à chaque étape, faites un choix. À la fin, découvrez le profil publicitaire que vos traces ont permis d'assembler — et vérifiez s'il vous ressemble.",
+    fs:"Plein écran", fsExit:"Quitter",
+    backList:"← Toutes les applications",
+    dayLabel:"Votre journée",
+    traceTitle:(n)=>`📡 Journal du traceur — ${n} trace${n>1?"s":""} collectée${n>1?"s":""}`,
+    traceEmpty:"Chacun de vos choix y laissera une empreinte.",
+    revealTitle:"Journée terminée. Voici votre profil.",
+    revealSub:(n)=>`Sans jamais connaître votre nom, les traceurs ont croisé vos ${n} traces. Ce profil est déjà en vente sur une place de marché publicitaire.`,
+    ageLabel:"Âge estimé",
+    incLabel:"Revenus estimés",
+    intLabel:"Centres d'intérêt",
+    conf:(p)=>`confiance ${p} %`,
+    ages:{ado:"13–17 ans", jeune:"18–25 ans", adulte:"26–45 ans", senior:"46 ans et +"},
+    incs:{modeste:"modestes", moyen:"moyens", confortable:"confortables"},
+    ints:{sport:"Sport", musique:"Musique", tech:"Tech / sciences", jeux:"Jeux vidéo", cuisine:"Cuisine", mode:"Mode / beauté", lecture:"Lecture", voyage:"Voyage / nature"},
+    quizTitle:"Et dans la vraie vie ?",
+    quizSub:"Répondez honnêtement, puis comparez : le profil était-il juste ?",
+    qAge:"Votre âge réel",
+    qInc:"Votre budget réel",
+    qInt:"Votre passion principale",
+    realInc:{modeste:"Plutôt serré", moyen:"Correct", confortable:"Confortable"},
+    compareBtn:"Révéler les inférences",
+    resultTitle:(n)=>`Inférences correctes : ${n} / 3`,
+    estL:"estimé", realL:"réel",
+    rowAge:"Âge", rowInc:"Revenus",
+    okBadge:"✓ correct", koBadge:"✗ à côté",
+    intHit:"présente dans le top 3", intMiss:"absente du top 3",
+    top3L:"top 3",
+    verdict:(n)=>[
+      "Le profil s'est trompé partout — mais il sera quand même vendu, acheté et utilisé.",
+      "Une seule inférence juste… et pourtant ce profil part déjà en vente.",
+      "Deux inférences sur trois : le profil vous connaît mieux que vous ne le pensez.",
+      "Trois sur trois : le profil vous a cerné. C'est précisément le but de la publicité ciblée."
+    ][n],
+    takeTitle:"À retenir",
+    takes:[
+      "Chaque clic laisse une trace : le contenu consulté, l'heure, le lieu approximatif, l'appareil.",
+      "Prise isolément, une trace semble anodine ; agrégées, elles révèlent votre âge, vos revenus et vos goûts.",
+      "Un profil peut se tromper — il n'en est pas moins vendu et utilisé pour décider de ce que vous voyez."
+    ],
+    restart:"Recommencer la journée",
+    hintChoose:"Répondez aux trois questions pour comparer."
+  },
+  en: {
+    kicker:"SOCIAL ISSUES",
+    title:"The reverse profile",
+    instruction:"Live an ordinary day online: make a choice at each step. At the end, see the advertising profile your traces made possible — and check whether it actually matches you.",
+    fs:"Fullscreen", fsExit:"Exit",
+    backList:"← All applications",
+    dayLabel:"Your day",
+    traceTitle:(n)=>`📡 Tracker log — ${n} trace${n>1?"s":""} collected`,
+    traceEmpty:"Every choice you make will leave a mark here.",
+    revealTitle:"Your day is over. Here is your profile.",
+    revealSub:(n)=>`Without ever knowing your name, the trackers cross-referenced your ${n} traces. This profile is already for sale on an advertising marketplace.`,
+    ageLabel:"Estimated age",
+    incLabel:"Estimated income",
+    intLabel:"Interests",
+    conf:(p)=>`${p}% confidence`,
+    ages:{ado:"13–17", jeune:"18–25", adulte:"26–45", senior:"46+"},
+    incs:{modeste:"modest", moyen:"average", confortable:"comfortable"},
+    ints:{sport:"Sports", musique:"Music", tech:"Tech / science", jeux:"Video games", cuisine:"Cooking", mode:"Fashion / beauty", lecture:"Reading", voyage:"Travel / outdoors"},
+    quizTitle:"What about real life?",
+    quizSub:"Answer honestly, then compare: was the profile accurate?",
+    qAge:"Your real age",
+    qInc:"Your real budget",
+    qInt:"Your main passion",
+    realInc:{modeste:"Rather tight", moyen:"Decent", confortable:"Comfortable"},
+    compareBtn:"Reveal the inferences",
+    resultTitle:(n)=>`Correct inferences: ${n} / 3`,
+    estL:"estimated", realL:"real",
+    rowAge:"Age", rowInc:"Income",
+    okBadge:"✓ correct", koBadge:"✗ off",
+    intHit:"in the top 3", intMiss:"not in the top 3",
+    top3L:"top 3",
+    verdict:(n)=>[
+      "The profile got everything wrong — yet it will still be sold, bought and used.",
+      "Only one correct inference… and this profile is already up for sale.",
+      "Two out of three: the profile knows you better than you think.",
+      "Three out of three: the profile has you figured out. That is exactly what targeted advertising aims for."
+    ][n],
+    takeTitle:"Key takeaways",
+    takes:[
+      "Every click leaves a trace: the content you viewed, the time, your approximate location, your device.",
+      "On its own, a trace looks harmless; combined, they reveal your age, your income and your tastes.",
+      "A profile can be wrong — it is still sold and used to decide what you see."
+    ],
+    restart:"Start the day over",
+    hintChoose:"Answer the three questions to compare."
+  }
+};
+
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+
+/* ---------- état ---------- */
+let phase = "day";                       // day | reveal | done
+let picks = [];                          // index du choix pour chaque moment
+let real = {age:null, inc:null, int:null};
+
+/* ---------- calcul du profil ---------- */
+function profile(){
+  const age={}, inc={}, int={};
+  AGE_KEYS.forEach(k=>age[k]=0);
+  INC_KEYS.forEach(k=>inc[k]=0);
+  INT_KEYS.forEach(k=>int[k]=0);
+  picks.forEach((ci,mi)=>{
+    const s = MOMENTS[mi].choices[ci].sig;
+    for(const k in s.age) age[k]+=s.age[k];
+    for(const k in s.inc) inc[k]+=s.inc[k];
+    for(const k in s.int) int[k]+=s.int[k];
+  });
+  const winner = (obj,keys)=>{
+    let best=keys[0], tot=0;
+    keys.forEach(k=>{ tot+=obj[k]; if(obj[k]>obj[best]) best=k; });
+    return {key:best, conf: tot>0 ? Math.round(100*obj[best]/tot) : 0};
+  };
+  const topInt = INT_KEYS.map(k=>({key:k, n:int[k]}))
+    .filter(o=>o.n>0)
+    .sort((a,b)=> b.n-a.n || INT_KEYS.indexOf(a.key)-INT_KEYS.indexOf(b.key))
+    .slice(0,3);
+  return { age:winner(age,AGE_KEYS), inc:winner(inc,INC_KEYS), topInt,
+           maxInt: topInt.length ? topInt[0].n : 1, traces: picks.length*3 };
+}
+
+/* ---------- rendu ---------- */
+function esc(s){ return s; }
+
+function renderDay(){
+  let h = `<div class="fade"><h2>${T().dayLabel}</h2><div class="progress">`;
+  MOMENTS.forEach((m,i)=>{
+    const cls = i<picks.length ? "done" : (i===picks.length ? "now" : "");
+    h += `<div class="pstep"><div class="dot ${cls}"></div>${m.time}</div>`;
+  });
+  h += `</div>`;
+  const m = MOMENTS[picks.length];
+  h += `<div class="moment">
+    <div class="momentHead"><span class="mtime">${m.time}</span><span>${m.emoji}</span></div>
+    <div class="mq">${m.q[lang]}</div>
+    <div class="choices">`;
+  m.choices.forEach((c,i)=>{
+    h += `<button type="button" class="choice" data-c="${i}">${c.label[lang]}</button>`;
+  });
+  h += `</div></div>`;
+  h += renderTraces();
+  h += `</div>`;
+  $("app").innerHTML = h;
+  document.querySelectorAll(".choice").forEach(b=>{
+    b.onclick = ()=> choose(parseInt(b.dataset.c,10));
+  });
+}
+
+function renderTraces(){
+  let h = `<div class="traces"><b>${T().traceTitle(picks.length*3)}</b>`;
+  if(picks.length===0){
+    h += `<div style="margin-top:6px">${T().traceEmpty}</div>`;
+  } else {
+    h += `<ul>`;
+    picks.forEach((ci,mi)=>{
+      h += `<li>${MOMENTS[mi].time} · ${MOMENTS[mi].choices[ci].trace[lang]}</li>`;
+    });
+    h += `</ul>`;
+  }
+  return h + `</div>`;
+}
+
+function renderReveal(){
+  const p = profile();
+  let h = `<div class="fade">`;
+  h += `<h2>${T().revealTitle}</h2>`;
+  h += `<div class="note">${T().revealSub(p.traces)}</div>`;
+  h += `<div class="profileGrid">
+    <div class="pcard">
+      <h3>${T().ageLabel}</h3>
+      <div class="pval">${T().ages[p.age.key]}</div>
+      <div class="conf">${T().conf(p.age.conf)}</div>
+      <div class="barTrack"><div class="barFill" style="width:${p.age.conf}%"></div></div>
+    </div>
+    <div class="pcard">
+      <h3>${T().incLabel}</h3>
+      <div class="pval">${T().incs[p.inc.key]}</div>
+      <div class="conf">${T().conf(p.inc.conf)}</div>
+      <div class="barTrack"><div class="barFill" style="width:${p.inc.conf}%"></div></div>
+    </div>
+    <div class="pcard">
+      <h3>${T().intLabel}</h3>`;
+  p.topInt.forEach(o=>{
+    h += `<div class="intRow"><span class="nm">${T().ints[o.key]}</span><span class="tr"><span class="fl" style="display:block;width:${Math.round(100*o.n/p.maxInt)}%"></span></span></div>`;
+  });
+  h += `</div></div>`;
+  h += renderTraces();
+  /* quiz réalité */
+  h += `<h2>${T().quizTitle}</h2><p style="margin-bottom:6px">${T().quizSub}</p>`;
+  h += `<div class="qa"><div class="qaLabel">${T().qAge}</div><div class="optRow">`;
+  AGE_KEYS.forEach(k=>{
+    h += `<button type="button" class="opt${real.age===k?" selected":""}" data-dim="age" data-v="${k}">${T().ages[k]}</button>`;
+  });
+  h += `</div></div><div class="qa"><div class="qaLabel">${T().qInc}</div><div class="optRow">`;
+  INC_KEYS.forEach(k=>{
+    h += `<button type="button" class="opt${real.inc===k?" selected":""}" data-dim="inc" data-v="${k}">${T().realInc[k]}</button>`;
+  });
+  h += `</div></div><div class="qa"><div class="qaLabel">${T().qInt}</div><div class="optRow">`;
+  INT_KEYS.forEach(k=>{
+    h += `<button type="button" class="opt${real.int===k?" selected":""}" data-dim="int" data-v="${k}">${T().ints[k]}</button>`;
+  });
+  h += `</div></div>`;
+  const ready = real.age && real.inc && real.int;
+  h += `<div class="center"><button type="button" id="cmpBtn" class="btnAccent" ${ready?"":"disabled"}>${T().compareBtn}</button>`;
+  if(!ready) h += `<div style="font-size:13px;color:var(--muted);margin-top:6px">${T().hintChoose}</div>`;
+  h += `</div></div>`;
+  $("app").innerHTML = h;
+  document.querySelectorAll(".opt").forEach(b=>{
+    b.onclick = ()=>{ real[b.dataset.dim]=b.dataset.v; render(); };
+  });
+  $("cmpBtn").onclick = ()=>{ phase="done"; render(); scrollTop(); };
+}
+
+function renderDone(){
+  const p = profile();
+  const ageOk = p.age.key===real.age;
+  const incOk = p.inc.key===real.inc;
+  const intOk = p.topInt.some(o=>o.key===real.int);
+  const n = (ageOk?1:0)+(incOk?1:0)+(intOk?1:0);
+  const row = (ok,body)=>`<div class="resultRow ${ok?"ok":"ko"}"><span>${body}</span><span class="badge">${ok?T().okBadge:T().koBadge}</span></div>`;
+  let h = `<div class="fade"><h2>${T().resultTitle(n)}</h2>`;
+  h += row(ageOk, `${T().rowAge} : ${T().estL} « ${T().ages[p.age.key]} » · ${T().realL} « ${T().ages[real.age]} »`);
+  h += row(incOk, `${T().rowInc} : ${T().estL} « ${T().incs[p.inc.key]} » · ${T().realL} « ${T().realInc[real.inc]} »`);
+  const top3 = p.topInt.map(o=>T().ints[o.key]).join(", ");
+  h += row(intOk, `${T().intLabel} : « ${T().ints[real.int]} » ${intOk?T().intHit:T().intMiss} (${T().top3L} : ${top3})`);
+  h += `<div class="verdict">${T().verdict(n)}</div>`;
+  h += `<div class="takeaway"><h3>${T().takeTitle}</h3><ul>`;
+  T().takes.forEach(t=>{ h += `<li>${t}</li>`; });
+  h += `</ul></div>`;
+  h += `<div class="center"><button type="button" id="rstBtn">${T().restart}</button></div></div>`;
+  $("app").innerHTML = h;
+  $("rstBtn").onclick = ()=>{ phase="day"; picks=[]; real={age:null,inc:null,int:null}; render(); scrollTop(); };
+}
+
+function render(){
+  if(phase==="day") renderDay();
+  else if(phase==="reveal") renderReveal();
+  else renderDone();
+}
+
+function choose(i){
+  picks.push(i);
+  if(picks.length>=MOMENTS.length) phase="reveal";
+  render();
+  scrollTop();
+}
+
+function scrollTop(){
+  const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({top:0, behavior: rm ? "auto" : "smooth"});
+}
+
+/* ---------- langue ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  syncFsLabel();
+  render();
+}
+$("langBtn").onclick = ()=>{
+  lang = lang==="fr" ? "en" : "fr";
+  try{
+    localStorage.setItem("fj-lang",lang);
+    document.cookie = "fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  }catch(e){}
+  applyLang();
+};
+
+/* ---------- plein écran (Safari compris) ---------- */
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = ()=>{
+  const el = document.documentElement;
+  if(isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange",syncFsLabel);
+document.addEventListener("webkitfullscreenchange",syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

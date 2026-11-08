@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Triez une boîte mail : repérez les e-mails d'hameçonnage parmi les messages légitimes, puis décortiquez vos erreurs. Trois niveaux progressifs.">
+<title>La boîte mail piégée · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;color:var(--primary)}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+
+.levels{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.lvlBtn{position:relative;min-width:118px;min-height:44px}
+.lvlBtn.current{background:var(--primary);color:#fff}
+.lvlBtn.current:hover{background:var(--primary)}
+.lvlBtn:disabled{opacity:.35;cursor:not-allowed}
+.lvlBtn.solved::after{content:"★";position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:var(--accent);font-size:16px}
+.progress{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:700}
+
+.game{display:grid;grid-template-columns:330px 1fr;gap:16px;align-items:start}
+.inbox{display:flex;flex-direction:column;gap:8px}
+.mailItem{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);
+  cursor:pointer;text-align:left;width:100%;font-family:inherit;color:var(--ink);font-size:14px;font-weight:400;min-height:44px}
+.mailItem:hover{background:var(--primaryLight)}
+.mailItem .miFrom{font-weight:700;color:var(--ink);display:flex;justify-content:space-between;gap:8px}
+.mailItem .miSubj{font-size:13px;color:var(--muted);margin-top:2px}
+.mailItem.cur{border-color:var(--accent)}
+.mailItem .st{font-weight:700}
+.mailItem.ok .st{color:var(--primary)}
+.mailItem.ko .st{color:var(--error)}
+
+.reading{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:18px}
+.mvHead{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px}
+.mvRow{font-size:14px;margin-bottom:4px}
+.mvRow .lab{font-weight:700;color:var(--primary);display:inline-block;min-width:52px}
+.mvAddr{color:var(--muted);font-size:13px}
+.mvSubj{font-weight:700;font-size:16px}
+.mvBody p{font-size:15px;margin-bottom:10px;line-height:1.45}
+.fakelink{color:var(--primary);text-decoration:underline;cursor:not-allowed;font-weight:700}
+
+.actions{display:flex;gap:12px;margin-top:14px}
+.actions button{flex:1;min-height:50px;font-size:16px}
+#btnLegit{border-color:var(--primary);color:var(--primary)}
+#btnLegit:hover{background:var(--primaryLight)}
+#btnPhish{border-color:var(--error);color:var(--error)}
+#btnPhish:hover{background:var(--accentLight)}
+.feedback{margin-top:14px;border-radius:12px;padding:12px 16px;font-size:15px}
+.feedback.good{background:var(--primaryLight);border:2px solid var(--primary)}
+.feedback.bad{background:var(--accentLight);border:2px solid var(--error)}
+.nextWrap{margin-top:14px;text-align:right}
+#nextBtn{background:var(--accent);border-color:var(--accent);color:#fff;min-height:46px}
+#nextBtn:hover{background:var(--accent)}
+
+.resCard{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:18px}
+.resCard h2{font-size:20px;color:var(--primary);margin-bottom:8px}
+.resScore{font-size:17px;font-weight:700;margin-bottom:6px}
+.resMsg{font-size:15px;margin-bottom:12px}
+.err{border:2px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;background:var(--bg)}
+.err h3{font-size:15px;color:var(--ink);margin-bottom:6px}
+.verdict{font-weight:700;margin-bottom:8px}
+.verdict.ph{color:var(--error)}
+.verdict.lg{color:var(--primary)}
+.linkRev{font-size:13px;margin-bottom:10px;color:var(--muted)}
+.linkRev code{font-family:"Courier New",monospace;font-size:12px;color:var(--ink)}
+.err ul{list-style:none}
+.err li{font-size:14px;margin-bottom:8px;line-height:1.4}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:8px;padding:2px 8px;margin-right:8px;
+  background:var(--primaryLight);color:var(--primary);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.resBtns{margin-top:16px;display:flex;gap:12px;flex-wrap:wrap}
+.resBtns .accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.resBtns .accent:hover{background:var(--accent)}
+.finalList{margin-top:14px}
+.finalList li{font-size:15px;margin-bottom:8px;margin-left:18px;line-height:1.45}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .game{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<canvas id="fireworks"></canvas>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<div class="levels" id="levels"></div>
+<main>
+  <section id="gameArea">
+    <div class="progress" id="progress"></div>
+    <div class="game">
+      <div class="inbox" id="inbox"></div>
+      <div class="reading">
+        <div class="mailview" id="mailview"></div>
+        <div class="actions" id="actions">
+          <button id="btnLegit" type="button"></button>
+          <button id="btnPhish" type="button"></button>
+        </div>
+        <div class="feedback" id="feedback" hidden></div>
+        <div class="nextWrap"><button id="nextBtn" type="button" hidden></button></div>
+      </div>
+    </div>
+  </section>
+  <section class="results" id="results" hidden>
+    <div class="resCard" id="resCard"></div>
+  </section>
+</main>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "La boîte mail piégée",
+    instruction: "Ouvrez chaque message, examinez l'expéditeur, les liens et le ton, puis décidez : légitime ou hameçonnage ?",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    level: n => "Niveau " + n,
+    lockedTitle: "Terminez d'abord les niveaux précédents !",
+    btnLegit: "Légitime", btnPhish: "Hameçonnage",
+    next: "Message suivant", seeResults: "Voir le bilan",
+    from: "De", subject: "Objet",
+    mailCounter: (i, n) => "Message " + i + " sur " + n,
+    correct: "Exact ! ",
+    wrongPhish: "Raté… ce message était un hameçonnage. Les indices seront décortiqués au bilan.",
+    wrongLegit: "Raté… ce message était légitime. Les indices seront décortiqués au bilan.",
+    resTitle: "Bilan du niveau",
+    scoreMsg: (s, t) => "Score : " + s + "/" + t,
+    pass: "Niveau réussi ! ",
+    perfect: "Sans la moindre erreur, bravo !",
+    fail: "Il faut au moins 4 bonnes réponses pour valider le niveau. Réessayez !",
+    retry: "Réessayer ce niveau",
+    nextLevel: "Niveau suivant",
+    dissectTitle: "Erreurs décortiquées",
+    noErrors: "Aucune erreur à décortiquer : tout était juste.",
+    verdictPhish: "C'était un hameçonnage",
+    verdictLegit: "C'était un message légitime",
+    linkShown: "Lien affiché", linkReal: "Adresse réelle",
+    finalTitle: "Les bons réflexes à garder",
+    winMsg: "Félicitations, vous avez terminé les trois niveaux !",
+    finalList: [
+      "Vérifiez le domaine de l'expéditeur, lettre par lettre, en lisant de droite à gauche.",
+      "Méfiez-vous de toute urgence : menace, compte à rebours, fausse facture.",
+      "Ne cliquez pas sur les liens : tapez vous-même l'adresse officielle ou ouvrez l'application.",
+      "Aucun service sérieux ne demande vos identifiants ou coordonnées bancaires par e-mail.",
+      "En cas de doute, demandez à la personne concernée par un autre canal."
+    ],
+    cat: { sender: "Expéditeur", spelling: "Fautes", urgency: "Urgence", link: "Lien", data: "Données", context: "Contexte", reflex: "Bon réflexe" }
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "The booby-trapped inbox",
+    instruction: "Open each message, examine the sender, the links and the tone, then decide: legitimate or phishing?",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    level: n => "Level " + n,
+    lockedTitle: "Complete the previous levels first!",
+    btnLegit: "Legitimate", btnPhish: "Phishing",
+    next: "Next message", seeResults: "See the results",
+    from: "From", subject: "Subject",
+    mailCounter: (i, n) => "Message " + i + " of " + n,
+    correct: "Correct! ",
+    wrongPhish: "Missed… this message was phishing. The clues will be dissected in the results.",
+    wrongLegit: "Missed… this message was legitimate. The clues will be dissected in the results.",
+    resTitle: "Level results",
+    scoreMsg: (s, t) => "Score: " + s + "/" + t,
+    pass: "Level completed! ",
+    perfect: "Without a single mistake, well done!",
+    fail: "You need at least 4 correct answers to complete the level. Try again!",
+    retry: "Retry this level",
+    nextLevel: "Next level",
+    dissectTitle: "Mistakes dissected",
+    noErrors: "No mistakes to dissect: everything was right.",
+    verdictPhish: "This was phishing",
+    verdictLegit: "This was a legitimate message",
+    linkShown: "Displayed link", linkReal: "Real address",
+    finalTitle: "The good habits to keep",
+    winMsg: "Congratulations, you completed all three levels!",
+    finalList: [
+      "Check the sender's domain letter by letter, reading from right to left.",
+      "Beware of any urgency: threats, countdowns, fake invoices.",
+      "Don't click links: type the official address yourself or open the app.",
+      "No serious service ever asks for your credentials or bank details by e-mail.",
+      "When in doubt, ask the person involved through another channel."
+    ],
+    cat: { sender: "Sender", spelling: "Typos", urgency: "Urgency", link: "Link", data: "Data", context: "Context", reflex: "Good habit" }
+  }
+};
+
+let lang = (function () {
+  try { const c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/); if (c && (c[1] === "fr" || c[1] === "en")) return c[1]; } catch (e) {}
+  try { const s = localStorage.getItem("fj-lang"); if (s === "fr" || s === "en") return s; } catch (e) {}
+  return "fr";
+})();
+const T = () => I18N[lang];
+
+/* ---------- Les 15 e-mails (3 niveaux de 5) ---------- */
+const EMAILS = [
+  { lvl:0, from:{fr:"PayPal — Service client",en:"PayPal — Customer service"}, addr:"support@paypa1-securite.com",
+    subj:{fr:"Votre compte a été bloqué !!",en:"Your account has been suspended!!"},
+    body:{
+      fr:["Cher client,","Nous avons détecté une activité suspect sur votre compte. Pour des raisons de sécurité, votre compte à été bloqué.","Vous devez vérifier vos informations dans les 24 heures, sinon votre compte sera définitivement supprimer.","Cliquez sur le lien ci-dessous pour débloquer votre compte immédiatement.","Cordialement, l'équipe PayPal"],
+      en:["Dear customer,","We have detected a suspicious activity on your account. For security reasons, your account has been block.","You must verify your informations within 24 hours, otherwise your account will be permanently deleted.","Click the link below to unlock your account immediately.","Best regards, the PayPal team"]},
+    link:{text:{fr:"Débloquer mon compte",en:"Unlock my account"}, real:"http://paypa1-securite.com/connexion"},
+    phish:true,
+    note:{fr:"Le domaine « paypa1-securite.com » imite paypal.com, le message est truffé de fautes et menace de supprimer le compte sous 24 h.",
+          en:"The domain “paypa1-securite.com” imitates paypal.com, the message is full of typos and threatens to delete the account within 24 hours."},
+    clues:[
+      {t:"sender",fr:"« paypa1-securite.com » : le chiffre « 1 » remplace la lettre « l » ; le vrai domaine est paypal.com.",en:"“paypa1-securite.com”: the digit “1” replaces the letter “l”; the real domain is paypal.com."},
+      {t:"spelling",fr:"Plusieurs fautes : « activité suspect », « compte à été », « supprimer ».",en:"Several typos: “has been block”, “informations”."},
+      {t:"urgency",fr:"Menace de suppression définitive sous 24 heures.",en:"Threat of permanent deletion within 24 hours."},
+      {t:"link",fr:"Le lien mène à paypa1-securite.com, pas à paypal.com.",en:"The link leads to paypa1-securite.com, not paypal.com."}]},
+
+  { lvl:0, from:{fr:"La Poste Suisse",en:"Swiss Post"}, addr:"noreply@poste-suivi.xyz",
+    subj:{fr:"Votre colis est en attente de livraison",en:"Your parcel is awaiting delivery"},
+    body:{
+      fr:["Bonjour,","Votre colis n'a pas pu être livré aujourd'hui. Des frais de dédouanement de 2,90 CHF sont nécessaires pour finaliser la livraison.","Veuillez régler ce montant sous 48 heures, sans quoi votre colis sera retourné à l'expéditeur.","Merci de votre confiance."],
+      en:["Hello,","Your parcel could not be delivered today. Customs fees of CHF 2.90 are required to complete the delivery.","Please pay this amount within 48 hours, otherwise your parcel will be returned to the sender.","Thank you for your trust."]},
+    link:{text:{fr:"Suivre mon colis",en:"Track my parcel"}, real:"http://poste-suivi.xyz/paiement"},
+    phish:true,
+    note:{fr:"La vraie Poste écrit depuis poste.ch, jamais depuis un domaine « .xyz » : le petit paiement sert à voler votre numéro de carte.",
+          en:"The real Post writes from poste.ch, never from an “.xyz” domain: the small payment is meant to steal your card number."},
+    clues:[
+      {t:"sender",fr:"« poste-suivi.xyz » : la vraie Poste utilise le domaine poste.ch.",en:"“poste-suivi.xyz”: the real Post uses the poste.ch domain."},
+      {t:"urgency",fr:"Délai de 48 heures sous menace de retour du colis.",en:"48-hour deadline under threat of returning the parcel."},
+      {t:"data",fr:"Demande de paiement de 2,90 CHF : un petit montant pour voler un numéro de carte bancaire.",en:"A CHF 2.90 payment request: a small amount meant to steal a bank card number."},
+      {t:"link",fr:"Le « suivi » mène en réalité à une page de paiement piégée.",en:"The “tracking” actually leads to a trapped payment page."}]},
+
+  { lvl:0, from:{fr:"Secrétariat du gymnase",en:"School office"}, addr:"secretariat@gymnase-provence.ch",
+    subj:{fr:"Rappel : excursion du 20 novembre",en:"Reminder: field trip on November 20"},
+    body:{
+      fr:["Bonjour,","Nous vous rappelons que l'inscription à l'excursion du 20 novembre se termine vendredi. Merci de déposer le formulaire signé au secrétariat avant 17 h 00.","Aucune inscription ne sera acceptée par e-mail.","Bonne journée, le secrétariat"],
+      en:["Hello,","This is a reminder that registration for the November 20 field trip closes on Friday. Please drop the signed form off at the office before 5:00 p.m.","Registrations will not be accepted by e-mail.","Have a nice day, the school office"]},
+    link:null,
+    phish:false,
+    note:{fr:"Adresse du gymnase, information concrète et datée, aucune donnée demandée : tout est cohérent.",
+          en:"School address, concrete dated information, no data requested: everything is consistent."},
+    clues:[
+      {t:"sender",fr:"Domaine officiel du gymnase, cohérent avec vos autres messages.",en:"Official school domain, consistent with your other messages."},
+      {t:"context",fr:"Information précise et datée, action à effectuer physiquement au secrétariat.",en:"Precise dated information, action to be done in person at the office."},
+      {t:"reflex",fr:"Aucun lien, aucune donnée demandée : il n'y a rien à cliquer.",en:"No link, no data requested: there is nothing to click."}]},
+
+  { lvl:0, from:{fr:"Loterie Internationale",en:"International Lottery"}, addr:"gagnant@loterie-internationale.tk",
+    subj:{fr:"FÉLICITATIONS !!! Vous avez gagné 50 000 CHF",en:"CONGRATULATIONS!!! You have won CHF 50,000"},
+    body:{
+      fr:["Cher heureux gagnant,","Votre adresse e-mail à été tiré au sort parmis 10 millions de participants ! Vous avez gagné 50 000 CHF !!!","Pour recevoir votre gain, envoyez-nous rapidement vos coordonnées bancaires et une copie de votre carte d'identité.","Ne tardez pas : cette offre expire dans 72 heures !"],
+      en:["Dear lucky winner,","Your e-mail address has been randomly selected among 10 millions participants! You have won CHF 50,000!!!","To receive your prize, quickly send us your bank details and a copy of your ID card.","Don't wait: this offer expires in 72 hours!"]},
+    link:{text:{fr:"Réclamer mon gain",en:"Claim my prize"}, real:"http://loterie-internationale.tk/gain"},
+    phish:true,
+    note:{fr:"On ne gagne jamais à une loterie à laquelle on n'a pas joué — et personne de sérieux ne demande vos coordonnées bancaires par e-mail.",
+          en:"You never win a lottery you never entered — and no serious organisation asks for your bank details by e-mail."},
+    clues:[
+      {t:"context",fr:"Impossible de gagner à une loterie à laquelle vous n'avez pas participé.",en:"You cannot win a lottery you never entered."},
+      {t:"spelling",fr:"Fautes (« à été », « parmis »), majuscules et points d'exclamation en rafale.",en:"Typos (“10 millions participants”), all caps and exclamation marks galore."},
+      {t:"data",fr:"Coordonnées bancaires et carte d'identité demandées : le vrai but du message.",en:"Bank details and ID card requested: the real goal of the message."},
+      {t:"urgency",fr:"Offre limitée à 72 heures pour vous presser.",en:"72-hour limited offer to rush you."}]},
+
+  { lvl:0, from:{fr:"Plateforme Moodle",en:"Moodle platform"}, addr:"moodle@gymnase-provence.ch",
+    subj:{fr:"Nouveau devoir : mathématiques — suites",en:"New assignment: mathematics — sequences"},
+    body:{
+      fr:["Bonjour,","M. Rochat a déposé un nouveau devoir dans le cours de mathématiques : « Suites et séries ». Date de remise : mardi 17 novembre, 23 h 59.","Connectez-vous à Moodle comme d'habitude pour consulter la consigne.","Ceci est un message automatique, merci de ne pas y répondre."],
+      en:["Hello,","Mr Rochat has posted a new assignment in the mathematics course: “Sequences and series”. Due date: Tuesday, November 17, 11:59 p.m.","Log in to Moodle as usual to read the instructions.","This is an automated message, please do not reply."]},
+    link:null,
+    phish:false,
+    note:{fr:"Domaine du gymnase, devoir précis et daté, aucun lien : on vous invite à vous connecter comme d'habitude.",
+          en:"School domain, precise dated assignment, no link: you are asked to log in as usual."},
+    clues:[
+      {t:"sender",fr:"Domaine officiel du gymnase.",en:"Official school domain."},
+      {t:"context",fr:"Devoir précis, enseignant nommé, date de remise : tout est cohérent avec votre scolarité.",en:"Precise assignment, named teacher, due date: everything matches your school life."},
+      {t:"reflex",fr:"Pas de lien : le message invite à se connecter « comme d'habitude » — le meilleur réflexe.",en:"No link: the message asks you to log in “as usual” — the best habit."}]},
+
+  { lvl:1, from:{fr:"Netflix",en:"Netflix"}, addr:"no-reply@netflix-facturation.com",
+    subj:{fr:"Votre abonnement sera suspendu sous 24 heures",en:"Your subscription will be suspended within 24 hours"},
+    body:{
+      fr:["Bonjour,","Nous n'avons pas pu prélever votre dernier paiement. Sans mise à jour de votre moyen de paiement sous 24 heures, votre abonnement sera suspendu.","Pour conserver l'accès à vos programmes, veuillez mettre à jour vos informations dès maintenant.","L'équipe Netflix"],
+      en:["Hello,","We were unable to charge your last payment. Unless you update your payment method within 24 hours, your subscription will be suspended.","To keep access to your shows, please update your information now.","The Netflix team"]},
+    link:{text:{fr:"https://www.netflix.com/votre-compte",en:"https://www.netflix.com/your-account"}, real:"http://netflix-facturation.com/maj-paiement"},
+    phish:true,
+    note:{fr:"Le lien affiché ment : il mène à netflix-facturation.com, pas à netflix.com. En cas de doute, ouvrez l'application officielle.",
+          en:"The displayed link lies: it leads to netflix-facturation.com, not netflix.com. When in doubt, open the official app."},
+    clues:[
+      {t:"link",fr:"Le texte affiché (netflix.com) cache une adresse différente : netflix-facturation.com.",en:"The displayed text (netflix.com) hides a different address: netflix-facturation.com."},
+      {t:"sender",fr:"« netflix-facturation.com » n'est pas netflix.com : les vrais messages viennent de @netflix.com.",en:"“netflix-facturation.com” is not netflix.com: genuine messages come from @netflix.com."},
+      {t:"urgency",fr:"Suspension sous 24 heures pour vous presser.",en:"Suspension within 24 hours to rush you."},
+      {t:"reflex",fr:"Ouvrez l'application Netflix officielle pour vérifier votre paiement — jamais via le lien.",en:"Open the official Netflix app to check your payment — never through the link."}]},
+
+  { lvl:1, from:{fr:"Amazon",en:"Amazon"}, addr:"service@amzn-support.net",
+    subj:{fr:"Votre commande : iPhone 16 Pro — 1 299,00 CHF",en:"Your order: iPhone 16 Pro — CHF 1,299.00"},
+    body:{
+      fr:["Bonjour,","Merci pour votre commande. Montant : 1 299,00 CHF. Livraison prévue : demain avant 20 h 00.","Si vous n'êtes pas à l'origine de cette commande, vous pouvez l'annuler immédiatement en cliquant sur le lien ci-dessous.","Amazon vous remercie de votre confiance."],
+      en:["Hello,","Thank you for your order. Total: CHF 1,299.00. Estimated delivery: tomorrow before 8:00 p.m.","If you did not place this order, you can cancel it immediately by clicking the link below.","Amazon thanks you for your trust."]},
+    link:{text:{fr:"Annuler cette commande",en:"Cancel this order"}, real:"http://amzn-support.net/annulation"},
+    phish:true,
+    note:{fr:"Une fausse commande coûteuse pour vous faire paniquer : le vrai domaine d'Amazon ne contient pas « amzn-support.net ».",
+          en:"A fake expensive order to make you panic: Amazon's real domain is not “amzn-support.net”."},
+    clues:[
+      {t:"urgency",fr:"Une commande de 1 299 CHF que vous n'avez pas passée : le but est de provoquer un clic de panique.",en:"A CHF 1,299 order you never placed: the goal is to trigger a panic click."},
+      {t:"sender",fr:"« amzn-support.net » n'a rien à voir avec amazon.com.",en:"“amzn-support.net” has nothing to do with amazon.com."},
+      {t:"link",fr:"Le bouton « Annuler » mène à une copie piégée du site.",en:"The “Cancel” button leads to a trapped copy of the site."},
+      {t:"reflex",fr:"Vérifiez vos commandes dans l'application officielle, jamais via un e-mail.",en:"Check your orders in the official app, never through an e-mail."}]},
+
+  { lvl:1, from:{fr:"Direction du gymnase",en:"Head office"}, addr:"direction@gymnase-provence.ch",
+    subj:{fr:"Convocation — conseil de classe du 3 décembre",en:"Invitation — class council on December 3"},
+    body:{
+      fr:["Bonjour,","Vous êtes convoqué·e au conseil de classe du mercredi 3 décembre. Les horaires détaillés sont disponibles sur l'intranet du gymnase, rubrique « Vie scolaire ».","En cas d'empêchement, veuillez contacter le secrétariat.","La Direction"],
+      en:["Hello,","You are invited to the class council on Wednesday, December 3. Detailed schedules are available on the school intranet, under “Student life”.","If you cannot attend, please contact the school office.","The Head Office"]},
+    link:null,
+    phish:false,
+    note:{fr:"Domaine officiel, renvoi vers l'intranet habituel, aucune donnée demandée.",
+          en:"Official domain, pointing to the usual intranet, no data requested."},
+    clues:[
+      {t:"sender",fr:"Domaine officiel du gymnase.",en:"Official school domain."},
+      {t:"context",fr:"Convocation datée, horaires à consulter sur l'intranet que vous utilisez déjà.",en:"Dated invitation, schedules on the intranet you already use."},
+      {t:"reflex",fr:"Aucun lien, aucune donnée demandée : rien de suspect.",en:"No link, no data requested: nothing suspicious."}]},
+
+  { lvl:1, from:{fr:"BCV — E-banking",en:"BCV — E-banking"}, addr:"e-banking@bcv-alerte.ch",
+    subj:{fr:"Nouvel appareil connecté à votre compte",en:"New device signed in to your account"},
+    body:{
+      fr:["Bonjour,","Un nouvel appareil s'est connecté à votre e-banking. Si cette connexion ne vient pas de vous, votre compte est peut-être compromis.","Pour sécuriser votre compte, confirmez votre identité en saisissant vos identifiants e-banking. Sans confirmation, l'accès à votre compte sera limité.","Banque Cantonale Vaudoise"],
+      en:["Hello,","A new device has signed in to your e-banking account. If this wasn't you, your account may be compromised.","To secure your account, confirm your identity by entering your e-banking credentials. Without confirmation, access to your account will be limited.","Banque Cantonale Vaudoise"]},
+    link:{text:{fr:"Sécuriser mon compte",en:"Secure my account"}, real:"http://bcv-alerte.ch/verification"},
+    phish:true,
+    note:{fr:"bcv-alerte.ch n'est pas bcv.ch — et une banque ne demande jamais vos identifiants par e-mail.",
+          en:"bcv-alerte.ch is not bcv.ch — and a bank never asks for your credentials by e-mail."},
+    clues:[
+      {t:"sender",fr:"« bcv-alerte.ch » n'est pas « bcv.ch » : n'importe qui peut acheter un domaine ressemblant.",en:"“bcv-alerte.ch” is not “bcv.ch”: anyone can buy a look-alike domain."},
+      {t:"data",fr:"Une vraie banque ne demande jamais vos identifiants par e-mail.",en:"A real bank never asks for your credentials by e-mail."},
+      {t:"urgency",fr:"Menace de limitation du compte pour vous presser.",en:"Threat of limited account access to rush you."},
+      {t:"link",fr:"Le bouton mène à une copie du site de la banque.",en:"The button leads to a copy of the bank's website."}]},
+
+  { lvl:1, from:{fr:"Club informatique",en:"Computer club"}, addr:"clubinfo@gymnase-provence.ch",
+    subj:{fr:"Soirée jeux rétro — vendredi 20 h",en:"Retro gaming night — Friday 8 p.m."},
+    body:{
+      fr:["Bonjour à toutes et à tous,","Vendredi, on ressort les consoles rétro : Mario Kart, Tetris et bornes d'arcade au local B12 dès 20 h. Apportez vos manettes si vous en avez.","Inscription facultative auprès de la secrétaire du club.","À vendredi !"],
+      en:["Hi everyone,","On Friday we're bringing out the retro consoles: Mario Kart, Tetris and arcade machines in room B12 from 8 p.m. Bring your controllers if you have any.","Optional registration with the club secretary.","See you on Friday!"]},
+    link:null,
+    phish:false,
+    note:{fr:"Annonce locale, ton habituel, pas de lien ni d'urgence : rien d'anormal.",
+          en:"Local announcement, usual tone, no link and no urgency: nothing unusual."},
+    clues:[
+      {t:"sender",fr:"Domaine officiel du gymnase.",en:"Official school domain."},
+      {t:"context",fr:"Annonce locale et précise (salle B12, heure), ton habituel d'un club d'élèves.",en:"Precise local announcement (room B12, time), usual tone of a student club."},
+      {t:"reflex",fr:"Pas de lien, pas de données demandées : rien à cliquer.",en:"No link, no data requested: nothing to click."}]},
+
+  { lvl:2, from:{fr:"Swisscom",en:"Swisscom"}, addr:"facture@swisscom.ch.paiement-securise.info",
+    subj:{fr:"Facture n° 2026-1187 : paiement refusé",en:"Invoice no. 2026-1187: payment declined"},
+    body:{
+      fr:["Bonjour,","Le paiement de votre dernière facture (89,40 CHF) a été refusé par votre banque. Afin d'éviter des frais de rappel de 30,00 CHF, veuillez régulariser votre situation sous 5 jours ouvrables.","Merci de votre fidélité.","Swisscom SA"],
+      en:["Hello,","The payment of your latest invoice (CHF 89.40) was declined by your bank. To avoid a CHF 30.00 reminder fee, please settle your balance within 5 working days.","Thank you for your loyalty.","Swisscom Ltd"]},
+    link:{text:{fr:"Consulter ma facture",en:"View my invoice"}, real:"http://swisscom.ch.paiement-securise.info/facture"},
+    phish:true,
+    note:{fr:"Piège : l'adresse commence par swisscom.ch, mais le vrai domaine est « paiement-securise.info » — on lit une adresse de droite à gauche.",
+          en:"Trap: the address starts with swisscom.ch, but the real domain is “paiement-securise.info” — read an address from right to left."},
+    clues:[
+      {t:"sender",fr:"Piège de sous-domaine : le vrai domaine est « paiement-securise.info » ; « swisscom.ch » n'est qu'un préfixe. Lisez de droite à gauche.",en:"Subdomain trap: the real domain is “paiement-securise.info”; “swisscom.ch” is only a prefix. Read from right to left."},
+      {t:"urgency",fr:"Menace de frais de rappel pour vous presser.",en:"Threat of reminder fees to rush you."},
+      {t:"link",fr:"La « facture » mène au domaine piégé paiement-securise.info.",en:"The “invoice” leads to the trapped domain paiement-securise.info."}]},
+
+  { lvl:2, from:{fr:"Microsoft",en:"Microsoft"}, addr:"compte@rnicrosoft.com",
+    subj:{fr:"Connexion inhabituelle détectée",en:"Unusual sign-in detected"},
+    body:{
+      fr:["Bonjour,","Nous avons détecté une connexion à votre compte Microsoft depuis un nouvel appareil. Pays : Russie. Appareil : PC Windows.","Si vous n'êtes pas à l'origine de cette connexion, nous vous recommandons de sécuriser votre compte dès maintenant.","L'équipe Microsoft"],
+      en:["Hello,","We detected a sign-in to your Microsoft account from a new device. Country: Russia. Device: Windows PC.","If this wasn't you, we recommend securing your account right away.","The Microsoft team"]},
+    link:{text:{fr:"Sécuriser mon compte",en:"Secure my account"}, real:"http://rnicrosoft.com/securite"},
+    phish:true,
+    note:{fr:"« rnicrosoft.com » : le « rn » imite le « m ». La mention d'un pays étranger ajoute la panique.",
+          en:"“rnicrosoft.com”: the “rn” imitates the “m”. Mentioning a foreign country adds panic."},
+    clues:[
+      {t:"sender",fr:"« rnicrosoft.com » : « rn » ressemble à « m ». Lisez le domaine lettre par lettre.",en:"“rnicrosoft.com”: “rn” looks like “m”. Read the domain letter by letter."},
+      {t:"urgency",fr:"La connexion « depuis la Russie » sert à vous faire paniquer.",en:"The sign-in “from Russia” is meant to make you panic."},
+      {t:"link",fr:"Le bouton mène au faux site rnicrosoft.com.",en:"The button leads to the fake rnicrosoft.com site."},
+      {t:"reflex",fr:"Tapez vous-même account.microsoft.com dans votre navigateur.",en:"Type account.microsoft.com yourself in your browser."}]},
+
+  { lvl:2, from:{fr:"Mme Rossier — Français",en:"Mrs Rossier — French"}, addr:"m.rossier@gymnases-provence.ch",
+    subj:{fr:"Document partagé : dissertation",en:"Shared document: essay"},
+    body:{
+      fr:["Bonjour,","J'ai partagé avec vous le sujet de la dissertation de décembre. Merci d'en prendre connaissance avant vendredi.","Vous devrez peut-être vous connecter avec votre adresse du gymnase pour l'ouvrir.","Cordialement, M. Rossier"],
+      en:["Hello,","I have shared the December essay topic with you. Please read it before Friday.","You may need to sign in with your school address to open it.","Best regards, Mrs Rossier"]},
+    link:{text:{fr:"Ouvrir le document",en:"Open the document"}, real:"http://docs-scolaires.com/partage/rossier"},
+    phish:true,
+    note:{fr:"Un « s » en trop dans « gymnases-provence.ch » et une fausse page de connexion pour voler votre mot de passe du gymnase.",
+          en:"An extra “s” in “gymnases-provence.ch” and a fake sign-in page to steal your school password."},
+    clues:[
+      {t:"sender",fr:"« gymnases-provence.ch » : un « s » presque invisible en trop par rapport au vrai domaine.",en:"“gymnases-provence.ch”: an almost invisible extra “s” compared to the real domain."},
+      {t:"data",fr:"La fausse page de connexion vise votre mot de passe du gymnase.",en:"The fake sign-in page targets your school password."},
+      {t:"link",fr:"« docs-scolaires.com » n'est pas un service de l'école.",en:"“docs-scolaires.com” is not a school service."},
+      {t:"reflex",fr:"En cas de doute, demandez directement à l'enseignant·e.",en:"When in doubt, ask the teacher directly."}]},
+
+  { lvl:2, from:{fr:"Google",en:"Google"}, addr:"no-reply@accounts.google.com",
+    subj:{fr:"Alerte de sécurité : nouvelle connexion",en:"Security alert: new sign-in"},
+    body:{
+      fr:["Bonjour,","Votre compte Google vient d'être utilisé sur un nouvel appareil. Appareil : MacBook Pro. Lieu : Lausanne, Suisse.","Si c'était vous, vous n'avez rien à faire. Si ce n'était pas vous, vérifiez l'activité de votre compte.","L'équipe des comptes Google"],
+      en:["Hello,","Your Google account was just used on a new device. Device: MacBook Pro. Location: Lausanne, Switzerland.","If this was you, there's nothing to do. If it wasn't you, review your account activity.","The Google Accounts team"]},
+    link:{text:{fr:"Vérifier l'activité",en:"Review activity"}, real:"https://myaccount.google.com/security"},
+    phish:false,
+    note:{fr:"accounts.google.com est un vrai domaine Google et rien ne vous est demandé. Bon réflexe quand même : taper l'adresse soi-même.",
+          en:"accounts.google.com is a genuine Google domain and nothing is asked of you. Good habit anyway: type the address yourself."},
+    clues:[
+      {t:"sender",fr:"accounts.google.com est un vrai domaine de Google.",en:"accounts.google.com is a genuine Google domain."},
+      {t:"data",fr:"Aucune demande d'identifiants : une alerte qui ne demande rien est bon signe.",en:"No credentials requested: an alert that asks for nothing is a good sign."},
+      {t:"link",fr:"Le lien mène réellement à myaccount.google.com — mais le réflexe reste de taper l'adresse soi-même.",en:"The link really leads to myaccount.google.com — but the habit remains to type the address yourself."}]},
+
+  { lvl:2, from:{fr:"Secrétariat du gymnase",en:"School office"}, addr:"secretariat@gymnase-provence.ch",
+    subj:{fr:"Votre attestation de scolarité",en:"Your certificate of enrolment"},
+    body:{
+      fr:["Bonjour,","Suite à votre demande de la semaine dernière, votre attestation de scolarité est prête. Vous pouvez la retirer au secrétariat (bureau 104) entre 8 h et 17 h, ou nous répondre pour la recevoir par courrier.","Bonne journée, le secrétariat"],
+      en:["Hello,","Following your request from last week, your certificate of enrolment is ready. You can pick it up at the office (room 104) between 8 a.m. and 5 p.m., or reply to have it mailed to you.","Have a nice day, the school office"]},
+    link:null,
+    phish:false,
+    note:{fr:"Ce message répond à votre propre demande : contexte attendu, aucune urgence, aucune donnée demandée.",
+          en:"This message answers your own request: expected context, no urgency, no data requested."},
+    clues:[
+      {t:"context",fr:"Vous attendiez ce document : il répond à votre propre démarche, c'est un très bon signe.",en:"You were expecting this document: it answers your own request, a very good sign."},
+      {t:"sender",fr:"Même domaine et même ton que les messages habituels du gymnase.",en:"Same domain and same tone as the school's usual messages."},
+      {t:"reflex",fr:"Pas de lien, pas d'urgence, pas de données demandées.",en:"No link, no urgency, no data requested."}]}
+];
+
+/* ---------- État ---------- */
+const NB_LEVELS = 3, PASS_SCORE = 4;
+let level = 0;
+let order = [];        // indices des e-mails du niveau, mélangés
+let idx = 0;           // position dans order
+let answers = {};      // indice global e-mail -> true (juste) / false (faux)
+const solved = new Set();
+
+function levelEmails(n) {
+  return EMAILS.map((m, i) => ({ m, i })).filter(x => x.m.lvl === n);
+}
+function isUnlocked(n) {
+  if (n === 0) return true;
+  for (let k = 0; k < n; k++) if (!solved.has(k)) return false;
+  return true;
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ---------- Rendu ---------- */
+function renderLevels() {
+  const box = $("levels");
+  box.innerHTML = "";
+  for (let n = 0; n < NB_LEVELS; n++) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "lvlBtn" + (n === level && !$("results").hidden ? " current" : (n === level ? " current" : "")) + (solved.has(n) ? " solved" : "");
+    b.textContent = T().level(n + 1);
+    if (!isUnlocked(n)) { b.disabled = true; b.title = T().lockedTitle; }
+    b.onclick = () => startLevel(n);
+    box.appendChild(b);
+  }
+}
+
+function renderInbox() {
+  const box = $("inbox");
+  box.innerHTML = "";
+  order.forEach((gi, pos) => {
+    const m = EMAILS[gi];
+    const it = document.createElement("button");
+    it.type = "button";
+    let cls = "mailItem";
+    if (pos === idx) cls += " cur";
+    if (gi in answers) cls += answers[gi] ? " ok" : " ko";
+    it.className = cls;
+    const st = (gi in answers) ? (answers[gi] ? "✓" : "✗") : "";
+    it.innerHTML = "<span class='miFrom'><span></span><span class='st'></span></span><span class='miSubj'></span>";
+    it.querySelector(".miFrom span:first-child").textContent = m.from[lang];
+    it.querySelector(".st").textContent = st;
+    it.querySelector(".miSubj").textContent = m.subj[lang];
+    it.onclick = () => { idx = pos; renderAll(); };
+    box.appendChild(it);
+  });
+}
+
+function renderMail() {
+  if (!order.length) return;
+  const gi = order[idx];
+  const m = EMAILS[gi];
+  const mv = $("mailview");
+  mv.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "mvHead";
+  const r1 = document.createElement("div");
+  r1.className = "mvRow";
+  r1.innerHTML = "<span class='lab'></span><span class='nm'></span> <span class='mvAddr'></span>";
+  r1.querySelector(".lab").textContent = T().from;
+  r1.querySelector(".nm").textContent = m.from[lang];
+  r1.querySelector(".mvAddr").textContent = "‹" + m.addr + "›";
+  const r2 = document.createElement("div");
+  r2.className = "mvRow";
+  r2.innerHTML = "<span class='lab'></span><span class='mvSubj'></span>";
+  r2.querySelector(".lab").textContent = T().subject;
+  r2.querySelector(".mvSubj").textContent = m.subj[lang];
+  head.appendChild(r1); head.appendChild(r2);
+  const body = document.createElement("div");
+  body.className = "mvBody";
+  m.body[lang].forEach(p => {
+    const el = document.createElement("p");
+    el.textContent = p;
+    body.appendChild(el);
+  });
+  if (m.link) {
+    const p = document.createElement("p");
+    const a = document.createElement("span");
+    a.className = "fakelink";
+    a.textContent = m.link.text[lang];
+    a.setAttribute("role", "link");
+    a.setAttribute("aria-disabled", "true");
+    p.appendChild(a);
+    body.appendChild(p);
+  }
+  mv.appendChild(head); mv.appendChild(body);
+
+  const answered = gi in answers;
+  $("btnLegit").disabled = answered;
+  $("btnPhish").disabled = answered;
+  if (answered) {
+    showFeedback(gi);
+    $("nextBtn").hidden = false;
+    $("nextBtn").textContent = (idx === order.length - 1) ? T().seeResults : T().next;
+  } else {
+    $("feedback").hidden = true;
+    $("nextBtn").hidden = true;
+  }
+  $("progress").textContent = T().mailCounter(idx + 1, order.length);
+}
+
+function showFeedback(gi) {
+  const m = EMAILS[gi];
+  const ok = answers[gi];
+  const fb = $("feedback");
+  fb.hidden = false;
+  fb.className = "feedback " + (ok ? "good" : "bad");
+  let txt;
+  if (ok) txt = T().correct + m.note[lang];
+  else txt = m.phish ? T().wrongPhish : T().wrongLegit;
+  fb.textContent = txt;
+}
+
+function classify(choicePhish) {
+  const gi = order[idx];
+  if (gi in answers) return;
+  const m = EMAILS[gi];
+  answers[gi] = (choicePhish === m.phish);
+  renderAll();
+}
+
+function renderAll() {
+  renderLevels();
+  renderInbox();
+  renderMail();
+}
+
+/* ---------- Bilan de niveau ---------- */
+function showResults() {
+  const gi_list = order.slice();
+  const score = gi_list.filter(gi => answers[gi]).length;
+  const total = gi_list.length;
+  const pass = score >= PASS_SCORE;
+  const errors = gi_list.filter(gi => !answers[gi]);
+
+  if (pass) solved.add(level);
+  $("gameArea").hidden = true;
+  $("results").hidden = false;
+  renderLevels();
+
+  const card = $("resCard");
+  card.innerHTML = "";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = T().resTitle + " — " + T().level(level + 1);
+  card.appendChild(h2);
+
+  const sc = document.createElement("div");
+  sc.className = "resScore";
+  sc.textContent = T().scoreMsg(score, total);
+  card.appendChild(sc);
+
+  const msg = document.createElement("div");
+  msg.className = "resMsg";
+  if (pass && score === total) msg.textContent = T().pass + T().perfect;
+  else if (pass) msg.textContent = T().pass;
+  else msg.textContent = T().fail;
+  card.appendChild(msg);
+
+  const dt = document.createElement("h2");
+  dt.textContent = T().dissectTitle;
+  card.appendChild(dt);
+
+  if (errors.length === 0) {
+    const p = document.createElement("p");
+    p.textContent = T().noErrors;
+    card.appendChild(p);
+  }
+  errors.forEach(gi => {
+    const m = EMAILS[gi];
+    const d = document.createElement("div");
+    d.className = "err";
+    const h3 = document.createElement("h3");
+    h3.textContent = m.subj[lang] + " — " + m.addr;
+    d.appendChild(h3);
+    const v = document.createElement("div");
+    v.className = "verdict " + (m.phish ? "ph" : "lg");
+    v.textContent = m.phish ? T().verdictPhish : T().verdictLegit;
+    d.appendChild(v);
+    if (m.link) {
+      const lr = document.createElement("div");
+      lr.className = "linkRev";
+      lr.innerHTML = "<span class='ls'></span> : <code></code> — <span class='lr2'></span> : <code></code>";
+      lr.querySelector(".ls").textContent = T().linkShown;
+      lr.querySelectorAll("code")[0].textContent = m.link.text[lang];
+      lr.querySelector(".lr2").textContent = T().linkReal;
+      lr.querySelectorAll("code")[1].textContent = m.link.real;
+      d.appendChild(lr);
+    }
+    const ul = document.createElement("ul");
+    m.clues.forEach(c => {
+      const li = document.createElement("li");
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = T().cat[c.t] || c.t;
+      li.appendChild(tag);
+      li.appendChild(document.createTextNode(c[lang]));
+      ul.appendChild(li);
+    });
+    d.appendChild(ul);
+    card.appendChild(d);
+  });
+
+  if (pass && level === NB_LEVELS - 1) {
+    const fh = document.createElement("h2");
+    fh.style.marginTop = "18px";
+    fh.textContent = T().winMsg + " " + T().finalTitle;
+    card.appendChild(fh);
+    const ul = document.createElement("ul");
+    ul.className = "finalList";
+    T().finalList.forEach(t => {
+      const li = document.createElement("li");
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+  }
+
+  const btns = document.createElement("div");
+  btns.className = "resBtns";
+  if (!pass) {
+    const r = document.createElement("button");
+    r.type = "button"; r.className = "accent";
+    r.textContent = T().retry;
+    r.onclick = () => startLevel(level);
+    btns.appendChild(r);
+  } else if (level < NB_LEVELS - 1) {
+    const n = document.createElement("button");
+    n.type = "button"; n.className = "accent";
+    n.textContent = T().nextLevel;
+    n.onclick = () => startLevel(level + 1);
+    btns.appendChild(n);
+  }
+  const again = document.createElement("button");
+  again.type = "button";
+  again.textContent = T().retry;
+  again.onclick = () => startLevel(level);
+  if (pass) btns.appendChild(again);
+  card.appendChild(btns);
+
+  if (pass && level === NB_LEVELS - 1) fireworks();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ---------- Navigation ---------- */
+function startLevel(n) {
+  if (!isUnlocked(n)) return;
+  level = n;
+  order = shuffle(levelEmails(n).map(x => x.i));
+  idx = 0;
+  answers = {};
+  $("gameArea").hidden = false;
+  $("results").hidden = true;
+  renderAll();
+  window.scrollTo({ top: 0 });
+}
+
+$("btnLegit").onclick = () => classify(false);
+$("btnPhish").onclick = () => classify(true);
+$("nextBtn").onclick = () => {
+  if (idx === order.length - 1) showResults();
+  else { idx++; renderAll(); }
+};
+
+/* ---------- Feux d'artifice ---------- */
+let fwRunning = false;
+function fireworks() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = $("fireworks"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  cv.style.display = "block";
+  fwRunning = true;
+  const COLORS = ["#155E4C", "#D96A08", "#C84B31"];
+  const rockets = [], sparks = [];
+  const launch = () => {
+    rockets.push({
+      x: cv.width * (0.15 + Math.random() * 0.7), y: cv.height,
+      vx: (Math.random() - 0.5) * 2, vy: -(10 + Math.random() * 4),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  };
+  const explode = r => {
+    for (let i = 0; i < 90; i++) {
+      const ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+      sparks.push({ x: r.x, y: r.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+                    life: 60 + Math.random() * 40, color: r.color });
+    }
+  };
+  let frame = 0;
+  const tick = () => {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    frame++;
+    if (frame < 260 && frame % 16 === 0) launch();
+    for (let i = rockets.length - 1; i >= 0; i--) {
+      const r = rockets[i];
+      r.x += r.vx; r.y += r.vy; r.vy += 0.18;
+      ctx.beginPath(); ctx.arc(r.x, r.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = r.color; ctx.fill();
+      if (r.vy >= -1.5) { explode(r); rockets.splice(i, 1); }
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.x += s.vx; s.y += s.vy; s.vy += 0.05; s.vx *= 0.985; s.life--;
+      ctx.globalAlpha = Math.max(0, s.life / 80);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.fill();
+      if (s.life <= 0) sparks.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    if (frame < 600 || rockets.length || sparks.length) requestAnimationFrame(tick);
+    else { cv.style.display = "none"; fwRunning = false; }
+  };
+  tick();
+}
+
+/* ---------- Langue & plein écran ---------- */
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " — " + T().kicker;
+  $("btnLegit").textContent = T().btnLegit;
+  $("btnPhish").textContent = T().btnPhish;
+  if ($("results").hidden) { if (order.length) renderAll(); else renderLevels(); }
+  else showResults();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+/* ---------- Démarrage ---------- */
+applyLang();
+startLevel(0);
+</script>
+</body>
+</html>

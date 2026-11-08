@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Simulation interactive : vivez une journée de navigation web, voyez les traceurs tiers construire votre profil, puis comparez avec un bloqueur de pubs et la navigation privée.">
+<title>La journée tracée · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1180px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);color:var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.modeBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.modeBar .lbl{font-weight:700;color:var(--primary);margin-right:4px}
+.modeBtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.modeBtn.done::after{content:" ✓"}
+
+.prog{height:8px;background:var(--line);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+.prog>div{height:100%;background:var(--accent);width:0;transition:width .35s}
+.progLbl{font-size:13px;color:var(--muted);margin-bottom:14px}
+
+.main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+h2{font-size:17px;color:var(--primary);margin-bottom:10px}
+.sub{font-size:13px;color:var(--muted);margin:-6px 0 10px}
+
+.visitBtn{display:block;width:100%;min-height:48px;margin-bottom:12px;background:var(--accent);border-color:var(--accent);color:#fff;font-size:15px}
+.visitBtn:hover{background:var(--accent);filter:brightness(1.08)}
+.replayBtn{width:100%;min-height:44px;margin-top:12px}
+
+.site{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.site .time{font-weight:700;color:var(--muted);width:46px;flex:none;font-size:14px}
+.site .em{font-size:22px;flex:none}
+.site .nm{flex:1;font-weight:700;font-size:15px}
+.site.next{border-color:var(--accent);background:var(--accentLight);cursor:pointer}
+.site.done{border-color:var(--primary);background:var(--primaryLight)}
+.badge{flex:none;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;color:#fff;background:var(--line)}
+.site.next .badge{background:var(--accent)}
+.site.done .badge{background:var(--primary)}
+
+.panel{position:sticky;top:12px}
+.trk{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;transition:border-color .3s,background .3s,opacity .3s}
+.trk.spy{border-color:var(--accent);background:var(--accentLight);animation:pulse 1s ease-in-out infinite}
+.trk.blk{border-color:var(--error);background:var(--accentLight)}
+.trk.forgot{opacity:.5}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,106,8,.0)}50%{box-shadow:0 0 0 4px rgba(217,106,8,.18)}}
+.trk .head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.trk .tem{font-size:18px}
+.trk .nm{font-weight:700;font-size:15px}
+.trk .ty{font-size:12px;color:var(--muted)}
+.trk .cnt{margin-left:auto;font-weight:700;color:var(--primary);font-size:13px;text-align:right}
+.stateBadge{flex:none;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+.stateBadge.spy{background:var(--accent);color:#fff}
+.stateBadge.blk{background:var(--error);color:#fff}
+.stateBadge.kept{background:var(--primary);color:#fff}
+.stateBadge.erased{background:var(--muted);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{background:var(--primaryLight);color:var(--primary);font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px}
+.chipsEmpty{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+
+.summary{border:2px solid var(--primary);background:var(--primaryLight);border-radius:12px;padding:14px 16px;margin-top:16px;display:none}
+.summary.show{display:block}
+.summary h3{color:var(--primary);font-size:16px;margin-bottom:6px}
+.summary p{font-size:14px;margin-bottom:6px}
+.summary .note{font-size:13px;color:var(--primary);font-style:italic}
+
+.comp{margin-top:22px;display:none}
+.comp.show{display:block}
+.compGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.compCol{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.compCol h3{font-size:14px;color:var(--primary);margin-bottom:8px;min-height:34px}
+.statLbl{font-size:12px;color:var(--muted);margin-top:6px}
+.statVal{font-size:13px;font-weight:700;color:var(--ink)}
+.bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden;margin:3px 0 6px}
+.bar>div{height:100%;background:var(--accent)}
+.bar.green>div{background:var(--primary)}
+.notPlayed{font-size:13px;color:var(--muted);font-style:italic}
+.takeaway{margin-top:14px;border:2px solid var(--accent);background:var(--accentLight);border-radius:12px;padding:12px 16px;font-size:14px;display:none}
+.takeaway.show{display:block}
+.fiction{margin-top:12px;font-size:12px;color:var(--muted);font-style:italic;text-align:center}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .main{grid-template-columns:1fr}
+  .panel{position:static}
+  .compGrid{grid-template-columns:1fr}
+  .compCol h3{min-height:0}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="modeBar" id="modeBar">
+  <span class="lbl" id="modeLbl"></span>
+  <button type="button" class="modeBtn" id="modeNo" data-mode="no"></button>
+  <button type="button" class="modeBtn" id="modeBlock" data-mode="block"></button>
+  <button type="button" class="modeBtn" id="modePrivate" data-mode="private"></button>
+</div>
+<div class="prog"><div id="progFill"></div></div>
+<div class="progLbl" id="progLbl"></div>
+
+<div class="main">
+  <div>
+    <h2 id="dayTitle"></h2>
+    <button type="button" class="visitBtn" id="visitBtn"></button>
+    <div id="timeline"></div>
+    <div class="summary" id="summary" aria-live="polite"></div>
+    <button type="button" class="replayBtn" id="replayBtn"></button>
+  </div>
+  <div class="panel">
+    <h2 id="panelTitle"></h2>
+    <div class="sub" id="panelSub"></div>
+    <div id="trackers"></div>
+  </div>
+</div>
+
+<div class="comp" id="comp">
+  <h2 id="compTitle"></h2>
+  <div class="sub" id="compSub"></div>
+  <div class="compGrid" id="compGrid"></div>
+  <div class="takeaway" id="takeaway"></div>
+</div>
+<div class="fiction" id="fiction"></div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+const SITES = [
+  {time:"07:15", em:"🌦️", key:"weather"},
+  {time:"08:30", em:"📰", key:"news"},
+  {time:"10:05", em:"💬", key:"social"},
+  {time:"12:15", em:"🍝", key:"cooking"},
+  {time:"14:00", em:"👟", key:"shopping"},
+  {time:"16:30", em:"🎬", key:"video"},
+  {time:"19:00", em:"🎮", key:"gaming"},
+  {time:"21:30", em:"🎵", key:"music"}
+];
+const TRACKERS = [
+  {id:"adtrack",  name:"AdTrack",     em:"📢", type:"ads",    adblock:true,  finger:false, sites:[0,1,2,4,5,7]},
+  {id:"pixel",    name:"PixelSocial", em:"👍", type:"social", adblock:true,  finger:false, sites:[1,2,3,4,6]},
+  {id:"analytix", name:"Analytix",    em:"📊", type:"stats",  adblock:false, finger:false, sites:[0,1,3,5,7]},
+  {id:"retarget", name:"RetargetPro", em:"🎯", type:"ads",    adblock:true,  finger:false, sites:[2,4,5,6,7]},
+  {id:"broker",   name:"DataBroker",  em:"💾", type:"broker", adblock:true,  finger:false, sites:[1,2,4,6,7]},
+  {id:"finger",   name:"FingerLab",   em:"👁️", type:"finger", adblock:false, finger:true,  sites:[0,1,2,3,4,5,6,7]}
+];
+const MODES = ["no","block","private"];
+const MAXINFOS = TRACKERS.reduce((a,t)=>a+t.sites.length,0);
+const NBLOCKED = TRACKERS.filter(t=>t.adblock).length;
+
+const I18N = {
+  fr:{
+    kicker:"ENJEUX SOCIAUX",
+    title:"La journée tracée",
+    docTitle:"La journée tracée · Gymnase — Frédéric Jaccard",
+    instruction:"Cliquez sur « Visiter » pour avancer dans votre journée en ligne. À chaque site, observez le panneau : quels traceurs tiers vous suivent, et qu'apprennent-ils ? Rejouez ensuite la journée avec un bloqueur de pubs, puis en navigation privée, et comparez.",
+    fs:"Plein écran", fsExit:"Quitter",
+    backList:"← Toutes les applications",
+    modeLbl:"Mode de navigation :",
+    mode_no:"Sans protection", mode_block:"🛡 Bloqueur de pubs", mode_private:"🕶 Navigation privée",
+    dayTitle:"Votre journée en ligne",
+    visit:(name)=>"Visiter : "+name,
+    dayOver:"Journée terminée ✓",
+    progress:(k,n)=>"Moment "+k+" sur "+n,
+    next:"suivant", visited:"visité ✓",
+    panelTitle:"Panneau des traceurs",
+    panelSub:"Ces entreprises tierces, présentes via des scripts, pixels ou boutons, construisent votre profil.",
+    type_ads:"Publicité ciblée", type_social:"Boutons sociaux", type_stats:"Statistiques de visite",
+    type_broker:"Revente de données", type_finger:"Empreinte du navigateur",
+    seenOn:(n)=>"vous a vu sur "+n+" site"+(n>1?"s":""),
+    noData:"Pas encore de données",
+    collecting:"● collecte", blocked:"🛡 bloqué",
+    erased:"cookies effacés — profil oublié", kept:"empreinte conservée — reconnu demain",
+    sumTitle:"Bilan de la journée",
+    sumNo:(t,i)=>t+" traceurs vous ont suivi toute la journée et collecté "+i+" informations sur vos goûts et vos habitudes.",
+    noteNo:"Ces profils sont conservés, recoupés entre sites… et revendus.",
+    sumBlock:(b,t,i)=>"Le bloqueur a stoppé "+b+" traceurs publicitaires, mais "+t+" traceur"+(t>1?"s":"")+" vous a"+(t>1?"nt":"")+" quand même suivi ("+i+" informations collectées).",
+    noteBlock:"Un bloqueur réduit fortement le pistage, mais ne bloque pas tout : les statistiques de visite et l'empreinte du navigateur passent encore.",
+    sumPrivate:(t,i)=>"Pendant la journée, "+t+" traceurs vous ont suivi exactement comme sans protection ("+i+" informations collectées).",
+    notePrivate:"À la fermeture, les cookies sont effacés… mais l'empreinte de votre navigateur permet encore de vous reconnaître. Et votre école, votre fournisseur d'accès et les sites visités voient toujours tout.",
+    profileLbl:"Ce qui est appris sur vous :",
+    replay:"Rejouer la journée",
+    compTitle:"Comparaison des modes",
+    compNeed:"Terminez la journée dans au moins deux modes pour débloquer la comparaison complète.",
+    compReady:"Les trois modes comparés : qui collecte quoi, et que reste-t-il demain ?",
+    compActive:"Traceurs actifs", compInfos:"Informations collectées", compKept:"Profils conservés le lendemain",
+    notPlayed:"Pas encore joué",
+    takeaway:"À retenir : la navigation privée efface les traces sur votre appareil, mais ne vous rend pas invisible pendant la session. Le bloqueur de pubs arrête la plupart des traceurs publicitaires, mais pas tous. La meilleure protection combine les deux… et un peu de méfiance.",
+    fiction:"Les noms des traceurs sont fictifs ; le mécanisme de pistage, lui, est bien réel.",
+    int_weather:"votre ville", int_news:"lit la presse", int_social:"votre réseau d'amis",
+    int_cooking:"aime cuisiner", int_shopping:"veut des baskets", int_video:"regarde des séries",
+    int_gaming:"joue aux jeux vidéo", int_music:"écoute de la pop",
+    site_weather:"Météo du matin", site_news:"Journal en ligne", site_social:"Réseau social",
+    site_cooking:"Recettes de cuisine", site_shopping:"Boutique de baskets", site_video:"Vidéos en streaming",
+    site_gaming:"Forum de jeux vidéo", site_music:"Musique en ligne"
+  },
+  en:{
+    kicker:"SOCIAL ISSUES",
+    title:"The tracked day",
+    docTitle:"The tracked day · Gymnase — Frédéric Jaccard",
+    instruction:"Click “Visit” to move through your day online. At each site, watch the panel: which third-party trackers follow you, and what do they learn? Then replay the day with an ad blocker and in private browsing, and compare.",
+    fs:"Fullscreen", fsExit:"Exit",
+    backList:"← All applications",
+    modeLbl:"Browsing mode:",
+    mode_no:"No protection", mode_block:"🛡 Ad blocker", mode_private:"🕶 Private browsing",
+    dayTitle:"Your day online",
+    visit:(name)=>"Visit: "+name,
+    dayOver:"Day complete ✓",
+    progress:(k,n)=>"Moment "+k+" of "+n,
+    next:"next", visited:"visited ✓",
+    panelTitle:"Tracker panel",
+    panelSub:"These third-party companies, embedded via scripts, pixels or buttons, are building your profile.",
+    type_ads:"Targeted ads", type_social:"Social buttons", type_stats:"Visit analytics",
+    type_broker:"Data broker", type_finger:"Browser fingerprint",
+    seenOn:(n)=>"saw you on "+n+" site"+(n>1?"s":""),
+    noData:"No data yet",
+    collecting:"● collecting", blocked:"🛡 blocked",
+    erased:"cookies wiped — profile forgotten", kept:"fingerprint kept — recognised tomorrow",
+    sumTitle:"End-of-day report",
+    sumNo:(t,i)=>t+" trackers followed you all day and collected "+i+" pieces of information about your tastes and habits.",
+    noteNo:"These profiles are stored, cross-referenced between sites… and sold.",
+    sumBlock:(b,t,i)=>"The blocker stopped "+b+" advertising trackers, but "+t+" tracker"+(t>1?"s":"")+" still followed you ("+i+" pieces of information collected).",
+    noteBlock:"A blocker greatly reduces tracking, but doesn't block everything: visit analytics and browser fingerprinting still get through.",
+    sumPrivate:(t,i)=>"During the day, "+t+" trackers followed you exactly as without protection ("+i+" pieces of information collected).",
+    notePrivate:"When you close the window, cookies are wiped… but your browser fingerprint can still recognise you. And your school, your internet provider and the sites you visit still see everything.",
+    profileLbl:"What they learn about you:",
+    replay:"Replay the day",
+    compTitle:"Mode comparison",
+    compNeed:"Finish the day in at least two modes to unlock the full comparison.",
+    compReady:"All three modes compared: who collects what, and what remains tomorrow?",
+    compActive:"Active trackers", compInfos:"Data points collected", compKept:"Profiles kept the next day",
+    notPlayed:"Not played yet",
+    takeaway:"Remember: private browsing wipes traces on your device, but doesn't make you invisible during the session. An ad blocker stops most advertising trackers, but not all of them. The best protection combines both… and a bit of caution.",
+    fiction:"Tracker names are fictional; the tracking mechanism is very real.",
+    int_weather:"your town", int_news:"reads the news", int_social:"your circle of friends",
+    int_cooking:"likes cooking", int_shopping:"wants sneakers", int_video:"watches series",
+    int_gaming:"plays video games", int_music:"listens to pop",
+    site_weather:"Morning weather", site_news:"Online newspaper", site_social:"Social network",
+    site_cooking:"Cooking recipes", site_shopping:"Sneaker shop", site_video:"Video streaming",
+    site_gaming:"Gaming forum", site_music:"Music streaming"
+  }
+};
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+
+let mode = "no";
+let step = -1;
+let collected = {};
+let finished = false;
+let results = {};
+
+function resetCollected(){ collected = {}; TRACKERS.forEach(tr=>collected[tr.id]=[]); }
+resetCollected();
+
+const isBlocked = tr => mode==="block" && tr.adblock;
+const isPresent = (tr,s) => tr.sites.indexOf(s) !== -1;
+
+function visitNext(){
+  if(finished || step >= SITES.length-1) return;
+  step++;
+  TRACKERS.forEach(tr=>{ if(isPresent(tr,step) && !isBlocked(tr)) collected[tr.id].push(step); });
+  if(step === SITES.length-1) finishDay();
+  render();
+}
+
+function finishDay(){
+  finished = true;
+  const active = TRACKERS.filter(tr=>collected[tr.id].length>0).length;
+  const infos = TRACKERS.reduce((a,tr)=>a+collected[tr.id].length,0);
+  let kept;
+  if(mode==="private") kept = TRACKERS.filter(tr=>tr.finger && collected[tr.id].length>0).length;
+  else kept = active;
+  results[mode] = {active:active, infos:infos, kept:kept};
+}
+
+function setMode(m){
+  if(m===mode && step===-1 && !finished) { render(); return; }
+  mode = m;
+  step = -1; finished = false; resetCollected();
+  render();
+}
+
+function renderModeBtns(){
+  MODES.forEach(m=>{
+    const btn = $("mode"+m.charAt(0).toUpperCase()+m.slice(1));
+    btn.textContent = T()["mode_"+m];
+    btn.classList.toggle("active", m===mode);
+    btn.classList.toggle("done", !!results[m]);
+  });
+}
+
+function renderTimeline(){
+  const tl = $("timeline");
+  tl.innerHTML = "";
+  SITES.forEach((s,i)=>{
+    const div = document.createElement("div");
+    div.className = "site";
+    let badge = "";
+    if(i <= step){ div.classList.add("done"); badge = '<span class="badge">'+T().visited+'</span>'; }
+    else if(i === step+1 && !finished){ div.classList.add("next"); badge = '<span class="badge">'+T().next+'</span>'; }
+    div.innerHTML = '<span class="time">'+s.time+'</span><span class="em">'+s.em+'</span>'+
+                    '<span class="nm">'+T()["site_"+s.key]+'</span>'+badge;
+    if(i === step+1 && !finished) div.onclick = visitNext;
+    tl.appendChild(div);
+  });
+}
+
+function renderVisitBtn(){
+  const b = $("visitBtn");
+  if(finished){ b.style.display = "none"; }
+  else{
+    b.style.display = "block";
+    b.textContent = T().visit(T()["site_"+SITES[step+1].key]);
+  }
+  $("replayBtn").textContent = T().replay;
+}
+
+function renderProgress(){
+  const done = step+1;
+  $("progFill").style.width = (done/SITES.length*100)+"%";
+  $("progLbl").textContent = T().progress(done, SITES.length);
+}
+
+function renderPanel(){
+  $("panelTitle").textContent = T().panelTitle;
+  $("panelSub").textContent = T().panelSub;
+  const box = $("trackers");
+  box.innerHTML = "";
+  TRACKERS.forEach(tr=>{
+    const n = collected[tr.id].length;
+    const card = document.createElement("div");
+    card.className = "trk";
+    let stateBadge = "";
+    if(!finished && step>=0 && isPresent(tr,step)){
+      if(isBlocked(tr)){ card.classList.add("blk"); stateBadge = '<span class="stateBadge blk">'+T().blocked+'</span>'; }
+      else{ card.classList.add("spy"); stateBadge = '<span class="stateBadge spy">'+T().collecting+'</span>'; }
+    }
+    if(mode==="private" && finished){
+      if(tr.finger){ stateBadge = '<span class="stateBadge kept">'+T().kept+'</span>'; }
+      else{ card.classList.add("forgot"); stateBadge = '<span class="stateBadge erased">'+T().erased+'</span>'; }
+    }
+    let chipsHtml;
+    const showChips = !(mode==="private" && finished && !tr.finger);
+    if(n>0 && showChips){
+      chipsHtml = '<div class="chips">'+collected[tr.id].map(i=>'<span class="chip">'+T()["int_"+SITES[i].key]+'</span>').join("")+'</div>';
+    } else if(n===0){
+      chipsHtml = '<div class="chipsEmpty">'+T().noData+'</div>';
+    } else {
+      chipsHtml = "";
+    }
+    card.innerHTML = '<div class="head"><span class="tem">'+tr.em+'</span>'+
+      '<span class="nm">'+tr.name+'</span>'+stateBadge+
+      '<span class="cnt">'+T().seenOn(n)+'</span></div>'+
+      '<div class="ty">'+T()["type_"+tr.type]+'</div>'+chipsHtml;
+    box.appendChild(card);
+  });
+}
+
+function renderSummary(){
+  const s = $("summary");
+  if(!finished){ s.className = "summary"; s.innerHTML = ""; return; }
+  const active = TRACKERS.filter(tr=>collected[tr.id].length>0).length;
+  const infos = TRACKERS.reduce((a,tr)=>a+collected[tr.id].length,0);
+  let main, note;
+  if(mode==="no"){ main = T().sumNo(active,infos); note = T().noteNo; }
+  else if(mode==="block"){ main = T().sumBlock(NBLOCKED,active,infos); note = T().noteBlock; }
+  else{ main = T().sumPrivate(active,infos); note = T().notePrivate; }
+  const keys = [];
+  TRACKERS.forEach(tr=>collected[tr.id].forEach(i=>{ if(keys.indexOf(SITES[i].key)===-1) keys.push(SITES[i].key); }));
+  const profile = keys.map(k=>'<span class="chip">'+T()["int_"+k]+'</span>').join("");
+  s.innerHTML = '<h3>'+T().sumTitle+'</h3><p>'+main+'</p>'+
+    '<p><strong>'+T().profileLbl+'</strong></p><div class="chips">'+profile+'</div>'+
+    '<p class="note" style="margin-top:8px">'+note+'</p>';
+  s.className = "summary show";
+}
+
+function renderComparison(){
+  const played = MODES.filter(m=>results[m]);
+  const comp = $("comp");
+  if(played.length===0){ comp.className = "comp"; return; }
+  comp.className = "comp show";
+  $("compTitle").textContent = T().compTitle;
+  $("compSub").textContent = played.length>=2 ? T().compReady : T().compNeed;
+  const grid = $("compGrid");
+  grid.innerHTML = "";
+  MODES.forEach(m=>{
+    const col = document.createElement("div");
+    col.className = "compCol";
+    let inner = '<h3>'+T()["mode_"+m]+'</h3>';
+    if(results[m]){
+      const r = results[m];
+      const rows = [
+        {lbl:T().compActive, val:r.active, max:TRACKERS.length, green:false},
+        {lbl:T().compInfos, val:r.infos, max:MAXINFOS, green:false},
+        {lbl:T().compKept, val:r.kept, max:TRACKERS.length, green:true}
+      ];
+      rows.forEach(row=>{
+        inner += '<div class="statLbl">'+row.lbl+'</div>'+
+          '<div class="bar'+(row.green?" green":"")+'"><div style="width:'+(row.val/row.max*100)+'%"></div></div>'+
+          '<div class="statVal">'+row.val+' / '+row.max+'</div>';
+      });
+    } else {
+      inner += '<div class="notPlayed">'+T().notPlayed+'</div>';
+    }
+    col.innerHTML = inner;
+    grid.appendChild(col);
+  });
+  const tk = $("takeaway");
+  if(played.length>=2){ tk.textContent = T().takeaway; tk.className = "takeaway show"; }
+  else tk.className = "takeaway";
+}
+
+function render(){
+  renderModeBtns();
+  renderTimeline();
+  renderVisitBtn();
+  renderProgress();
+  renderPanel();
+  renderSummary();
+  renderComparison();
+}
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  document.getElementById("backLink").textContent = T().backList;
+  document.title = T().docTitle;
+  $("modeLbl").textContent = T().modeLbl;
+  $("dayTitle").textContent = T().dayTitle;
+  $("fiction").textContent = T().fiction;
+  render();
+}
+$("langBtn").onclick = () => {
+  lang = lang==="fr" ? "en" : "fr";
+  try{localStorage.setItem("fj-lang",lang);document.cookie = "fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
+  applyLang();
+};
+$("visitBtn").onclick = visitNext;
+$("replayBtn").onclick = () => { step=-1; finished=false; resetCollected(); render(); };
+MODES.forEach(m=>{
+  $("mode"+m.charAt(0).toUpperCase()+m.slice(1)).onclick = () => setMode(m);
+});
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if(isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange",syncFsLabel);
+document.addEventListener("webkitfullscreenchange",syncFsLabel);
+applyLang();
+</script>
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Recoupez des données « anonymisées » pour ré-identifier des personnes et découvrez pourquoi quelques attributs suffisent — introduction à la k-anonymité.">
+<title>Anonyme, vraiment ? · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;color:var(--primary)}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+/* Cartes de niveaux */
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.stageCard{position:relative;background:var(--card);border:2px solid var(--line);border-radius:12px;
+  padding:14px;cursor:pointer;text-align:left;min-height:44px}
+.stageCard h2{font-size:16px;color:var(--primary);margin-bottom:4px}
+.stageCard p{font-size:13px;color:var(--muted);font-weight:400}
+.stageCard.current{border-color:var(--accent);background:var(--accentLight)}
+.stageCard.current h2{color:var(--accent)}
+.stageCard.done{border-color:var(--primary);background:var(--primaryLight)}
+.stageCard.locked{opacity:.35;cursor:not-allowed}
+.stageCard .star{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:22px;display:none}
+.stageCard.done .star{display:block}
+.stageNum{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+
+/* Panneaux */
+.panel{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.panel h3{font-size:15px;color:var(--primary);margin-bottom:8px}
+.prompt{font-size:14px;color:var(--ink);margin-bottom:12px}
+.progress{font-size:13px;color:var(--muted);margin-bottom:10px}
+
+/* Registre */
+.personGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.personCard{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 8px;
+  text-align:center;font-weight:400;color:var(--ink);min-height:44px;width:100%}
+.personCard .pname{font-weight:700;font-size:14px;display:block;margin-bottom:3px}
+.personCard .pattr{font-size:12px;color:var(--muted);display:block}
+.personCard:hover{background:var(--primaryLight);border-color:var(--primary)}
+.personCard.hit{border-color:var(--primary);background:var(--primaryLight)}
+.personCard.miss{border-color:var(--error);background:var(--accentLight)}
+.personCard:disabled{cursor:default}
+
+/* Dossier anonyme */
+.dossier{background:var(--bg);border:2px dashed var(--accent);border-radius:12px;padding:14px;margin-bottom:14px}
+.dossier .dtitle{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.attrRow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.attr{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:14px}
+.attr b{color:var(--primary)}
+.activity{font-size:14px;background:var(--accentLight);border-radius:8px;padding:8px 10px}
+.feedback{margin-top:10px;font-size:14px;border-radius:10px;padding:10px 12px;display:none}
+.feedback.ok{display:block;background:var(--primaryLight);border:2px solid var(--primary);color:var(--primary)}
+.feedback.ko{display:block;background:var(--accentLight);border:2px solid var(--error);color:var(--error)}
+.doneBox{margin-top:12px;background:var(--primaryLight);border:2px solid var(--primary);border-radius:12px;
+  padding:14px;color:var(--primary);font-size:15px;display:none}
+.doneBox.show{display:block}
+.nextBtn{background:var(--accent);border-color:var(--accent);color:#fff;margin-top:10px;min-height:44px}
+.nextBtn:hover{background:var(--accent);opacity:.85}
+
+/* Niveau 2 */
+table.reg{width:100%;border-collapse:collapse;font-size:14px;background:var(--bg);border-radius:8px;overflow:hidden}
+table.reg th{background:var(--primaryLight);color:var(--primary);text-align:left;padding:8px 10px;font-size:13px}
+table.reg td{padding:7px 10px;border-top:1px solid var(--line)}
+.recGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.recCard{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px;font-size:13px}
+.recCard .rtitle{font-weight:700;color:var(--accent);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.recCard .rattrs{margin-bottom:6px}
+.recCard .ract{color:var(--muted);margin-bottom:8px}
+.optRow{display:flex;gap:6px}
+.optBtn{flex:1;padding:8px 4px;font-size:13px;min-height:44px}
+.optBtn:hover{background:var(--accentLight);border-color:var(--accent)}
+.recCard.solved1{border-color:var(--error);background:var(--accentLight)}
+.recCard.solved2,.recCard.solved3{border-color:var(--primary);background:var(--primaryLight)}
+.recResult{font-size:13px;font-weight:700;margin-top:4px}
+.recCard.solved1 .recResult{color:var(--error)}
+.recCard.solved2 .recResult,.recCard.solved3 .recResult{color:var(--primary)}
+.recHint{font-size:12px;color:var(--error);margin-top:4px;display:none}
+.recHint.show{display:block}
+
+/* Niveau 3 */
+.attrToggles{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.tog{display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--line);
+  border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;min-height:44px;flex:1;justify-content:center}
+.tog.on{border-color:var(--primary);background:var(--primaryLight);color:var(--primary)}
+.tog input{accent-color:var(--primary);width:20px;height:20px;cursor:pointer}
+.statsRow{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.statBox{flex:1;min-width:150px;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.statBox .big{font-size:26px;font-weight:700;color:var(--primary)}
+.statBox.bad .big{color:var(--error)}
+.statBox.good{border-color:var(--primary);background:var(--primaryLight)}
+.statBox.bad{border-color:var(--error);background:var(--accentLight)}
+.statBox .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px}
+.chip.solo{border-color:var(--error);background:var(--accentLight)}
+.chip.pair{border-color:var(--accent);background:var(--accentLight)}
+.chip.safe{border-color:var(--primary);background:var(--primaryLight)}
+.chip .cnames{color:var(--muted);font-size:12px}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .stages{grid-template-columns:1fr}
+  .personGrid{grid-template-columns:repeat(2,1fr)}
+  .recGrid{grid-template-columns:1fr}
+  .attrRow{flex-direction:column;align-items:stretch}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="stages" id="stages"></div>
+
+<section id="stage1" style="display:none">
+  <div class="panel">
+    <div class="dossier">
+      <div class="dtitle" id="dTitle1"></div>
+      <div class="attrRow" id="dAttrs1"></div>
+      <div class="activity" id="dAct1"></div>
+    </div>
+    <div class="prompt" id="prompt1"></div>
+    <div class="progress" id="progress1"></div>
+    <div class="personGrid" id="grid1"></div>
+    <div class="feedback" id="fb1"></div>
+    <div class="doneBox" id="done1"></div>
+  </div>
+</section>
+
+<section id="stage2" style="display:none">
+  <div class="panel">
+    <h3 id="regTitle2"></h3>
+    <table class="reg" id="regTable2"></table>
+  </div>
+  <div class="panel">
+    <div class="prompt" id="prompt2"></div>
+    <div class="progress" id="progress2"></div>
+    <div class="recGrid" id="grid2"></div>
+    <div class="doneBox" id="done2"></div>
+  </div>
+</section>
+
+<section id="stage3" style="display:none">
+  <div class="panel">
+    <div class="prompt" id="prompt3"></div>
+    <div class="attrToggles" id="toggles3"></div>
+    <div class="statsRow" id="stats3"></div>
+    <h3 id="chipTitle3"></h3>
+    <div class="chips" id="chips3"></div>
+    <div class="doneBox" id="done3"></div>
+  </div>
+</section>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- Données ---------- */
+// Niveau 1 : 8 personnes — le triple (année, CP, sexe) est unique pour chacune,
+// mais aucun attribut seul ne l'est (vérifié par le calcul).
+const L1PERSONS = [
+  {n:"Léa Favre",      y:2009, z:1004, c:"Lausanne", g:"F"},
+  {n:"Enzo Roulet",    y:2009, z:1004, c:"Lausanne", g:"M"},
+  {n:"Aïcha Benali",   y:2008, z:1020, c:"Renens",   g:"F"},
+  {n:"Noah Blanc",     y:2008, z:1020, c:"Renens",   g:"M"},
+  {n:"Sofia Rodrigues",y:2009, z:1020, c:"Renens",   g:"F"},
+  {n:"Emma Rochat",    y:2008, z:1004, c:"Lausanne", g:"F"},
+  {n:"Matteo Da Silva",y:2009, z:1008, c:"Prilly",   g:"M"},
+  {n:"Chloé Monnard",  y:2008, z:1008, c:"Prilly",   g:"F"}
+];
+// Dossiers anonymes du niveau 1 : indice de la personne + clé d'activité
+const L1RECORDS = [
+  {p:0, a:"l1a0"}, {p:3, a:"l1a1"}, {p:4, a:"l1a2"}, {p:5, a:"l1a3"}, {p:6, a:"l1a4"}
+];
+// Niveau 2 : 10 personnes, les classes (année, CP, sexe) font 1, 2 ou 3 (vérifié).
+const L2PERSONS = [
+  {n:"Mia",    y:2009, z:1004, g:"F"}, {n:"Lina",  y:2009, z:1004, g:"F"},
+  {n:"Rafael", y:2008, z:1020, g:"M"}, {n:"Tim",   y:2008, z:1020, g:"M"},
+  {n:"Jonas",  y:2008, z:1020, g:"M"}, {n:"Nora",  y:2009, z:1020, g:"F"},
+  {n:"Alix",   y:2008, z:1008, g:"F"}, {n:"Jade",  y:2008, z:1008, g:"F"},
+  {n:"Elias",  y:2009, z:1004, g:"M"}, {n:"Sarah", y:2008, z:1020, g:"F"}
+];
+const L2RECORDS = [
+  {p:8,a:"l2a0"},{p:0,a:"l2a1"},{p:2,a:"l2a2"},{p:6,a:"l2a3"},{p:4,a:"l2a4"},
+  {p:1,a:"l2a5"},{p:3,a:"l2a6"},{p:9,a:"l2a7"},{p:5,a:"l2a8"},{p:7,a:"l2a9"}
+];
+// Niveau 3 : 24 personnes, 4 attributs (année, mois, CP, sexe).
+// Avec les 4 attributs : 22/24 uniques. Sans le mois : k=2.
+// Sûr (k≥3) seulement sans le mois ET sans le CP ou le sexe (vérifié).
+const L3PEOPLE = [
+  {n:"Enzo",  y:2008,m:3, z:1004,g:"M"},{n:"Noah",  y:2008,m:10,z:1004,g:"M"},
+  {n:"Aïcha", y:2008,m:2, z:1004,g:"F"},{n:"Léa",   y:2008,m:5, z:1004,g:"F"},
+  {n:"Matteo",y:2008,m:8, z:1020,g:"M"},{n:"Rafael",y:2008,m:11,z:1020,g:"M"},
+  {n:"Emma",  y:2008,m:7, z:1020,g:"F"},{n:"Chloé", y:2008,m:4, z:1020,g:"F"},
+  {n:"Elias", y:2009,m:7, z:1004,g:"M"},{n:"Mia",   y:2009,m:7, z:1004,g:"F"},
+  {n:"Nora",  y:2009,m:10,z:1004,g:"F"},{n:"Tim",   y:2009,m:1, z:1004,g:"M"},
+  {n:"Jade",  y:2009,m:10,z:1008,g:"F"},{n:"Alix",  y:2009,m:2, z:1008,g:"M"},
+  {n:"Jonas", y:2009,m:6, z:1008,g:"M"},{n:"Sarah", y:2009,m:1, z:1008,g:"F"},
+  {n:"Lina",  y:2010,m:7, z:1020,g:"F"},{n:"Yan",   y:2010,m:11,z:1020,g:"M"},
+  {n:"Ilyas", y:2010,m:4, z:1020,g:"M"},{n:"Mara",  y:2010,m:7, z:1020,g:"F"},
+  {n:"Zoé",   y:2010,m:8, z:1110,g:"F"},{n:"Nils",  y:2010,m:8, z:1110,g:"M"},
+  {n:"Lara",  y:2010,m:9, z:1110,g:"F"},{n:"Ruben", y:2010,m:4, z:1110,g:"M"}
+];
+const L3ATTRS = ["y","m","z","g"];
+
+/* ---------- Textes ---------- */
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Anonyme, vraiment ?",
+    instruction: "Une entreprise publie un fichier « anonymisé » : les noms ont été retirés. À vous de recouper les attributs pour retrouver qui est qui.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    lvl: "Niveau",
+    lvl1: "Le recoupement",
+    lvl1d: "Croisez trois attributs pour identifier chaque dossier.",
+    lvl2: "Qui peut se cacher ?",
+    lvl2d: "Combien de personnes correspondent à chaque dossier ?",
+    lvl3: "Le révélateur",
+    lvl3d: "Retirez des attributs jusqu'à ce que personne ne soit identifiable.",
+    lockedMsg: "Terminez d'abord les niveaux précédents !",
+    dossier: "Dossier anonyme",
+    aYear: "Année", aMonth: "Mois", aZip: "Code postal", aSex: "Sexe",
+    actLabel: "Activité repérée",
+    prompt1: "Cliquez sur la personne du registre qui correspond à ce dossier.",
+    prog1: (i,n) => `Dossiers identifiés : ${i}/${n}`,
+    ok1: (name) => `Identifié ! Ce dossier appartenait à ${name}.`,
+    ko1: "Ce n'est pas la bonne personne : comparez bien l'année, le code postal et le sexe.",
+    done1: "Aucun attribut seul ne suffisait… mais les trois réunis désignent une seule personne à chaque fois. C'est le recoupement : « anonymisé » ne veut pas dire anonyme.",
+    next: "Niveau suivant →",
+    regTitle2: "Le registre (avec les noms)",
+    thName: "Prénom", thYear: "Année", thZip: "Code postal", thSex: "Sexe",
+    prompt2: "Pour chaque dossier anonyme, combien de personnes du registre partagent exactement ces trois attributs ?",
+    prog2: (i,n) => `Dossiers résolus : ${i}/${n}`,
+    opt1: "1 personne", opt2: "2 personnes", opt3: "3 ou +",
+    res1: "Une seule personne correspond : le dossier est ré-identifié !",
+    res2: "Deux personnes se confondent : impossible de savoir laquelle a fait cette activité.",
+    res3: "Trois personnes se confondent : l'activité reste anonyme.",
+    ko2: "Recomptez dans le registre : combien de lignes ont exactement cette année, ce code postal et ce sexe ?",
+    done2: "Quand une combinaison d'attributs est unique, l'anonymat s'effondre ; quand plusieurs personnes se confondent, il tient. C'est toute l'idée de la k-anonymité.",
+    prompt3: "Vous décidez quels attributs publier. Objectif : que chaque combinaison regroupe au moins 3 personnes (k ≥ 3), pour que plus personne ne soit identifiable.",
+    statIdent: "personnes identifiables",
+    statK: "k = taille du plus petit groupe",
+    chipTitle: "Groupes formés par les attributs publiés",
+    people1: "personne", peopleN: "personnes",
+    done3: "Bravo : k ≥ 3, chaque personne se confond avec au moins deux autres — c'est la k-anonymité. Mais regardez : avec les quatre attributs cochés, 22 personnes sur 24 étaient uniques. Aux États-Unis, Latanya Sweeney a montré que date de naissance + code postal + sexe suffisent à ré-identifier 87 % de la population. Retirer les noms ne protège presque rien.",
+    l1a0: "6 h par jour sur les réseaux sociaux",
+    l1a1: "consultations d'offres d'emploi pendant les cours",
+    l1a2: "achat de billets pour un festival",
+    l1a3: "inscription à un club d'escalade",
+    l1a4: "recherche « comment gérer son stress » à 2 h du matin",
+    l2a0: "commande d'un livre de cuisine végétarienne",
+    l2a1: "47 photos ajoutées en favoris",
+    l2a2: "recherche « stage d'été »",
+    l2a3: "achat de places de théâtre",
+    l2a4: "9 h de podcasts true crime",
+    l2a5: "consultation des résultats de foot de 3e ligue",
+    l2a6: "abonnement à une chaîne d'astrophysique",
+    l2a7: "inscription à un marathon",
+    l2a8: "location d'un film d'horreur",
+    l2a9: "messages sur un forum d'entraide scolaire à 1 h du matin",
+    months: ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Anonymous, really?",
+    instruction: "A company releases an “anonymized” dataset: the names have been removed. Your job is to cross-reference the attributes and work out who is who.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    lvl: "Level",
+    lvl1: "Cross-referencing",
+    lvl1d: "Cross three attributes to identify each record.",
+    lvl2: "Who can hide?",
+    lvl2d: "How many people match each record?",
+    lvl3: "The re-identifier",
+    lvl3d: "Remove attributes until nobody can be identified.",
+    lockedMsg: "Finish the previous levels first!",
+    dossier: "Anonymous record",
+    aYear: "Year", aMonth: "Month", aZip: "ZIP code", aSex: "Sex",
+    actLabel: "Spotted activity",
+    prompt1: "Click the person in the registry who matches this record.",
+    prog1: (i,n) => `Records identified: ${i}/${n}`,
+    ok1: (name) => `Identified! This record belonged to ${name}.`,
+    ko1: "Not the right person: compare the year, ZIP code and sex carefully.",
+    done1: "No single attribute was enough… but all three together pinpoint one person every time. That is cross-referencing: “anonymized” does not mean anonymous.",
+    next: "Next level →",
+    regTitle2: "The registry (with names)",
+    thName: "First name", thYear: "Year", thZip: "ZIP code", thSex: "Sex",
+    prompt2: "For each anonymous record, how many people in the registry share exactly these three attributes?",
+    prog2: (i,n) => `Records solved: ${i}/${n}`,
+    opt1: "1 person", opt2: "2 people", opt3: "3 or more",
+    res1: "Only one person matches: the record is re-identified!",
+    res2: "Two people blend together: no way to tell which one did this activity.",
+    res3: "Three people blend together: the activity stays anonymous.",
+    ko2: "Count again in the registry: how many rows have exactly this year, ZIP code and sex?",
+    done2: "When a combination of attributes is unique, anonymity collapses; when several people blend together, it holds. That is the whole idea of k-anonymity.",
+    prompt3: "You decide which attributes to publish. Goal: every combination must group at least 3 people (k ≥ 3), so that nobody can be identified any more.",
+    statIdent: "identifiable people",
+    statK: "k = size of the smallest group",
+    chipTitle: "Groups formed by the published attributes",
+    people1: "person", peopleN: "people",
+    done3: "Well done: k ≥ 3, each person blends with at least two others — that is k-anonymity. But look: with all four attributes ticked, 22 out of 24 people were unique. In the United States, Latanya Sweeney showed that birth date + ZIP code + sex are enough to re-identify 87% of the population. Removing names protects almost nothing.",
+    l1a0: "6 hours a day on social media",
+    l1a1: "job ads viewed during class",
+    l1a2: "festival tickets purchased",
+    l1a3: "sign-up for a climbing club",
+    l1a4: "search for “how to handle stress” at 2 a.m.",
+    l2a0: "order of a vegetarian cookbook",
+    l2a1: "47 photos added to favorites",
+    l2a2: "search for “summer internship”",
+    l2a3: "theatre tickets purchased",
+    l2a4: "9 hours of true-crime podcasts",
+    l2a5: "third-division football results checked",
+    l2a6: "subscription to an astrophysics channel",
+    l2a7: "marathon sign-up",
+    l2a8: "horror movie rental",
+    l2a9: "posts on a homework-help forum at 1 a.m.",
+    months: ["January","February","March","April","May","June","July","August","September","October","November","December"]
+  }
+};
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+/* ---------- État ---------- */
+let stage = 1;
+let l1Current = 0, l1Done = false;
+let l2Solved = [], l2Done = false;
+let l3Attrs = {y:true, m:true, z:true, g:true}, l3Done = false;
+
+/* ---------- Niveaux : navigation ---------- */
+function renderStages(){
+  const wrap = $("stages"); wrap.innerHTML = "";
+  const defs = [
+    {n:1, t:T().lvl1, d:T().lvl1d, done:l1Done, open:true},
+    {n:2, t:T().lvl2, d:T().lvl2d, done:l2Done, open:l1Done},
+    {n:3, t:T().lvl3, d:T().lvl3d, done:l3Done, open:l2Done}
+  ];
+  defs.forEach(s => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "stageCard" + (s.done ? " done" : "") + (stage === s.n && !s.done ? " current" : "") + (!s.open ? " locked" : "");
+    b.innerHTML = `<span class="star">★</span><span class="stageNum">${T().lvl} ${s.n}</span><h2>${s.t}</h2><p>${s.d}</p>`;
+    b.onclick = () => {
+      if(!s.open){ flashLocked(); return; }
+      stage = s.n; showStage();
+    };
+    wrap.appendChild(b);
+  });
+}
+function flashLocked(){
+  const i = $("instruction"), old = i.textContent;
+  i.textContent = T().lockedMsg;
+  setTimeout(() => { i.textContent = T().instruction; }, 1600);
+}
+function showStage(){
+  [1,2,3].forEach(n => { $("stage"+n).style.display = n === stage ? "block" : "none"; });
+  renderStages();
+  if(stage === 1) renderL1();
+  if(stage === 2) renderL2();
+  if(stage === 3) renderL3();
+}
+
+/* ---------- Niveau 1 ---------- */
+function fmtAttr(label, val){ return `<span class="attr">${label} : <b>${val}</b></span>`; }
+function renderL1(){
+  const rec = L1RECORDS[l1Current], p = L1PERSONS[rec.p];
+  $("dTitle1").textContent = `${T().dossier} ${l1Current+1}/${L1RECORDS.length}`;
+  $("dAttrs1").innerHTML = fmtAttr(T().aYear, p.y) + fmtAttr(T().aZip, p.z) + fmtAttr(T().aSex, p.g);
+  $("dAct1").innerHTML = `<b>${T().actLabel}</b> : ${T()[rec.a]}`;
+  $("prompt1").textContent = T().prompt1;
+  $("progress1").textContent = T().prog1(l1Done ? L1RECORDS.length : l1Current, L1RECORDS.length);
+  $("fb1").className = "feedback"; $("fb1").textContent = "";
+  const g = $("grid1"); g.innerHTML = "";
+  L1PERSONS.forEach((q, idx) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "personCard"; b.disabled = l1Done;
+    b.innerHTML = `<span class="pname">${q.n}</span><span class="pattr">${q.y} · ${q.z} ${q.c} · ${q.g}</span>`;
+    b.onclick = () => guessL1(idx, b);
+    g.appendChild(b);
+  });
+  const d = $("done1");
+  if(l1Done){
+    d.classList.add("show");
+    d.innerHTML = T().done1 + `<br><button type="button" class="nextBtn" onclick="stage=2;showStage()">${T().next}</button>`;
+  } else d.classList.remove("show");
+}
+function guessL1(idx, btn){
+  if(l1Done) return;
+  const rec = L1RECORDS[l1Current], p = L1PERSONS[rec.p];
+  const fb = $("fb1");
+  if(idx === rec.p){
+    fb.className = "feedback ok"; fb.textContent = T().ok1(p.n);
+    btn.classList.add("hit");
+    setTimeout(() => {
+      l1Current++;
+      if(l1Current >= L1RECORDS.length){ l1Done = true; l1Current = L1RECORDS.length - 1; }
+      renderL1(); renderStages();
+    }, 1400);
+  } else {
+    fb.className = "feedback ko"; fb.textContent = T().ko1;
+    btn.classList.add("miss");
+    setTimeout(() => btn.classList.remove("miss"), 700);
+  }
+}
+
+/* ---------- Niveau 2 ---------- */
+function l2ClassSize(person){
+  return L2PERSONS.filter(q => q.y === person.y && q.z === person.z && q.g === person.g).length;
+}
+function renderL2(){
+  $("regTitle2").textContent = T().regTitle2;
+  let h = `<tr><th>${T().thName}</th><th>${T().thYear}</th><th>${T().thZip}</th><th>${T().thSex}</th></tr>`;
+  L2PERSONS.forEach(q => { h += `<tr><td>${q.n}</td><td>${q.y}</td><td>${q.z}</td><td>${q.g}</td></tr>`; });
+  $("regTable2").innerHTML = h;
+  $("prompt2").textContent = T().prompt2;
+  $("progress2").textContent = T().prog2(l2Solved.length, L2RECORDS.length);
+  const g = $("grid2"); g.innerHTML = "";
+  L2RECORDS.forEach((rec, i) => {
+    const p = L2PERSONS[rec.p], k = l2ClassSize(p);
+    const solved = l2Solved.includes(i);
+    const card = document.createElement("div");
+    card.className = "recCard" + (solved ? " solved" + Math.min(k,3) : "");
+    let inner = `<div class="rtitle">${T().dossier} ${i+1}</div>
+      <div class="rattrs">${p.y} · ${p.z} · ${p.g}</div>
+      <div class="ract">${T().actLabel} : ${T()[rec.a]}</div>`;
+    if(solved){
+      inner += `<div class="recResult">${k === 1 ? T().res1 : k === 2 ? T().res2 : T().res3}</div>`;
+    } else {
+      inner += `<div class="optRow">
+        <button type="button" class="optBtn" data-v="1">${T().opt1}</button>
+        <button type="button" class="optBtn" data-v="2">${T().opt2}</button>
+        <button type="button" class="optBtn" data-v="3">${T().opt3}</button></div>
+        <div class="recHint" id="hint${i}">${T().ko2}</div>`;
+    }
+    card.innerHTML = inner;
+    if(!solved){
+      card.querySelectorAll(".optBtn").forEach(b => {
+        b.onclick = () => {
+          if(parseInt(b.dataset.v) === Math.min(k,3)){
+            l2Solved.push(i);
+            if(l2Solved.length === L2RECORDS.length) l2Done = true;
+            renderL2(); renderStages();
+          } else {
+            $("hint"+i).classList.add("show");
+          }
+        };
+      });
+    }
+    g.appendChild(card);
+  });
+  const d = $("done2");
+  if(l2Done){
+    d.classList.add("show");
+    d.innerHTML = T().done2 + `<br><button type="button" class="nextBtn" onclick="stage=3;showStage()">${T().next}</button>`;
+  } else d.classList.remove("show");
+}
+
+/* ---------- Niveau 3 ---------- */
+function l3Groups(){
+  const keys = L3ATTRS.filter(a => l3Attrs[a]);
+  const map = new Map();
+  L3PEOPLE.forEach(p => {
+    const k = keys.map(a => p[a]).join("|");
+    if(!map.has(k)) map.set(k, []);
+    map.get(k).push(p);
+  });
+  return {keys, groups:[...map.values()]};
+}
+function l3Label(p, keys){
+  const parts = [];
+  keys.forEach(a => {
+    if(a === "y") parts.push(p.y);
+    if(a === "m") parts.push(T().months[p.m-1]);
+    if(a === "z") parts.push(p.z);
+    if(a === "g") parts.push(p.g);
+  });
+  return parts.join(" · ");
+}
+function renderL3(){
+  $("prompt3").textContent = T().prompt3;
+  const labels = {y:T().aYear, m:T().aMonth, z:T().aZip, g:T().aSex};
+  const tw = $("toggles3"); tw.innerHTML = "";
+  L3ATTRS.forEach(a => {
+    const l = document.createElement("label");
+    l.className = "tog" + (l3Attrs[a] ? " on" : "");
+    l.innerHTML = `<input type="checkbox" ${l3Attrs[a] ? "checked" : ""}> ${labels[a]}`;
+    l.querySelector("input").onchange = e => {
+      l3Attrs[a] = e.target.checked;
+      renderL3();
+    };
+    tw.appendChild(l);
+  });
+  const {keys, groups} = l3Groups();
+  const uniq = groups.filter(gr => gr.length === 1).reduce((s,gr) => s + gr.length, 0);
+  const k = Math.min(...groups.map(gr => gr.length));
+  const good = k >= 3;
+  $("stats3").innerHTML =
+    `<div class="statBox ${uniq > 0 ? "bad" : "good"}"><div class="big">${uniq} / ${L3PEOPLE.length}</div><div class="lbl">${T().statIdent}</div></div>
+     <div class="statBox ${good ? "good" : "bad"}"><div class="big">k = ${k}</div><div class="lbl">${T().statK}</div></div>`;
+  $("chipTitle3").textContent = T().chipTitle;
+  const cw = $("chips3"); cw.innerHTML = "";
+  groups.sort((a,b) => a.length - b.length || l3Label(a[0],keys).localeCompare(l3Label(b[0],keys)));
+  groups.forEach(gr => {
+    const c = document.createElement("span");
+    c.className = "chip " + (gr.length === 1 ? "solo" : gr.length === 2 ? "pair" : "safe");
+    const names = gr.map(p => p.n).join(", ");
+    c.innerHTML = `<b>${l3Label(gr[0], keys)}</b> — ${gr.length} ${gr.length === 1 ? T().people1 : T().peopleN}<br><span class="cnames">${names}</span>`;
+    cw.appendChild(c);
+  });
+  const d = $("done3");
+  if(good){
+    d.classList.add("show");
+    d.innerHTML = T().done3;
+    if(!l3Done){ l3Done = true; renderStages(); }
+  } else d.classList.remove("show");
+}
+
+/* ---------- Langue ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  showStage();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch(e) {}
+  applyLang();
+};
+
+/* ---------- Plein écran (Safari inclus) ---------- */
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if(isFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+  else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

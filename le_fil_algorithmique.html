@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Réglez les pondérations d'un fil d'actualité (engagement, nouveauté, proximité) et observez en direct la formation d'une bulle de filtres.">
+<title>Le fil algorithmique · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F;
+  --muted:#6E726B; --error:#C84B31;
+  --cTech:#155E4C; --cSport:#D96A08; --cCulture:#C84B31; --cEco:#20241F; --cEnv:#6E726B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:40px}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);color:var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.grid{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:17px;color:var(--primary);margin-bottom:10px}
+.profile{background:var(--primaryLight);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--primary);margin-bottom:14px}
+.sliderRow{display:grid;grid-template-columns:110px 1fr 26px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.sliderRow:last-of-type{border-bottom:none}
+.sliderRow label{font-size:14px;font-weight:700}
+.sliderRow .desc{grid-column:1/-1;font-size:12px;color:var(--muted);margin-top:-4px}
+.sliderRow .val{text-align:right;font-weight:700;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--primary);height:28px;cursor:pointer}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.presets button{font-size:13px;padding:8px 12px}
+.presets button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.formula{margin-top:14px;font-size:13px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.formula b{color:var(--primary)}
+.noteZero{margin-top:10px;font-size:13px;color:var(--accent);font-weight:700;display:none}
+.feedHead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.feedCount{font-size:13px;color:var(--muted)}
+.post{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line);align-items:start}
+.post:last-child{border-bottom:none}
+.rank{font-weight:700;color:var(--accent);font-size:14px;padding-top:2px}
+.ptop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ptitle{font-size:15px;font-weight:700;margin-top:2px}
+.pmeta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.scoreBar{height:5px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.scoreBar i{display:block;height:100%;background:var(--primary);border-radius:3px}
+.bars{display:grid;gap:10px;margin-top:6px}
+.barRow{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:center}
+.barRow .blabel{font-size:13px;font-weight:700;color:var(--muted)}
+.bar{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--bg)}
+.bar span{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:13px}
+.legend .li{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.verdict{margin-top:14px;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;border:2px solid transparent}
+.verdict.low{background:var(--primaryLight);border-color:var(--primary);color:var(--primary)}
+.verdict.mid{background:var(--accentLight);border-color:var(--accent);color:var(--ink)}
+.verdict.high{background:var(--accentLight);border-color:var(--error);color:var(--error)}
+.hiddenInfo{margin-top:10px;font-size:13.5px;color:var(--muted)}
+.hiddenInfo b{color:var(--ink)}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+@media(max-width:640px){
+  body{padding:14px}h1{font-size:22px}.hdrBtns{width:100%}
+  button{min-height:44px}
+  .sliderRow{grid-template-columns:1fr 30px}
+  .sliderRow input[type=range]{grid-column:1/-1;height:44px}
+  .sliderRow label{grid-column:1/2}
+  .barRow{grid-template-columns:1fr}
+  .barRow .blabel{margin-bottom:-4px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="grid">
+  <div class="card">
+    <h2 id="hSettings"></h2>
+    <div class="profile" id="profileBox"></div>
+    <div class="sliderRow">
+      <label for="wE" id="labE"></label>
+      <input type="range" id="wE" min="0" max="10" step="1" value="3">
+      <div class="val" id="valE">3</div>
+      <div class="desc" id="descE"></div>
+    </div>
+    <div class="sliderRow">
+      <label for="wN" id="labN"></label>
+      <input type="range" id="wN" min="0" max="10" step="1" value="3">
+      <div class="val" id="valN">3</div>
+      <div class="desc" id="descN"></div>
+    </div>
+    <div class="sliderRow">
+      <label for="wP" id="labP"></label>
+      <input type="range" id="wP" min="0" max="10" step="1" value="3">
+      <div class="val" id="valP">3</div>
+      <div class="desc" id="descP"></div>
+    </div>
+    <div class="presets">
+      <button type="button" id="pBal"></button>
+      <button type="button" id="pChrono"></button>
+      <button type="button" id="pCaptive"></button>
+      <button type="button" id="pShuffle"></button>
+    </div>
+    <div class="noteZero" id="noteZero"></div>
+    <div class="formula" id="formula"></div>
+  </div>
+
+  <div class="card">
+    <div class="feedHead">
+      <h2 id="hFeed"></h2>
+      <div class="feedCount" id="feedCount"></div>
+    </div>
+    <div id="feed"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2 id="hBubble"></h2>
+  <div class="bars">
+    <div class="barRow"><div class="blabel" id="lblWorld"></div><div class="bar" id="barWorld"></div></div>
+    <div class="barRow"><div class="blabel" id="lblFeed"></div><div class="bar" id="barFeed"></div></div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="verdict" id="verdict"></div>
+  <div class="hiddenInfo" id="hiddenInfo"></div>
+</div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------- Données : 30 publications, 5 thèmes ---------- */
+const THEMES = ["tech","sport","culture","eco","env"];
+const THEME_COLOR = {tech:"var(--cTech)",sport:"var(--cSport)",culture:"var(--cCulture)",eco:"var(--cEco)",env:"var(--cEnv)"};
+/* t = thème, fr/en = titre, l = j'aime, a = âge (h), p = proximité avec le profil (0-100) */
+const BASE_POSTS = [
+ {t:"tech", fr:"Une puce révolutionnaire annoncée", en:"A revolutionary chip unveiled", l:4200, a:2,  p:75},
+ {t:"tech", fr:"L'IA traduit enfin les langues rares", en:"AI finally translates rare languages", l:1500, a:9,  p:62},
+ {t:"tech", fr:"Votre téléphone vous espionne-t-il ?", en:"Is your phone spying on you?", l:3100, a:16, p:70},
+ {t:"tech", fr:"Le premier robot cuisinier suisse", en:"Switzerland's first cooking robot", l:800,  a:26, p:55},
+ {t:"tech", fr:"Panne mondiale d'un réseau social", en:"Global social network outage", l:4800, a:40, p:78},
+ {t:"tech", fr:"Une batterie qui dure une semaine", en:"A battery that lasts a week", l:600,  a:46, p:48},
+ {t:"sport",fr:"Lausanne gagne en finale", en:"Lausanne wins the final", l:3900, a:1,  p:72},
+ {t:"sport",fr:"Record du monde du marathon battu", en:"Marathon world record broken", l:1200, a:7,  p:66},
+ {t:"sport",fr:"Un gymnaste suisse décroche l'or", en:"Swiss gymnast takes gold", l:2600, a:14, p:60},
+ {t:"sport",fr:"Le football féminin attire les foules", en:"Women's football draws crowds", l:900,  a:22, p:52},
+ {t:"sport",fr:"Un scandale de dopage découvert", en:"A doping scandal uncovered", l:4400, a:34, p:70},
+ {t:"sport",fr:"Un jeune prodige du ski", en:"A young skiing prodigy", l:500,  a:44, p:45},
+ {t:"culture", fr:"Le nouveau film suisse fait sensation", en:"The new Swiss film makes waves", l:700,  a:3,  p:32},
+ {t:"culture", fr:"Un musée ouvre ses portes la nuit", en:"A museum opens its doors at night", l:4600, a:11, p:40},
+ {t:"culture", fr:"Festival : la billetterie explose", en:"Festival: ticket sales explode", l:350,  a:18, p:18},
+ {t:"culture", fr:"Le roman qui divise les critiques", en:"The novel dividing the critics", l:2900, a:25, p:36},
+ {t:"culture", fr:"Le street art entre au musée", en:"Street art enters the museum", l:450,  a:33, p:22},
+ {t:"culture", fr:"Une série tournée à Vevey", en:"A series filmed in Vevey", l:3800, a:45, p:42},
+ {t:"eco",  fr:"Les prix du logement s'envolent", en:"Housing prices are soaring", l:1100, a:4,  p:26},
+ {t:"eco",  fr:"Le franc suisse au plus haut", en:"Swiss franc at a record high", l:600,  a:10, p:15},
+ {t:"eco",  fr:"Une start-up vaudoise lève des millions", en:"Vaud start-up raises millions", l:4700, a:19, p:38},
+ {t:"eco",  fr:"Grève dans une grande banque", en:"Strike at a major bank", l:400,  a:28, p:20},
+ {t:"eco",  fr:"Le tourisme repart à la hausse", en:"Tourism is bouncing back", l:3200, a:36, p:44},
+ {t:"eco",  fr:"Pénurie de main-d'œuvre qualifiée", en:"Skilled labour shortage", l:300,  a:47, p:12},
+ {t:"env",  fr:"Un glacier recule encore", en:"A glacier retreats again", l:950,  a:5,  p:28},
+ {t:"env",  fr:"Record de chaleur pour un mois d'octobre", en:"Record heat for October", l:4100, a:12, p:35},
+ {t:"env",  fr:"Le Léman retrouve une eau plus propre", en:"Lake Geneva's water gets cleaner", l:550,  a:20, p:18},
+ {t:"env",  fr:"Une ville interdit les pesticides", en:"A city bans pesticides", l:2700, a:27, p:33},
+ {t:"env",  fr:"Éoliennes : le débat s'anime", en:"Wind turbines: the debate heats up", l:750,  a:38, p:25},
+ {t:"env",  fr:"Les abeilles de retour en ville", en:"Bees are back in town", l:3400, a:43, p:40}
+];
+let posts = BASE_POSTS.map(p => ({...p}));
+
+const FEED_SIZE = 8;
+const PROFILE = ["tech","sport"];
+
+/* ---------- I18N ---------- */
+const I18N = {
+ fr:{
+  kicker:"ENJEUX SOCIAUX", title:"Le fil algorithmique",
+  instruction:"Réglez les trois pondérations de l'algorithme, observez votre fil se recomposer en direct, puis mesurez la bulle de filtres en bas de page.",
+  fs:"Plein écran", fsExit:"Quitter", backList:"← Toutes les applications",
+  hSettings:"Réglages de l'algorithme", hFeed:"Votre fil", hBubble:"La bulle en chiffres",
+  profile:"👤 Votre profil : vous réagissez surtout aux contenus Technologie et Sport. La proximité mesure la ressemblance de chaque publication avec vos goûts.",
+  labE:"Engagement", labN:"Nouveauté", labP:"Proximité",
+  descE:"popularité : nombre de j'aime", descN:"fraîcheur : publications récentes d'abord", descP:"ressemblance avec vos goûts",
+  pBal:"Fil équilibré", pChrono:"Fil chronologique", pCaptive:"Fil captif", pShuffle:"Mélanger le monde",
+  noteZero:"Tous les curseurs à zéro : l'algorithme affiche un simple fil chronologique.",
+  formula:(e,n,p)=>`Score = (<b>${e}</b> × engagement + <b>${n}</b> × nouveauté + <b>${p}</b> × proximité) ÷ <b>${e+n+p}</b>`,
+  feedCount:(n,tot)=>`${n} publications affichées sur ${tot}`,
+  likes:v=>fmtNum(v)+" j'aime",
+  ago:h=>h<24?`il y a ${h} h`:(h<48?"il y a 1 j":"il y a 2 j"),
+  lblWorld:"Le monde (30)", lblFeed:"Votre fil (8)",
+  theme:{tech:"Technologie", sport:"Sport", culture:"Culture", eco:"Économie", env:"Environnement"},
+  vLow:p=>`Bulle faible : ${p} % de votre fil vient de vos thèmes favoris — vous voyez encore du monde.`,
+  vMid:p=>`Bulle modérée : ${p} % de votre fil vient de vos thèmes favoris — la diversité recule.`,
+  vHigh:p=>`Bulle forte : ${p} % de votre fil vient de vos thèmes favoris — le reste du monde a disparu.`,
+  hidden:(n,miss)=>`<b>${n} publications masquées</b> par l'algorithme`+(miss?` — thèmes absents : <b>${miss}</b>`:" — tous les thèmes sont encore présents.")
+ },
+ en:{
+  kicker:"SOCIAL ISSUES", title:"The algorithmic feed",
+  instruction:"Adjust the algorithm's three weights, watch your feed rebuild itself live, then measure the filter bubble at the bottom of the page.",
+  fs:"Fullscreen", fsExit:"Exit", backList:"← All applications",
+  hSettings:"Algorithm settings", hFeed:"Your feed", hBubble:"The bubble in numbers",
+  profile:"👤 Your profile: you mostly react to Technology and Sport content. Proximity measures how similar each post is to your tastes.",
+  labE:"Engagement", labN:"Freshness", labP:"Proximity",
+  descE:"popularity: number of likes", descN:"recency: newest posts first", descP:"similarity to your tastes",
+  pBal:"Balanced feed", pChrono:"Chronological", pCaptive:"Captive feed", pShuffle:"Shuffle the world",
+  noteZero:"All sliders at zero: the algorithm falls back to a plain chronological feed.",
+  formula:(e,n,p)=>`Score = (<b>${e}</b> × engagement + <b>${n}</b> × freshness + <b>${p}</b> × proximity) ÷ <b>${e+n+p}</b>`,
+  feedCount:(n,tot)=>`${n} posts shown out of ${tot}`,
+  likes:v=>fmtNum(v)+" likes",
+  ago:h=>h<24?`${h} h ago`:(h<48?"1 d ago":"2 d ago"),
+  lblWorld:"The world (30)", lblFeed:"Your feed (8)",
+  theme:{tech:"Technology", sport:"Sport", culture:"Culture", eco:"Economy", env:"Environment"},
+  vLow:p=>`Weak bubble: ${p}% of your feed comes from your favourite topics — you still see the world.`,
+  vMid:p=>`Moderate bubble: ${p}% of your feed comes from your favourite topics — diversity is shrinking.`,
+  vHigh:p=>`Strong bubble: ${p}% of your feed comes from your favourite topics — the rest of the world has vanished.`,
+  hidden:(n,miss)=>`<b>${n} posts hidden</b> by the algorithm`+(miss?` — missing topics: <b>${miss}</b>`:" — every topic is still present.")
+ }
+};
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+function fmtNum(v){ return lang==="fr" ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g,"\u202f") : v.toLocaleString("en-US"); }
+
+/* ---------- Algorithme ---------- */
+const engN = l => Math.min(100, l/50);
+const nov  = a => Math.max(0, 100-4*a);
+function getW(){ return {e:+$("wE").value, n:+$("wN").value, p:+$("wP").value}; }
+function computeFeed(){
+  const w = getW(), sum = w.e+w.n+w.p;
+  let scored = posts.map((p,i)=>({i, score: sum>0 ? (w.e*engN(p.l)+w.n*nov(p.a)+w.p*p.p)/sum : null}));
+  if(sum>0) scored.sort((x,y)=> y.score-x.score || posts[x.i].a-posts[y.i].a || x.i-y.i);
+  else      scored.sort((x,y)=> posts[x.i].a-posts[y.i].a || x.i-y.i);
+  return scored.slice(0, FEED_SIZE);
+}
+
+/* ---------- Rendu ---------- */
+function renderFeed(){
+  const f = computeFeed(), el = $("feed");
+  el.innerHTML = "";
+  f.forEach((s,k)=>{
+    const p = posts[s.i];
+    const div = document.createElement("div");
+    div.className = "post";
+    div.innerHTML = `<div class="rank">${k+1}</div>
+      <div>
+        <div class="ptop"><span class="dot" style="background:${THEME_COLOR[p.t]}"></span><span class="tag">${T().theme[p.t]}</span></div>
+        <div class="ptitle">${p[lang]}</div>
+        <div class="pmeta">❤ ${T().likes(p.l)} · ${T().ago(p.a)}</div>
+        <div class="scoreBar" title="${s.score===null?"":Math.round(s.score)+" / 100"}"><i style="width:${s.score===null?100:Math.max(4,Math.round(s.score))}%"></i></div>
+      </div>`;
+    el.appendChild(div);
+  });
+  $("feedCount").textContent = T().feedCount(FEED_SIZE, posts.length);
+  renderBubble(f);
+}
+function barHTML(counts,total){
+  return THEMES.map(t=> counts[t] ? `<span style="width:${counts[t]/total*100}%;background:${THEME_COLOR[t]}" title="${T().theme[t]} : ${counts[t]}"></span>` : "").join("");
+}
+function renderBubble(f){
+  const world = {}; THEMES.forEach(t=>world[t]=0);
+  posts.forEach(p=>world[p.t]++);
+  const feedC = {}; THEMES.forEach(t=>feedC[t]=0);
+  f.forEach(s=>feedC[posts[s.i].t]++);
+  $("barWorld").innerHTML = barHTML(world, posts.length);
+  $("barFeed").innerHTML  = barHTML(feedC, FEED_SIZE);
+  $("legend").innerHTML = THEMES.map(t=>`<span class="li"><span class="dot" style="background:${THEME_COLOR[t]}"></span>${T().theme[t]}</span>`).join("");
+  const prof = f.filter(s=>PROFILE.includes(posts[s.i].t)).length;
+  const pct = Math.round(prof/FEED_SIZE*100);
+  const v = $("verdict");
+  v.className = "verdict " + (pct<=50?"low":pct<=75?"mid":"high");
+  v.textContent = pct<=50 ? T().vLow(pct) : pct<=75 ? T().vMid(pct) : T().vHigh(pct);
+  const missing = THEMES.filter(t=>feedC[t]===0).map(t=>T().theme[t]).join(", ");
+  $("hiddenInfo").innerHTML = T().hidden(posts.length-FEED_SIZE, missing);
+}
+function renderControls(){
+  const w = getW(), sum = w.e+w.n+w.p;
+  $("valE").textContent = w.e; $("valN").textContent = w.n; $("valP").textContent = w.p;
+  $("formula").innerHTML = sum>0 ? T().formula(w.e,w.n,w.p) : "";
+  $("noteZero").style.display = sum>0 ? "none" : "block";
+  const mark = (id,on)=>$(id).classList.toggle("active",on);
+  mark("pBal",     w.e===3&&w.n===3&&w.p===3);
+  mark("pChrono",  w.e===0&&w.n===10&&w.p===0);
+  mark("pCaptive", w.e===2&&w.n===1&&w.p===10);
+}
+function render(){ renderControls(); renderFeed(); }
+
+/* ---------- Événements ---------- */
+["wE","wN","wP"].forEach(id=>$(id).addEventListener("input",render));
+function setW(e,n,p){ $("wE").value=e; $("wN").value=n; $("wP").value=p; render(); }
+$("pBal").onclick     = ()=>setW(3,3,3);
+$("pChrono").onclick  = ()=>setW(0,10,0);
+$("pCaptive").onclick = ()=>setW(2,1,10);
+$("pShuffle").onclick = ()=>{
+  /* mélange les attributs (j'aime, âge, proximité) au sein de chaque thème */
+  posts = BASE_POSTS.map(p=>({...p}));
+  THEMES.forEach(t=>{
+    const idx = posts.map((p,i)=>p.t===t?i:-1).filter(i=>i>=0);
+    const attrs = idx.map(i=>({l:posts[i].l,a:posts[i].a,p:posts[i].p}));
+    for(let i=attrs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [attrs[i],attrs[j]]=[attrs[j],attrs[i]]; }
+    idx.forEach((pi,k)=>Object.assign(posts[pi],attrs[k]));
+  });
+  render();
+};
+
+/* ---------- Langue ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang==="fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  $("hSettings").textContent = T().hSettings;
+  $("hFeed").textContent = T().hFeed;
+  $("hBubble").textContent = T().hBubble;
+  $("profileBox").textContent = T().profile;
+  $("labE").textContent = T().labE; $("labN").textContent = T().labN; $("labP").textContent = T().labP;
+  $("descE").textContent = T().descE; $("descN").textContent = T().descN; $("descP").textContent = T().descP;
+  $("pBal").textContent = T().pBal; $("pChrono").textContent = T().pChrono;
+  $("pCaptive").textContent = T().pCaptive; $("pShuffle").textContent = T().pShuffle;
+  $("noteZero").textContent = T().noteZero;
+  $("lblWorld").textContent = T().lblWorld; $("lblFeed").textContent = T().lblFeed;
+  render();
+}
+$("langBtn").onclick = () => {
+  lang = lang==="fr" ? "en" : "fr";
+  try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
+  applyLang();
+};
+
+/* ---------- Plein écran (Safari inclus) ---------- */
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if(isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else { const req = el.requestFullscreen || el.webkitRequestFullscreen;
+         if(req){ const r = req.call(el); if(r && r.catch) r.catch(()=>{}); } }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange",syncFsLabel);
+document.addEventListener("webkitfullscreenchange",syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

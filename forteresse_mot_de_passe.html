@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Testez vos mots de passe : calcul réel de l'entropie, temps de cassage par force brute et bonnes pratiques de sécurité.">
+<title>Forteresse mot de passe · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:980px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;color:var(--primary)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{font-size:17px;color:var(--primary);margin-bottom:10px}
+.labGrid{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.pwRow{display:flex;gap:8px;margin-bottom:6px}
+#pw{flex:1;font-family:"Quattrocento Sans",sans-serif;font-size:18px;padding:10px 12px;border-radius:10px;
+  border:2px solid var(--primary);background:#fff;color:var(--ink);min-width:0}
+#pw:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.privacy{font-size:12px;color:var(--muted);margin-bottom:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stat .val{font-size:18px;font-weight:700;color:var(--ink)}
+.stat .sub{font-size:12px;color:var(--muted)}
+.verdict{border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px;margin-bottom:12px;border:2px solid var(--line)}
+.verdict.weak{background:var(--accentLight);border-color:var(--error);color:var(--error)}
+.verdict.mid{background:var(--accentLight);border-color:var(--accent);color:var(--accent)}
+.verdict.strong{background:var(--primaryLight);border-color:var(--primary);color:var(--primary)}
+table.crack{width:100%;border-collapse:collapse;font-size:14px}
+table.crack td{padding:7px 8px;border-bottom:1px solid var(--line)}
+table.crack td:first-child{color:var(--muted)}
+table.crack td:last-child{text-align:right;font-weight:700}
+.fortress{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.fortress svg{width:100%;height:auto;display:block}
+.bitsBar{height:10px;background:var(--line);border-radius:6px;margin-top:8px;overflow:hidden}
+.bitsFill{height:100%;border-radius:6px;transition:width .25s ease}
+.exRow{display:flex;flex-wrap:wrap;gap:8px}
+.exRow button{border-color:var(--accent);color:var(--accent)}
+.exRow button:hover{background:var(--accentLight)}
+.missions{list-style:none}
+.missions li{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14px}
+.missions .box{flex:0 0 22px;height:22px;border:2px solid var(--primary);border-radius:6px;text-align:center;
+  line-height:18px;font-weight:700;color:#fff;background:var(--card)}
+.missions li.done .box{background:var(--primary)}
+.missions li.done{color:var(--primary);font-weight:700}
+.rules{margin:0;padding-left:20px;font-size:14px}
+.rules li{margin-bottom:8px}
+.rules b{color:var(--primary)}
+.reuseRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.reuseRow button.sel{background:var(--primary);color:#fff}
+#reuseMsg{font-size:14px;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .labGrid{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  #pw{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="card">
+  <h2 id="labTitle"></h2>
+  <div class="labGrid">
+    <div>
+      <div class="pwRow">
+        <input id="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" aria-label="mot de passe">
+        <button id="eyeBtn" type="button" aria-label="afficher"></button>
+      </div>
+      <div class="privacy" id="privacy"></div>
+      <div class="stats" id="stats"></div>
+      <div class="verdict mid" id="verdict"></div>
+      <table class="crack" id="crackTable"></table>
+    </div>
+    <div class="fortress">
+      <svg id="castle" viewBox="0 0 260 300" role="img" aria-label="forteresse"></svg>
+      <div class="bitsBar"><div class="bitsFill" id="bitsFill" style="width:0%"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 id="exTitle"></h2>
+  <div class="exRow" id="exRow"></div>
+</div>
+
+<div class="card">
+  <h2 id="misTitle"></h2>
+  <ul class="missions" id="missions"></ul>
+</div>
+
+<div class="card">
+  <h2 id="reuseTitle"></h2>
+  <div class="reuseRow" id="reuseRow"></div>
+  <div id="reuseMsg"></div>
+</div>
+
+<div class="card">
+  <h2 id="rulesTitle"></h2>
+  <ul class="rules" id="rules"></ul>
+</div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Forteresse mot de passe",
+    instruction: "Tapez un mot de passe et observez la forteresse : combien de temps faudrait-il à un attaquant pour le casser par force brute ? Rien n'est enregistré ni envoyé.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    labTitle: "Le laboratoire",
+    placeholder: "Tapez un mot de passe…",
+    eye: "👁 Afficher", eyeHide: "🙈 Masquer",
+    privacy: "🔒 Calcul fait dans votre navigateur : le mot de passe ne quitte jamais cette page.",
+    stLen: "Longueur", stLenSub: (n) => n + (n > 1 ? " caractères" : " caractère"),
+    stPool: "Alphabet", stPoolSub: (n) => n + " symboles possibles par position",
+    stCombo: "Combinaisons", stComboSub: "possibilités à essayer",
+    stBits: "Entropie", stBitsSub: "bits (log₂ des combinaisons)",
+    poolDetail: (l, u, d, s) => {
+      const parts = [];
+      if (l) parts.push("minuscules");
+      if (u) parts.push("majuscules");
+      if (d) parts.push("chiffres");
+      if (s) parts.push("symboles");
+      return parts.length ? parts.join(" + ") : "—";
+    },
+    verdictWeak: "🧨 Mur de sable : cassé presque instantanément.",
+    verdictMid: "🧱 Mur de brique : quelques heures ou quelques jours…",
+    verdictStrong: "🏰 Forteresse : inatteignable en pratique. Bravo !",
+    verdictEmpty: "En attente d'un mot de passe…",
+    crackOnline: "Attaque en ligne (10 essais/s)",
+    crackGPU: "Base volée, GPU rapide (1 milliard d'essais/s)",
+    crackRig: "Attaquant très puissant (1 000 milliards d'essais/s)",
+    exTitle: "Comparez par vous-même",
+    exBtn: "Tester",
+    examples: [
+      { id: "e1", pw: "azerty", note: "classique du clavier" },
+      { id: "e2", pw: "Xq#7z!2v", note: "court mais complexe" },
+      { id: "e3", pw: "tigre-croissant-planete-verre", note: "phrase de passe" },
+      { id: "e4", pw: "Gymnase2026!", note: "mot + année + symbole" }
+    ],
+    misTitle: "Vos missions",
+    missions: [
+      "Atteignez 60 bits d'entropie.",
+      "Atteignez 80 bits sans aucun symbole (phrase de passe).",
+      "Trouvez un mot de passe que même un GPU rapide mettrait plus de 100 ans à casser.",
+      "Provoquez un effondrement : moins de 1 seconde face au GPU rapide."
+    ],
+    reuseTitle: "Et si vous le réutilisez ?",
+    reuseBtn: (n) => n + (n > 1 ? " sites" : " site"),
+    reuseMsg: (n) => n <= 1
+      ? "Bonne habitude : un seul mot de passe par compte. Si ce site est piraté, un seul compte est en danger."
+      : "Vous utilisez ce mot de passe sur " + n + " sites : si l'un d'eux fuite, les attaquants essaient aussitôt la même clé partout — vos " + n + " comptes tombent en même temps.",
+    rulesTitle: "Bonnes pratiques (à retenir)",
+    rules: [
+      "<b>La longueur d'abord.</b> Chaque caractère ajouté multiplie les combinaisons par la taille de l'alphabet : 4 mots ordinaires valent mieux qu'un mot savant de 8 signes.",
+      "<b>Phrase de passe.</b> Plusieurs mots sans rapport, faciles à retenir, impossibles à deviner : <i>tigre-croissant-planete-verre</i>.",
+      "<b>Jamais deux fois la même clé.</b> Un compte par mot de passe ; un gestionnaire de mots de passe s'en souvient pour vous.",
+      "<b>Double authentification (2FA).</b> Même cassé, le mot de passe ne suffit plus.",
+      "<b>Méfiance face aux fuites.</b> Un mot de passe fort protégé mal stocké par un site reste vulnérable : changez-le dès qu'une fuite est annoncée."
+    ],
+    bitsGoal: "objectif : 100 bits"
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Password Fortress",
+    instruction: "Type a password and watch the fortress: how long would an attacker need to crack it by brute force? Nothing is stored or sent anywhere.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    labTitle: "The lab",
+    placeholder: "Type a password…",
+    eye: "👁 Show", eyeHide: "🙈 Hide",
+    privacy: "🔒 Computed in your browser: the password never leaves this page.",
+    stLen: "Length", stLenSub: (n) => n + (n > 1 ? " characters" : " character"),
+    stPool: "Alphabet", stPoolSub: (n) => n + " possible symbols per position",
+    stCombo: "Combinations", stComboSub: "possibilities to try",
+    stBits: "Entropy", stBitsSub: "bits (log₂ of combinations)",
+    poolDetail: (l, u, d, s) => {
+      const parts = [];
+      if (l) parts.push("lowercase");
+      if (u) parts.push("uppercase");
+      if (d) parts.push("digits");
+      if (s) parts.push("symbols");
+      return parts.length ? parts.join(" + ") : "—";
+    },
+    verdictWeak: "🧨 Sand castle: cracked almost instantly.",
+    verdictMid: "🧱 Brick wall: a few hours or days…",
+    verdictStrong: "🏰 Fortress: out of reach in practice. Well done!",
+    verdictEmpty: "Waiting for a password…",
+    crackOnline: "Online attack (10 tries/s)",
+    crackGPU: "Leaked database, fast GPU (1 billion tries/s)",
+    crackRig: "Very powerful attacker (1 trillion tries/s)",
+    exTitle: "Compare for yourself",
+    exBtn: "Test",
+    examples: [
+      { id: "e1", pw: "azerty", note: "keyboard classic" },
+      { id: "e2", pw: "Xq#7z!2v", note: "short but complex" },
+      { id: "e3", pw: "tiger-croissant-planet-glass", note: "passphrase" },
+      { id: "e4", pw: "Gymnase2026!", note: "word + year + symbol" }
+    ],
+    misTitle: "Your missions",
+    missions: [
+      "Reach 60 bits of entropy.",
+      "Reach 80 bits without any symbol (passphrase).",
+      "Find a password that even a fast GPU would need more than 100 years to crack.",
+      "Cause a collapse: under 1 second against the fast GPU."
+    ],
+    reuseTitle: "What if you reuse it?",
+    reuseBtn: (n) => n + (n > 1 ? " sites" : " site"),
+    reuseMsg: (n) => n <= 1
+      ? "Good habit: one password per account. If this site is breached, only one account is at risk."
+      : "You use this password on " + n + " sites: if one of them leaks, attackers instantly try the same key everywhere — all " + n + " accounts fall together.",
+    rulesTitle: "Best practices (remember these)",
+    rules: [
+      "<b>Length first.</b> Every added character multiplies the combinations by the alphabet size: 4 ordinary words beat a clever 8-sign word.",
+      "<b>Passphrase.</b> Several unrelated words, easy to remember, impossible to guess: <i>tiger-croissant-planet-glass</i>.",
+      "<b>Never the same key twice.</b> One password per account; a password manager remembers them for you.",
+      "<b>Two-factor authentication (2FA).</b> Even cracked, the password is no longer enough.",
+      "<b>Beware of breaches.</b> A strong password stored badly by a website stays vulnerable: change it as soon as a breach is announced."
+    ],
+    bitsGoal: "goal: 100 bits"
+  }
+};
+
+let lang = (function () {
+  try { const c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/); if (c && (c[1] === "fr" || c[1] === "en")) return c[1]; } catch (e) {}
+  try { const s = localStorage.getItem("fj-lang"); return (s === "fr" || s === "en") ? s : "fr"; } catch (e) { return "fr"; }
+})();
+const T = () => I18N[lang];
+
+/* ---------- Calcul réel (aucune valeur codée en dur) ---------- */
+const RATES = [
+  { key: "crackOnline", rate: 10 },
+  { key: "crackGPU",    rate: 1e9 },
+  { key: "crackRig",    rate: 1e12 }
+];
+
+function analyze(pw) {
+  let pool = 0;
+  const hasL = /[a-z]/.test(pw), hasU = /[A-Z]/.test(pw), hasD = /[0-9]/.test(pw);
+  const hasS = /[^a-zA-Z0-9]/.test(pw);
+  if (hasL) pool += 26;
+  if (hasU) pool += 26;
+  if (hasD) pool += 10;
+  if (hasS) pool += 33;
+  const len = pw.length;
+  const bits = (len > 0 && pool > 0) ? len * Math.log2(pool) : 0;
+  const combos = (len > 0 && pool > 0) ? Math.pow(pool, len) : 0;
+  return { len, pool, bits, combos, hasL, hasU, hasD, hasS };
+}
+
+/* ---------- Formatage des nombres et durées ---------- */
+function fmtNum(x) {
+  if (!isFinite(x)) return "∞";
+  if (x === 0) return "0";
+  if (x < 1000) {
+    const r = Math.round(x * 10) / 10;
+    return lang === "fr" ? String(r).replace(".", ",") : String(r);
+  }
+  const exp = Math.floor(Math.log10(x));
+  if (exp >= 15) {
+    const mant = x / Math.pow(10, exp);
+    const m = lang === "fr" ? String(Math.round(mant * 10) / 10).replace(".", ",") : String(Math.round(mant * 10) / 10);
+    return m + "·10^" + exp;
+  }
+  const s = String(Math.round(x));
+  if (lang === "fr") return s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function fmtPow(x) {
+  if (x === 0) return "0";
+  const exp = Math.log10(x);
+  if (exp < 12) return fmtNum(x);
+  const mant = x / Math.pow(10, Math.floor(exp));
+  const m = lang === "fr" ? String(Math.round(mant * 10) / 10).replace(".", ",") : String(Math.round(mant * 10) / 10);
+  return m + "·10^" + Math.floor(exp);
+}
+
+/* fmtDur est définie plus bas (version finale). */
+
+/* ---------- Durées : version propre (remplace la déclaration précédente) ---------- */
+function fmtDur(sec) {
+  if (!isFinite(sec) || sec > 1e30) return lang === "fr" ? "bien plus que l'âge de l'Univers" : "far beyond the age of the Universe";
+  if (sec < 1) return lang === "fr" ? "moins d'une seconde" : "under a second";
+  const fr = lang === "fr";
+  const units = fr
+    ? [[31557600e9, "milliard d'années", "milliards d'années"], [31557600e6, "million d'années", "millions d'années"],
+       [31557600e3, "millénaire", "millénaires"], [31557600, "an", "ans"], [86400, "jour", "jours"],
+       [3600, "heure", "heures"], [60, "minute", "minutes"], [1, "seconde", "secondes"]]
+    : [[31557600e9, "billion years", "billion years"], [31557600e6, "million years", "million years"],
+       [31557600e3, "millennium", "millennia"], [31557600, "year", "years"], [86400, "day", "days"],
+       [3600, "hour", "hours"], [60, "minute", "minutes"], [1, "second", "seconds"]];
+  for (const [k, sing, plur] of units) {
+    if (sec >= k) {
+      const v = sec / k;
+      if (k >= 31557600 && v > 13.8e9) return fr ? "plus vieux que l'Univers" : "older than the Universe";
+      let num = v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10);
+      if (fr) num = num.replace(".", ",");
+      const n = parseFloat(num.replace(",", "."));
+      return num + " " + (n === 1 ? sing : plur);
+    }
+  }
+  return fr ? "1 seconde" : "1 second";
+}
+
+/* ---------- Forteresse SVG ---------- */
+const BRICK = "#155E4C", BRICK_MORTAR = "#F7F6F2", BRICK_WEAK = "#C84B31", BRICK_MID = "#D96A08";
+
+function drawCastle(bits) {
+  const svg = $("castle");
+  const maxRows = 9;
+  const rows = Math.max(0, Math.min(maxRows, Math.floor(bits / 11)));
+  const col = bits >= 70 ? BRICK : (bits >= 40 ? BRICK_MID : BRICK_WEAK);
+  const W = 260, baseY = 285, wallX = 70, wallW = 120, bh = 22, bw = 34;
+  let s = "";
+  // sol
+  s += `<rect x="10" y="${baseY}" width="240" height="8" rx="3" fill="#D8D5CB"/>`;
+  // tours
+  for (const tx of [20, 200]) {
+    s += `<rect x="${tx}" y="150" width="40" height="${baseY - 150}" rx="4" fill="${BRICK}" opacity="0.9"/>`;
+    s += `<path d="M ${tx} 150 L ${tx + 20} 118 L ${tx + 40} 150 Z" fill="${BRICK}"/>`;
+  }
+  // créneaux des tours
+  for (const tx of [24, 36, 204, 216]) s += `<rect x="${tx}" y="142" width="8" height="12" fill="${BRICK}"/>`;
+  // mur de briques (hauteur selon l'entropie)
+  for (let r = 0; r < rows; r++) {
+    const y = baseY - (r + 1) * bh;
+    const off = (r % 2) * (bw / 2);
+    for (let x = wallX - off; x < wallX + wallW; x += bw) {
+      const bx = Math.max(x, wallX), bwid = Math.min(x + bw, wallX + wallW) - bx;
+      if (bwid <= 2) continue;
+      s += `<rect x="${bx + 1.5}" y="${y + 1.5}" width="${bwid - 3}" height="${bh - 3}" rx="3" fill="${col}"/>`;
+    }
+  }
+  // porte
+  s += `<path d="M 118 ${baseY} L 118 250 A 12 12 0 0 1 142 250 L 142 ${baseY} Z" fill="#20241F" opacity="0.75"/>`;
+  // drapeau
+  if (bits >= 70) s += `<line x1="130" y1="${baseY - rows * bh}" x2="130" y2="${baseY - rows * bh - 28}" stroke="#20241F" stroke-width="2.5"/><path d="M 130 ${baseY - rows * bh - 28} L 152 ${baseY - rows * bh - 21} L 130 ${baseY - rows * bh - 14} Z" fill="${BRICK}"/>`;
+  svg.innerHTML = s;
+}
+
+/* ---------- Rendu ---------- */
+let reuseN = 1;
+
+function statHtml(lbl, val, sub) {
+  return `<div class="stat"><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
+}
+
+function render() {
+  const pw = $("pw").value;
+  const a = analyze(pw);
+  // stats
+  $("stats").innerHTML =
+    statHtml(T().stLen, String(a.len), T().stLenSub(a.len)) +
+    statHtml(T().stPool, String(a.pool), T().poolDetail(a.hasL, a.hasU, a.hasD, a.hasS)) +
+    statHtml(T().stCombo, fmtPow(a.combos), T().stComboSub) +
+    statHtml(T().stBits, a.bits ? fmtNum(a.bits) : "0", T().stBitsSub);
+  // verdict
+  const v = $("verdict");
+  if (a.len === 0) { v.className = "verdict mid"; v.textContent = T().verdictEmpty; }
+  else {
+    const tGpu = a.combos / 2 / RATES[1].rate;
+    if (tGpu < 1) { v.className = "verdict weak"; v.textContent = T().verdictWeak; }
+    else if (tGpu < 31557600) { v.className = "verdict mid"; v.textContent = T().verdictMid; }
+    else { v.className = "verdict strong"; v.textContent = T().verdictStrong; }
+  }
+  // table de cassage (temps moyen = moitié des combinaisons)
+  let rows = "";
+  for (const r of RATES) {
+    const t = a.combos ? a.combos / 2 / r.rate : 0;
+    rows += `<tr><td>${T()[r.key]}</td><td>${a.len === 0 ? "—" : fmtDur(t)}</td></tr>`;
+  }
+  $("crackTable").innerHTML = rows;
+  // forteresse + barre
+  drawCastle(a.bits);
+  $("bitsFill").style.width = Math.min(100, a.bits) + "%";
+  $("bitsFill").style.background = a.bits >= 70 ? "#155E4C" : (a.bits >= 40 ? "#D96A08" : "#C84B31");
+  // missions
+  const tGpu = a.combos ? a.combos / 2 / RATES[1].rate : 0;
+  const done = [
+    a.bits >= 60,
+    a.bits >= 80 && !a.hasS,
+    tGpu > 100 * 31557600,
+    a.len > 0 && tGpu < 1
+  ];
+  const lis = T().missions.map((m, i) =>
+    `<li class="${done[i] ? "done" : ""}"><span class="box">${done[i] ? "✓" : ""}</span><span>${m}</span></li>`).join("");
+  $("missions").innerHTML = lis;
+  renderReuse();
+}
+
+function renderReuse() {
+  const row = $("reuseRow");
+  row.innerHTML = "";
+  for (const n of [1, 3, 10]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = T().reuseBtn(n);
+    if (n === reuseN) b.className = "sel";
+    b.onclick = () => { reuseN = n; renderReuse(); };
+    row.appendChild(b);
+  }
+  $("reuseMsg").textContent = T().reuseMsg(reuseN);
+}
+
+/* ---------- Langue ---------- */
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  $("labTitle").textContent = T().labTitle;
+  $("pw").placeholder = T().placeholder;
+  $("eyeBtn").textContent = $("pw").type === "password" ? T().eyeHide : T().eye;
+  $("privacy").textContent = T().privacy;
+  $("exTitle").textContent = T().exTitle;
+  $("misTitle").textContent = T().misTitle;
+  $("reuseTitle").textContent = T().reuseTitle;
+  $("rulesTitle").textContent = T().rulesTitle;
+  $("rules").innerHTML = T().rules.map(r => `<li>${r}</li>`).join("");
+  // exemples
+  const er = $("exRow");
+  er.innerHTML = "";
+  for (const ex of T().examples) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = "« " + ex.pw + " » — " + ex.note;
+    b.onclick = () => { $("pw").value = ex.pw; render(); };
+    er.appendChild(b);
+  }
+  render();
+}
+
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+
+$("pw").addEventListener("input", render);
+$("eyeBtn").onclick = () => {
+  const p = $("pw");
+  p.type = p.type === "password" ? "text" : "password";
+  $("eyeBtn").textContent = p.type === "password" ? T().eyeHide : T().eye;
+};
+
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

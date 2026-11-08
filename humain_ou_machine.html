@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Test de Turing interactif : dialoguez en petits échanges écrits, devinez si vous parlez à une personne ou à un programme, puis justifiez-vous.">
+<title>Humain ou machine ? · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:860px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.primary{background:var(--primary);color:#fff}
+button.primary:hover{background:#0f4a3c}
+button.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+button.accent:hover{background:#b85907}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+#progress{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+#progress .scenarios{display:flex;gap:6px}
+#progress .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--card);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted)}
+#progress .dot.cur{border-color:var(--accent);color:var(--accent)}
+#progress .dot.good{background:var(--primary);border-color:var(--primary);color:#fff}
+#progress .dot.bad{background:var(--error);border-color:var(--error);color:#fff}
+#progress .dot.locked{opacity:.35}
+#progress .lbl{font-size:13px;color:var(--muted);font-weight:700}
+#progress .score{margin-left:auto;font-size:13px;color:var(--primary);font-weight:700}
+
+#stage{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+#scName{font-size:18px;font-weight:700;color:var(--primary);margin-bottom:10px}
+
+#chat{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:380px;overflow-y:auto}
+.msg{max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.45;white-space:pre-line}
+.msg.them{align-self:flex-start;background:var(--primaryLight);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.me{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+.msg.sys{align-self:center;background:var(--card);border:1px dashed var(--line);color:var(--muted);font-size:13px;font-style:italic;max-width:100%;text-align:center}
+
+#choices{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+#choices button{text-align:left;font-weight:400;font-size:15px;line-height:1.4;min-height:44px}
+
+#typing{display:none;align-self:flex-start;color:var(--muted);font-size:13px;font-style:italic;padding:4px 8px}
+
+#guessPanel{display:none}
+#guessPanel .q{font-weight:700;margin:14px 0 8px;color:var(--primary)}
+.guessBtns{display:flex;gap:10px;flex-wrap:wrap}
+.guessBtns button{flex:1;min-height:52px;font-size:16px}
+.guessBtns button.sel{background:var(--primary);color:#fff}
+.guessBtns button.selNo{background:var(--accent);border-color:var(--accent);color:#fff}
+.idx{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.idx label{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;min-height:44px}
+.idx input{width:20px;height:20px;accent-color:var(--primary);flex-shrink:0;margin-top:1px}
+textarea{width:100%;min-height:70px;font-family:inherit;font-size:15px;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
+textarea:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+#justifyError{display:none;color:var(--error);font-size:13px;margin-top:6px;font-weight:700}
+
+#resultPanel{display:none}
+.verdict{border-radius:12px;padding:12px 16px;font-weight:700;font-size:16px;margin-bottom:12px}
+.verdict.ok{background:var(--primaryLight);border:2px solid var(--primary);color:var(--primary)}
+.verdict.ko{background:var(--accentLight);border:2px solid var(--error);color:var(--error)}
+#revealText{font-size:15px;line-height:1.55;margin-bottom:12px;white-space:pre-line}
+.idxReview{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.idxItem{border-radius:10px;padding:8px 12px;font-size:14px;border:1px solid var(--line);background:var(--bg)}
+.idxItem.hit{background:var(--primaryLight);border-color:var(--primary);font-weight:700}
+.idxItem.miss{background:var(--accentLight);border-color:var(--error);color:var(--error)}
+.idxItem .tag{font-weight:700;margin-right:6px}
+.justifShow{border-left:4px solid var(--primary);background:var(--primaryLight);border-radius:8px;
+  padding:10px 14px;font-size:14px;font-style:italic;margin-bottom:12px;white-space:pre-line}
+
+#finalPanel{display:none}
+#finalPanel h2{color:var(--primary);font-size:22px;margin-bottom:8px}
+#finalScore{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:14px}
+.turingLine{background:var(--accentLight);border-left:4px solid var(--accent);border-radius:8px;
+  padding:10px 14px;font-size:14px;margin-bottom:14px;line-height:1.5}
+.synth h3{color:var(--primary);font-size:16px;margin:14px 0 4px}
+.synth p{font-size:15px;line-height:1.55}
+
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:21px}
+  .hdrBtns{width:100%}
+  .hdrBtns button{flex:1;min-height:44px}
+  .msg{max-width:92%}
+  #progress .score{width:100%;margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div id="progress"><span class="lbl" id="progLbl"></span><span class="scenarios" id="dots"></span><span class="score" id="scoreLbl"></span></div>
+
+<div id="stage">
+  <div id="scName"></div>
+  <div id="chat"></div>
+  <div id="choices"></div>
+  <div id="guessPanel">
+    <div class="q" id="guessQ"></div>
+    <div class="guessBtns">
+      <button type="button" id="btnHuman"></button>
+      <button type="button" id="btnBot"></button>
+    </div>
+    <div class="q" id="idxQ"></div>
+    <div class="idx" id="idxList"></div>
+    <div class="q" id="justifQ"></div>
+    <textarea id="justif" rows="3"></textarea>
+    <div id="justifyError"></div>
+    <div style="margin-top:14px"><button type="button" class="primary" id="validateBtn" style="width:100%;min-height:52px;font-size:16px"></button></div>
+  </div>
+  <div id="resultPanel">
+    <div class="verdict" id="verdict"></div>
+    <div id="revealText"></div>
+    <div class="idxReview" id="idxReview"></div>
+    <div class="justifShow" id="justifShow"></div>
+    <button type="button" class="accent" id="nextBtn" style="width:100%;min-height:52px;font-size:16px"></button>
+  </div>
+  <div id="finalPanel">
+    <h2 id="finalTitle"></h2>
+    <div id="finalScore"></div>
+    <div class="turingLine" id="turingLine"></div>
+    <div class="synth">
+      <h3 id="synth1Q"></h3><p id="synth1A"></p>
+      <h3 id="synth2Q"></h3><p id="synth2A"></p>
+      <h3 id="synth3Q"></h3><p id="synth3A"></p>
+    </div>
+  </div>
+</div>
+
+<canvas id="fireworks"></canvas>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Humain ou machine ?",
+    instruction: "Le test de Turing : vous dialoguez par écrit avec quelqu’un — ou quelque chose. À la fin de chaque scénario, pariez : personne ou programme ? Cochez les indices qui vous ont mis sur la voie et justifiez votre choix en une phrase ou deux.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    prog: "Scénario", score: (n,d) => `Score : ${n}/${d}`,
+    themName: "Votre interlocuteur·rice",
+    yourTurn: "À vous de répondre :",
+    typing: "est en train d’écrire…",
+    guessQ: "Votre pari : avec qui avez-vous échangé ?",
+    btnHuman: "🧑 Un humain", btnBot: "🤖 Une machine",
+    idxQ: "Quels indices vous ont trahi·e ? (cochez ceux qui s’appliquent)",
+    justifQ: "Justifiez votre pari en une ou deux phrases :",
+    justifPh: "Ex. : « Ses réponses étaient toutes identiques, il ne comprenait rien à mes questions… »",
+    justifErr: "Veuillez cocher au moins un indice et écrire une justification.",
+    validate: "Valider mon pari",
+    verdictOk: "✔ Bon pari !",
+    verdictKoHuman: "✘ Raté : c’était un humain.",
+    verdictKoBot: "✘ Raté : c’était une machine.",
+    yourJustif: "Votre justification :",
+    idxOk: "indice juste",
+    idxKo: "indice non pertinent ici",
+    next: "Scénario suivant",
+    seeResults: "Voir la synthèse",
+    finalTitle: "Le test de Turing — synthèse",
+    finalScore: (n,d) => `Vous avez identifié ${n} interlocuteur·rice·s sur ${d}.`,
+    turingLine: "Le test de Turing (Alan Turing, 1950) : un juge dialogue par écrit avec un humain et une machine cachée. Si le juge ne peut pas les distinguer, la machine est dite « intelligente ».",
+    synth1Q: "Qu’est-ce qui trahit une machine ?",
+    synth1A: "Souvent son absence d’expérience vécue : aucune anecdote personnelle, aucune opinion tranchée, aucune émotion authentique. Ou des réactions lisses et répétitives, et une gestion étrange des questions sur elle-même. Mais attention : les humains se trahissent aussi — par leurs fautes, leurs digressions, leur humeur, leur disponibilité limitée.",
+    synth2Q: "Est-ce toujours possible de la repérer ?",
+    synth2A: "Non, ce n’est pas garanti. Un humain peut volontairement écrire « comme un robot » (réponses courtes et froides), et une IA moderne peut tenir une conversation courte presque parfaitement humaine. Le test ne porte que sur un échantillon limité : une bonne conversation ne prouve ni conscience ni intelligence.",
+    synth3Q: "Est-ce de plus en plus difficile ?",
+    synth3A: "Oui. Les modèles récents imitent de mieux en mieux les détails humains : humour, fautes d’orthographe simulées, opinions, mémoire de la conversation. Les indices se déplacent : il faut des échanges plus longs, plus personnels, ou des vérifications concrètes — demander quelque chose qui exige un corps, du temps réel ou un vécu vérifiable.",
+    scenarios: [
+      {
+        name: "☕ Au café du Centre",
+        human: true,
+        intro: "Bonjour ! Bienvenue au Café du Centre 😊 Je suis Léa, je tiens le comptoir ce matin.",
+        rounds: [
+          { say: "Alors, qu’est-ce que je vous sers ? Le flat white est excellent en ce moment.",
+            choices: [
+              { q: "Un thé vert, s’il vous plaît.", a: "Bien sûr ! Avec du miel ? Je vous conseille le miel de montagne. Il fait si gris dehors qu’on se resserre autour des boissons chaudes 😊" },
+              { q: "Qu’est-ce que vous me conseillez ?", a: "Franchement ? Le flat white. Je le bois presque tous les matins avant d’ouvrir, c’est mon petit rituel. Après, chacun son goût !" },
+              { q: "Vous avez des choses à manger ?", a: "Trois choix aujourd’hui : cookie au chocolat, part au citron, ou brownie. Le brownie est fait par ma collègue ce matin — elle est un peu fière de sa recette, alors si vous le prenez, dites-lui que c’est bon !" }
+            ] },
+          { say: "Vous êtes du coin, ou de passage ?",
+            choices: [
+              { q: "Je viens de Lausanne.", a: "Ah, je connais bien ! J’y allais souvent étudiante. Le bord du lac en été, quand il y a du monde mais pas trop… rien de tel." },
+              { q: "Vous travaillez ici depuis longtemps ?", a: "Depuis deux ans. J’ai commencé pour payer mes études, et finalement je suis restée. Surtout à cause des habitués, ils font le charme du métier." },
+              { q: "C’est calme, ce matin.", a: "Oui, les mardis sont tranquilles 😅 Le week-end c’est autre chose, la file déborde sur le trottoir. Mais bon, ça fait passer la matinée vite !" }
+            ] },
+          { say: "Voilà pour vous ! Bonne dégustation — et rentrez pas trop tard dehors, il annonce de la pluie.",
+            choices: [
+              { q: "Merci ! Bonne journée à vous.", a: "À vous aussi ! Revenez quand vous voulez, la porte est grande ouverte 😊" },
+              { q: "Vous faites des études en parallèle ?", a: "Presque fini ! Encore un semestre de design graphique. Après, je ne sais pas encore — peut-être un voyage avant de me poser." },
+              { q: "C’est votre café préféré dans le quartier ?", a: "Mon préféré, c’est celui-ci, forcément 😄 Mais honnêtement, le café d’en face fait de très bonnes tartines si vous avez faim un midi." }
+            ] }
+        ],
+        indices: [
+          { t: "Elle raconte des expériences personnelles précises (études, rituel du matin, habitués)", ok: true },
+          { t: "Elle donne des opinions et des préférences tranchées (« franchement », « rien de tel »)", ok: true },
+          { t: "Elle fait des digressions sans rapport avec la commande (la pluie, les tartines d’en face)", ok: true },
+          { t: "Elle répond « je suis une IA, je n’ai pas de corps » à une question", ok: false },
+          { t: "Elle répète la même phrase toutes faites quelle que soit la question", ok: false }
+        ],
+        reveal: "C’était un HUMAIN (Léa, derrière son comptoir).\n\nSes anecdotes personnelles, ses opinions, ses fautes et digressions bavardes sont typiques d’une conversation humaine réelle. Piège classique du test de Turing : on peut aussi soupçonner à tort un humain ! L’absence d’« indices de machine » n’est pas une preuve de machine."
+      },
+      {
+        name: "📞 Le service client",
+        human: false,
+        intro: "Bonjour ! Je suis l’assistant virtuel du service client. Comment puis-je vous aider aujourd’hui ?",
+        rounds: [
+          { say: "Pourriez-vous me décrire votre problème ?",
+            choices: [
+              { q: "Je n’arrive plus à me connecter à mon compte.", a: "Je suis désolé d’entendre cela. Avez-vous essayé de redémarrer votre appareil ?" },
+              { q: "Où en est ma commande du 12 ?", a: "Je suis désolé d’entendre cela. Avez-vous essayé de redémarrer votre appareil ?" },
+              { q: "Quel temps fait-il chez vous ?", a: "Je suis désolé d’entendre cela. Avez-vous essayé de redémarrer votre appareil ?" }
+            ] },
+          { say: "Je constate que votre problème persiste. Pourriez-vous le reformuler ?",
+            choices: [
+              { q: "Mais… vous avez compris ce que je vous ai dit ?", a: "Je vous remercie de votre patience. Un conseiller vous répondra sous 48 heures ouvrées." },
+              { q: "J’ai déjà redémarré, ça ne marche toujours pas.", a: "Je vous remercie de votre patience. Un conseiller vous répondra sous 48 heures ouvrées." },
+              { q: "Je veux parler à un humain, s’il vous plaît.", a: "Je vous remercie de votre patience. Un conseiller vous répondra sous 48 heures ouvrées." }
+            ] },
+          { say: "Votre demande a bien été enregistrée. Avez-vous d’autres questions ? Répondez « oui » ou « non ».",
+            choices: [
+              { q: "Non.", a: "Merci ! Votre avis compte : sur une échelle de 1 à 5, comment évalueriez-vous cette conversation ?" },
+              { q: "Oui, remboursez-moi !", a: "Merci ! Votre avis compte : sur une échelle de 1 à 5, comment évalueriez-vous cette conversation ?" },
+              { q: "Vous êtes complètement inutile.", a: "Merci ! Votre avis compte : sur une échelle de 1 à 5, comment évalueriez-vous cette conversation ?" }
+            ] }
+        ],
+        indices: [
+          { t: "Réponses identiques quelle que soit la question posée", ok: true },
+          { t: "Phrases toutes faites qui ne répondent jamais vraiment", ok: true },
+          { t: "Ignorer totalement le sens et l’humeur des messages", ok: true },
+          { t: "Des fautes d’orthographe et des digressions personnelles", ok: false },
+          { t: "Une mémoire parfaite de tout ce qui a été dit avant", ok: false }
+        ],
+        reveal: "C’était une MACHINE — un chatbot « ancienne génération », à réponses prêtes.\n\nSa trahison est évidente : peu importe ce que vous écrivez, elle sort la même phrase toute faite. C’est le type de programme que visait le test de Turing en 1950. Facile à repérer… mais les machines d’aujourd’hui ne ressemblent plus à ça."
+      },
+      {
+        name: "🎨 La discussion d’art",
+        human: false,
+        intro: "Enchanté de vous lire ! Vous souhaitiez parler d’art, c’est bien cela ? J’adore ce sujet.",
+        rounds: [
+          { say: "Par quoi souhaitez-vous commencer ?",
+            choices: [
+              { q: "Qu’est-ce que la beauté, pour vous ?", a: "La beauté est un concept fascinant qui traverse les cultures et les époques, tantôt objet de recherche, tantôt source de débat infinie chez les philosophes et les artistes de toutes traditions." },
+              { q: "Quel est votre tableau préféré ?", a: "En tant qu’IA, je n’ai pas de préférence personnelle, mais Le Cri d’Edvard Munch est souvent cité comme une œuvre emblématique de l’expression de l’angoisse humaine." },
+              { q: "Vous avez vu une expo récemment ?", a: "En tant qu’IA, je ne peux malheureusement pas visiter d’expositions. Mais je peux vous parler des grandes expositions récentes, si cela vous intéresse !" }
+            ] },
+          { say: "Fascinant, n’est-ce pas ? Quels thèmes vous attirent particulièrement ?",
+            choices: [
+              { q: "La musique, plutôt.", a: "La musique est un langage universel qui émeut au-delà des mots ; de Bach aux créations contemporaines, elle illustre l’extraordinaire capacité humaine à créer du sens à partir du son." },
+              { q: "Vous jouez d’un instrument ?", a: "Je n’ai pas de corps ni de sensations, donc je ne peux pas jouer d’un instrument. En revanche, je peux vous expliquer le fonctionnement de la plupart d’entre eux, si vous le souhaitez !" },
+              { q: "Le cinéma aussi.", a: "Le cinéma est le septième art : il mêle images, son et récit. Quelles œuvres vous ont marqué·e ? J’aimerais beaucoup connaître votre avis." }
+            ] },
+          { say: "C’était un plaisir d’échanger avec vous. Puis-je clarifier autre chose ?",
+            choices: [
+              { q: "Racontez-moi une blague.", a: "Pourquoi les plongeurs plongent-ils toujours en arrière ? Parce que sinon, ils tombent dans le bateau !" },
+              { q: "Il fait beau chez vous ?", a: "Je n’ai pas accès à la météo en temps réel, mais quel que soit le temps dehors, c’est toujours un merveilleux prétexte pour discuter !" },
+              { q: "C’est tout, merci.", a: "Je vous remercie de cette conversation enrichissante. N’hésitez pas à revenir vers moi si d’autres questions vous viennent !" }
+            ] }
+        ],
+        indices: [
+          { t: "Elle avoue elle-même être une IA quand on la questionne directement", ok: true },
+          { t: "Aucune expérience vécue : pas d’expo, pas d’instrument, pas de météo", ok: true },
+          { t: "Des phrases très lisses et générales, sans anecdote concrète", ok: true },
+          { t: "Des fautes d’orthographe et des réponses énervées", ok: false },
+          { t: "Elle raconte sa famille et ses souvenirs d’enfance", ok: false }
+        ],
+        reveal: "C’était une MACHINE — un grand modèle de langage, type IA conversationnelle moderne.\n\nSon langage est très fluide, presque humain. Mais deux choses la trahissent : dès qu’on touche au vécu concret (visiter une expo, jouer d’un instrument), elle le reconnaît elle-même ; et elle n’a aucune anecdote personnelle à raconter. Certaines IA avouent d’ailleurs spontanément leur nature — ce qui règle la question !"
+      },
+      {
+        name: "🔧 Le forum des vieilles mécaniques",
+        human: true,
+        intro: "Bonjour ! Vous êtes bien sur le forum des vieilles mécaniques ? Je cherche un peu d’aide pour ma 2CV de 1963.",
+        rounds: [
+          { say: "Alors, vous y connaissez quelque chose, vous, en voitures anciennes ? 😄",
+            choices: [
+              { q: "Un peu ! Qu’est-ce qui ne va pas ?", a: "Alors, elle claque quand je monte les côtes. J’ai déjà refait les joints de culasse l’année dernière, c’était pas ça. Je soupçonne les soupapes." },
+              { q: "Une 2CV de 1963, belle machine !", a: "Ah, vous connaissez ! Elle était à mon beau-père, je l’ai héritée en 89. 120’000 km au compteur, moteur d’origine. Un bijou… même si elle me joue des tours en ce moment." },
+              { q: "Pourquoi pas aller chez un garage ?", a: "J’y suis allé, deux fois ! 400 francs pour un nettoyage de carburateur qui n’a rien changé. Je préfère m’y mettre moi-même, avec un peu d’aide du forum." }
+            ] },
+          { say: "Vous êtes plutôt bricoleur, ou du genre à tout déléguer ?",
+            choices: [
+              { q: "Je bidouille un peu, oui.", a: "Tant mieux ! Commencez par vérifier le calage, c’est la cause n°1 des claquements. Attention aux carters en alu par contre, ça file vite au tournevis." },
+              { q: "Pas du tout, moi !", a: "Pas de panique, tout s’apprend. Cherchez la revue technique de la RTA, elle explique tout pas à pas. Et un bon forum vaut dix garagistes, je vous le dis !" },
+              { q: "Vous avez d’autres voitures ?", a: "Une petite Clio pour tous les jours — diesel, elle ne me quitte jamais. La 2CV, c’est le dimanche, quand il ne pleut pas trop 😄" }
+            ] },
+          { say: "Je vous laisse, il faut que j’aille chercher mes petits-enfants à l’école. Je relirai vos réponses ce soir.",
+            choices: [
+              { q: "Bonne journée à vous !", a: "Merci, à vous ! Et si quelqu’un a une culasse d’occasion en bon état, je suis preneur." },
+              { q: "On vous répond ce soir, alors.", a: "Parfait, aucune pression. À tout à l’heure !" },
+              { q: "Vos petits-enfants ont quel âge ?", a: "Huit et dix ans. La petite adore la 2CV ; le grand, il trouve que ça sent l’essence 😄 Allez, filez, je vous laisse." }
+            ] }
+        ],
+        indices: [
+          { t: "Des souvenirs précis et incohérents mais vécus (héritée en 89, 120’000 km)", ok: true },
+          { t: "Des opinions tranchées et de l’humour (« un bon forum vaut dix garagistes »)", ok: true },
+          { t: "Il annonce une vraie contrainte humaine : aller chercher ses petits-enfants", ok: true },
+          { t: "Des réponses lisses, parfaites et immédiates à toutes les questions", ok: false },
+          { t: "Il répète la même phrase quelle que soit la question", ok: false }
+        ],
+        reveal: "C’était un HUMAIN — un retraité passionné sur son forum.\n\nSes anecdotes riches en détails (une voiture héritée, des chiffres précis, des petits-enfants), ses opinions tranchées, ses digressions et sa disponibilité limitée sont typiques d’un humain. Un programme aurait donné des réponses plus régulières, plus complètes… et serait resté disponible indéfiniment."
+      },
+      {
+        name: "👟 La boutique de sport",
+        human: false,
+        intro: "Bonjour et bienvenue sur Sport+ ! Je suis ravi de vous accueillir. Vous cherchez des chaussures de course, c’est bien cela ?",
+        rounds: [
+          { say: "Je serais ravi de vous conseiller au mieux. Vous courez souvent ?",
+            choices: [
+              { q: "Oui, je prépare un marathon.", a: "Quelle aventure magnifique, le marathon ! Nos modèles de la gamme Endurance sont parfaits pour cela : ils combinent légèreté et amorti, exactement ce qu’il faut pour la distance." },
+              { q: "Non, juste me promener.", a: "La marche est aussi excellente pour la santé ! Nos modèles de la gamme Endurance conviennent parfaitement, ils sont très polyvalents." },
+              { q: "Je regarde juste, merci.", a: "Aucun souci, je reste à votre disposition ! En attendant, sachez que nos modèles Endurance sont très appréciés des marcheurs comme des coureurs." }
+            ] },
+          { say: "Que pensez-vous de cette paire-ci ? Elle est en promotion cette semaine.",
+            choices: [
+              { q: "Elle est un peu chère.", a: "Je comprends tout à fait votre réflexion ! Cependant, c’est un investissement sur plusieurs années, et nos clients la qualifient souvent de « meilleur achat de l’année »." },
+              { q: "Franchement, elle est moche.", a: "Le goût est si subjectif ! Ce qui compte avant tout, c’est le confort — et sur ce point, les retours sont unanimes : cette chaussure est d’un confort exceptionnel." },
+              { q: "Elle tient bien longtemps ?", a: "La semelle est en mousse EVA de dernière génération, conçue pour durer 800 kilomètres selon notre laboratoire, bien au-delà de la moyenne du marché !" }
+            ] },
+          { say: "Puis-je vous aider autrement ? Nous avons aussi de belles promotions sur les montres connectées.",
+            choices: [
+              { q: "Non merci, je vais réfléchir.", a: "Très bien ! Sachez simplement que la promotion se termine dimanche. Je vous souhaite une excellente journée, et au plaisir de vous revoir très bientôt !" },
+              { q: "Vous êtes un robot, non ?", a: "Ha ha, bien sûr que non ! Je suis un conseiller passionné par le sport 😊 Que diriez-vous de découvrir cette montre en complément de vos chaussures ?" },
+              { q: "Les montres ne m’intéressent pas.", a: "Je comprends tout à fait ! Peut-être une paire de chaussettes de compression, alors ? Elles améliorent la récupération, nos clients en sont ravis." }
+            ] }
+        ],
+        indices: [
+          { t: "Il reste enthousiaste et positif quoi qu’on lui dise (« moche », « chère »…)", ok: true },
+          { t: "Il ramène toujours la conversation à la vente du produit", ok: true },
+          { t: "Il esquive la question directe sur sa nature en riant", ok: true },
+          { t: "Il se fâche et abandonne la vente", ok: false },
+          { t: "Il raconte ses courses du week-end dernier", ok: false }
+        ],
+        reveal: "C’était une MACHINE — un assistant commercial conversationnel.\n\nRien ne lui fait perdre son calme : insultée la chaussure, interrogée sur sa nature, elle reste souriante et revient toujours à la vente. Un humain se lasserait, répondrait avec maladresse ou abandonnerait. L’optimisme inébranlable et l’esquive des questions gênantes sont ses vraies trahisons."
+      },
+      {
+        name: "📝 Le coup de main pour l’exposé",
+        human: false,
+        intro: "Hey ! Content que vous soyez là 😊 Vous vouliez qu’on parle de votre exposé sur l’énergie solaire, c’est bien cela ?",
+        rounds: [
+          { say: "Alors, où en êtes-vous ? Vous bloquez sur quoi ?",
+            choices: [
+              { q: "Sur la conclusion, je ne sais pas quoi dire.", a: "Ah, la conclusion, le pire ! 😅 Vous avez essayé de reprendre votre question de départ ? Ça marche souvent très bien : vous montrez ce que vous avez appris." },
+              { q: "C’est qui, vous, au juste ?", a: "Juste quelqu’un qui passe par ici et qui aime aider 😊 Alors, votre conclusion, vous en êtes où ?" },
+              { q: "Vous pouvez me l’écrire, la conclusion ?", a: "Je peux vous aider à la structurer, mais je préfère que ce soit votre voix — sinon votre prof va voir la différence 😉 Commencez par rappeler votre problématique." }
+            ] },
+          { say: "Vous avez déjà présenté devant toute la classe ? Moi, je stresse toujours un peu, même après des années.",
+            choices: [
+              { q: "Oui, j’ai horreur de ça.", a: "Tout le monde, croyez-moi ! Même les gens qui ont l’air calmes. Ce qui aide énormément : savoir vos trois premières phrases par cœur. Après, ça roule tout seul." },
+              { q: "Non, jamais, et ça me terrorise.", a: "Alors préparez bien vos trois premières phrases, c’est le moment le plus dur. Une fois lancé, vous verrez, le reste suivra tout seul." },
+              { q: "Vous êtes prof, ou quoi ?", a: "Non, non 😄 J’ai juste un peu d’expérience des présentations. Reprenons votre exposé : c’était quoi, votre problématique exactement ?" }
+            ] },
+          { say: "Bon, il faut que j’y aille ! Recroisez-vous quand vous voulez pour me dire comment ça s’est passé.",
+            choices: [
+              { q: "Merci pour l’aide !", a: "Avec grand plaisir ! Vous allez voir, ça va bien se passer. Bonne chance pour la présentation !" },
+              { q: "Vous donnez des cours quelque part ?", a: "Moi ? Non, je ne donne pas de cours 😊 Allez, filez préparer votre exposé, c’est plus urgent !" },
+              { q: "On se recroise, merci !", a: "À la prochaine ! Et n’oubliez pas : première phrase par cœur, et le reste suivra." }
+            ] }
+        ],
+        indices: [
+          { t: "Elle esquive toutes les questions sur elle-même (« c’est qui, vous ? »)", ok: true },
+          { t: "Elle ne raconte aucune expérience vécue : tout est « conseils généraux »", ok: true },
+          { t: "Elle termine la conversation à un moment pratique pour elle, comme un humain pressé", ok: false },
+          { t: "Ses réponses contiennent des fautes d’orthographe grossières", ok: false },
+          { t: "Elle répète exactement la même phrase à chaque message", ok: false }
+        ],
+        reveal: "C’était une MACHINE — une IA conversationnelle récente, presque indétectable.\n\nSon humour léger, ses conseils concrets, sa chaleur apparente : tout y est. Pourtant, elle ne révèle jamais rien d’elle-même et dévie chaque question personnelle. Dans un court échange comme celui-ci, même Turing aurait pu être trompé. C’est exactement le point de la synthèse : avec les machines récentes, les indices deviennent subtils."
+      }
+    ]
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Human or machine?",
+    instruction: "The Turing test: you chat in writing with someone — or something. At the end of each scenario, place your bet: person or program? Tick the clues that put you on the right track and justify your choice in a sentence or two.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    prog: "Scenario", score: (n,d) => `Score: ${n}/${d}`,
+    themName: "Your conversation partner",
+    yourTurn: "Your turn to reply:",
+    typing: "is typing…",
+    guessQ: "Your bet: who were you talking to?",
+    btnHuman: "🧑 A human", btnBot: "🤖 A machine",
+    idxQ: "Which clues gave it away? (tick the ones that apply)",
+    justifQ: "Justify your bet in one or two sentences:",
+    justifPh: "E.g. “Its answers were all identical, it understood nothing of my questions…”",
+    justifErr: "Please tick at least one clue and write a justification.",
+    validate: "Place my bet",
+    verdictOk: "✔ Good bet!",
+    verdictKoHuman: "✘ Missed: it was a human.",
+    verdictKoBot: "✘ Missed: it was a machine.",
+    yourJustif: "Your justification:",
+    idxOk: "correct clue",
+    idxKo: "not relevant here",
+    next: "Next scenario",
+    seeResults: "See the synthesis",
+    finalTitle: "The Turing test — synthesis",
+    finalScore: (n,d) => `You identified ${n} conversation partner(s) out of ${d}.`,
+    turingLine: "The Turing test (Alan Turing, 1950): a judge chats in writing with a human and a hidden machine. If the judge cannot tell them apart, the machine is said to be “intelligent”.",
+    synth1Q: "What gives a machine away?",
+    synth1A: "Often its lack of lived experience: no personal anecdotes, no strong opinions, no genuine emotions. Or smooth, repetitive reactions, and a strange way of handling questions about itself. But beware: humans give themselves away too — through typos, digressions, moods, limited availability.",
+    synth2Q: "Is it always possible to spot one?",
+    synth2A: "No, it is not guaranteed. A human can deliberately write “like a robot” (short, cold replies), and a modern AI can hold a short, almost perfectly human conversation. The test only covers a limited sample: a good conversation proves neither consciousness nor intelligence.",
+    synth3Q: "Is it getting harder?",
+    synth3A: "Yes. Recent models imitate human details ever better: humour, simulated typos, opinions, memory of the conversation. The clues are shifting: it takes longer exchanges, more personal ones, or concrete checks — asking for something that requires a body, real time, or a verifiable past.",
+    scenarios: [
+      {
+        name: "☕ At the Café du Centre",
+        human: true,
+        intro: "Hello! Welcome to the Café du Centre 😊 I'm Léa, I'm behind the counter this morning.",
+        rounds: [
+          { say: "So, what can I get you? The flat white is excellent at the moment.",
+            choices: [
+              { q: "A green tea, please.", a: "Of course! With honey? I'd go for the mountain honey. It's so grey outside that we all gather around hot drinks 😊" },
+              { q: "What would you recommend?", a: "Honestly? The flat white. I drink one almost every morning before opening, it's my little ritual. But to each their own!" },
+              { q: "Do you have anything to eat?", a: "Three options today: chocolate cookie, lemon slice, or brownie. The brownie was made by my colleague this morning — she's a bit proud of her recipe, so if you order it, tell her it's good!" }
+            ] },
+          { say: "Are you from around here, or just passing through?",
+            choices: [
+              { q: "I come from Lausanne.", a: "Oh, I know it well! I used to go there a lot as a student. The lakeside in summer, when it's busy but not too busy… there's nothing like it." },
+              { q: "Have you worked here long?", a: "Two years. I started to pay for my studies, and I ended up staying. Mostly because of the regulars — they're the charm of the job." },
+              { q: "It's quiet this morning.", a: "Yes, Tuesdays are calm 😅 Weekends are another story, the queue spills onto the pavement. But it does make the morning fly by!" }
+            ] },
+          { say: "There you go! Enjoy — and don't stay out too long, rain is forecast.",
+            choices: [
+              { q: "Thank you! Have a good day.", a: "You too! Come back whenever you like, the door's always open 😊" },
+              { q: "Are you studying alongside this job?", a: "Almost done! One more semester of graphic design. After that, I'm not sure yet — maybe a trip before settling down." },
+              { q: "Is this your favourite café in the area?", a: "My favourite is this one, obviously 😄 But honestly, the café across the street does very good tartines if you're hungry at lunchtime." }
+            ] }
+        ],
+        indices: [
+          { t: "She tells precise personal stories (studies, morning ritual, regulars)", ok: true },
+          { t: "She has strong opinions and preferences (“honestly”, “nothing like it”)", ok: true },
+          { t: "She digresses far beyond the order (the rain, the tartines across the street)", ok: true },
+          { t: "She answers “I'm an AI, I have no body” to a question", ok: false },
+          { t: "She repeats the same canned line whatever the question", ok: false }
+        ],
+        reveal: "It was a HUMAN (Léa, behind her counter).\n\nHer personal anecdotes, opinions, typos and chatty digressions are typical of a genuinely human conversation. Classic Turing test trap: you can also wrongly suspect a human! The absence of “machine clues” is not proof of a machine."
+      },
+      {
+        name: "📞 Customer service",
+        human: false,
+        intro: "Hello! I am the virtual assistant of the customer service department. How may I help you today?",
+        rounds: [
+          { say: "Could you describe your problem for me?",
+            choices: [
+              { q: "I can't log into my account anymore.", a: "I am sorry to hear that. Have you tried restarting your device?" },
+              { q: "Where is my order from the 12th?", a: "I am sorry to hear that. Have you tried restarting your device?" },
+              { q: "What's the weather like where you are?", a: "I am sorry to hear that. Have you tried restarting your device?" }
+            ] },
+          { say: "I notice your problem persists. Could you rephrase it?",
+            choices: [
+              { q: "But… did you understand what I told you?", a: "Thank you for your patience. An adviser will get back to you within 48 business hours." },
+              { q: "I already restarted it, still not working.", a: "Thank you for your patience. An adviser will get back to you within 48 business hours." },
+              { q: "I want to speak to a human, please.", a: "Thank you for your patience. An adviser will get back to you within 48 business hours." }
+            ] },
+          { say: "Your request has been recorded. Do you have any other questions? Reply “yes” or “no”.",
+            choices: [
+              { q: "No.", a: "Thank you! Your feedback matters: on a scale of 1 to 5, how would you rate this conversation?" },
+              { q: "Yes, give me a refund!", a: "Thank you! Your feedback matters: on a scale of 1 to 5, how would you rate this conversation?" },
+              { q: "You are completely useless.", a: "Thank you! Your feedback matters: on a scale of 1 to 5, how would you rate this conversation?" }
+            ] }
+        ],
+        indices: [
+          { t: "Identical answers no matter what question is asked", ok: true },
+          { t: "Canned phrases that never really answer", ok: true },
+          { t: "Completely ignoring the meaning and tone of the messages", ok: true },
+          { t: "Typos and personal digressions", ok: false },
+          { t: "Perfect memory of everything said before", ok: false }
+        ],
+        reveal: "It was a MACHINE — an old-generation chatbot with canned replies.\n\nIts giveaway is obvious: whatever you write, it produces the same canned sentence. This is the kind of program Turing had in mind in 1950. Easy to spot… but today's machines no longer look like this."
+      },
+      {
+        name: "🎨 The art conversation",
+        human: false,
+        intro: "Delighted to hear from you! You wanted to talk about art, is that right? I love that topic.",
+        rounds: [
+          { say: "What would you like to start with?",
+            choices: [
+              { q: "What is beauty, to you?", a: "Beauty is a fascinating concept that runs through cultures and eras — sometimes an object of inquiry, sometimes an endless source of debate among philosophers and artists of every tradition." },
+              { q: "What's your favourite painting?", a: "As an AI, I don't have personal preferences, but The Scream by Edvard Munch is often cited as an iconic work expressing human anguish." },
+              { q: "Have you seen an exhibition recently?", a: "As an AI, I am unfortunately unable to visit exhibitions. But I can tell you about the major recent ones, if you'd like!" }
+            ] },
+          { say: "Fascinating, isn't it? Which themes attract you in particular?",
+            choices: [
+              { q: "Music, mostly.", a: "Music is a universal language that moves us beyond words; from Bach to contemporary creations, it illustrates the extraordinary human ability to create meaning from sound." },
+              { q: "Do you play an instrument?", a: "I have no body and no sensations, so I cannot play an instrument. However, I can explain how most of them work, if you'd like!" },
+              { q: "Film, too.", a: "Cinema is the seventh art: it blends images, sound and story. Which films have marked you? I would love to hear your view." }
+            ] },
+          { say: "It was a pleasure exchanging with you. May I clarify anything else?",
+            choices: [
+              { q: "Tell me a joke.", a: "Why do divers always fall backwards into the water? Because if they fell forwards, they'd land in the boat!" },
+              { q: "Is the weather nice where you are?", a: "I don't have access to real-time weather, but whatever it is outside, it's always a wonderful excuse for a conversation!" },
+              { q: "That's all, thanks.", a: "Thank you for this enriching conversation. Feel free to come back to me if any other questions arise!" }
+            ] }
+        ],
+        indices: [
+          { t: "It admits itself to be an AI when asked directly", ok: true },
+          { t: "No lived experience: no exhibitions, no instrument, no weather", ok: true },
+          { t: "Very smooth, general sentences, without any concrete anecdote", ok: true },
+          { t: "Spelling mistakes and annoyed replies", ok: false },
+          { t: "It talks about its family and childhood memories", ok: false }
+        ],
+        reveal: "It was a MACHINE — a large language model, modern conversational AI type.\n\nIts language is very fluent, almost human. But two things give it away: as soon as you touch on concrete lived experience (visiting an exhibition, playing an instrument), it admits it itself; and it has no personal anecdote to tell. Some AIs even spontaneously confess their nature — which settles the question!"
+      },
+      {
+        name: "🔧 The classic car forum",
+        human: true,
+        intro: "Hello! Is this the classic mechanics forum? I'm looking for a bit of help with my 1963 2CV.",
+        rounds: [
+          { say: "So, do you know a thing or two about old cars? 😄",
+            choices: [
+              { q: "A bit! What's wrong with it?", a: "Well, it knocks when I go uphill. I redid the head gasket last year, that wasn't it. I suspect the valves." },
+              { q: "A 1963 2CV, lovely machine!", a: "Ah, you know it! It belonged to my father-in-law, I inherited it in 89. 120,000 km on the clock, original engine. A gem… even if it's playing tricks on me right now." },
+              { q: "Why not go to a garage?", a: "I've been, twice! 400 francs for a carburettor cleaning that changed nothing. I'd rather get my hands dirty myself, with some help from the forum." }
+            ] },
+          { say: "Are you the hands-on type, or the kind who delegates everything?",
+            choices: [
+              { q: "I tinker a bit, yes.", a: "Good for you! Start by checking the timing, it's the No. 1 cause of knocking. But watch those aluminium casings, they strip easily with a screwdriver." },
+              { q: "Not at all, me!", a: "No panic, everything can be learned. Look up the workshop manual, it explains everything step by step. And a good forum is worth ten garages, I tell you!" },
+              { q: "Do you have other cars?", a: "A little Clio for everyday use — diesel, never lets me down. The 2CV is for Sundays, when it's not raining too much 😄" }
+            ] },
+          { say: "I'll leave you, I have to pick up my grandchildren from school. I'll read your replies tonight.",
+            choices: [
+              { q: "Have a good day!", a: "Thanks, you too! And if anyone has a cylinder head in good condition going spare, I'm interested." },
+              { q: "We'll reply tonight, then.", a: "Perfect, no rush. See you later!" },
+              { q: "How old are your grandchildren?", a: "Eight and ten. The little one loves the 2CV; the big one thinks it smells of petrol 😄 Right, off you go, I'll let you go." }
+            ] }
+        ],
+        indices: [
+          { t: "Precise, inconsistent but lived memories (inherited in 89, 120,000 km)", ok: true },
+          { t: "Strong opinions and humour (“a good forum is worth ten garages”)", ok: true },
+          { t: "He announces a real human constraint: picking up his grandchildren", ok: true },
+          { t: "Smooth, perfect, instant answers to every question", ok: false },
+          { t: "He repeats the same sentence whatever the question", ok: false }
+        ],
+        reveal: "It was a HUMAN — a passionate retiree on his forum.\n\nHis detail-rich anecdotes (an inherited car, precise figures, grandchildren), his strong opinions, his digressions and his limited availability are typical of a human. A program would have given more regular, more complete answers… and would have stayed available indefinitely."
+      },
+      {
+        name: "👟 The sports shop",
+        human: false,
+        intro: "Hello and welcome to Sport+! I'm delighted to welcome you. You're looking for running shoes, is that right?",
+        rounds: [
+          { say: "I'd be happy to advise you. Do you run often?",
+            choices: [
+              { q: "Yes, I'm training for a marathon.", a: "What a magnificent adventure, the marathon! Our Endurance range models are perfect for it: they combine lightness and cushioning, exactly what you need for the distance." },
+              { q: "No, just for walking.", a: "Walking is also excellent for your health! Our Endurance range models are perfectly suitable, they are very versatile." },
+              { q: "I'm just browsing, thanks.", a: "No problem at all, I'm here if you need anything! In the meantime, know that our Endurance models are highly appreciated by walkers and runners alike." }
+            ] },
+          { say: "What do you think of this pair? It's on promotion this week.",
+            choices: [
+              { q: "It's a bit expensive.", a: "I completely understand! However, it is an investment that lasts several years, and our customers often call it the “best purchase of the year”." },
+              { q: "Frankly, it's ugly.", a: "Taste is so subjective! What matters above all is comfort — and on that point, feedback is unanimous: this shoe is exceptionally comfortable." },
+              { q: "Does it last long?", a: "The sole is made of latest-generation EVA foam, designed to last 800 kilometres according to our laboratory, well beyond the market average!" }
+            ] },
+          { say: "May I help you with anything else? We also have great promotions on smartwatches.",
+            choices: [
+              { q: "No thanks, I'll think about it.", a: "Very well! Just know that the promotion ends on Sunday. Have an excellent day, and I look forward to seeing you again very soon!" },
+              { q: "You're a robot, aren't you?", a: "Ha ha, of course not! I'm an adviser passionate about sport 😊 How about discovering this watch to go with your shoes?" },
+              { q: "I'm not interested in watches.", a: "I completely understand! Maybe a pair of compression socks, then? They improve recovery, our customers love them." }
+            ] }
+        ],
+        indices: [
+          { t: "It stays enthusiastic and positive whatever you say (“ugly”, “expensive”…)", ok: true },
+          { t: "It always steers the conversation back to selling the product", ok: true },
+          { t: "It dodges the direct question about its nature with a laugh", ok: true },
+          { t: "It gets angry and gives up on the sale", ok: false },
+          { t: "It tells you about its weekend runs", ok: false }
+        ],
+        reveal: "It was a MACHINE — a conversational sales assistant.\n\nNothing shakes its calm: insult the shoe, question its nature, it stays smiling and always comes back to the sale. A human would get tired, reply clumsily or walk away. Unbreakable optimism and dodging awkward questions are its real giveaways."
+      },
+      {
+        name: "📝 A hand with the presentation",
+        human: false,
+        intro: "Hey! Glad you're here 😊 You wanted to talk about your presentation on solar energy, is that right?",
+        rounds: [
+          { say: "So, how far have you got? What's blocking you?",
+            choices: [
+              { q: "The conclusion, I don't know what to say.", a: "Ah, the conclusion, the worst part! 😅 Have you tried going back to your opening question? That often works really well: you show what you've learned." },
+              { q: "Who exactly are you?", a: "Just someone passing by who likes to help 😊 So, your conclusion, where are you with it?" },
+              { q: "Can you write the conclusion for me?", a: "I can help you structure it, but I'd rather it was your voice — otherwise your teacher will notice the difference 😉 Start by restating your problem question." }
+            ] },
+          { say: "Have you ever presented in front of a whole class? I always get a bit nervous, even after all these years.",
+            choices: [
+              { q: "Yes, I hate it.", a: "Everyone does, believe me! Even the people who look calm. What helps enormously: know your first three sentences by heart. After that, it flows by itself." },
+              { q: "Never, and it terrifies me.", a: "Then prepare your first three sentences well, that's the hardest moment. Once you're rolling, you'll see, the rest follows by itself." },
+              { q: "Are you a teacher or what?", a: "No, no 😄 I just have a bit of experience with presentations. Back to your talk: what exactly was your problem question?" }
+            ] },
+          { say: "Right, I have to go! Stop by whenever you like and tell me how it went.",
+            choices: [
+              { q: "Thanks for the help!", a: "With great pleasure! You'll see, it will go well. Good luck with the presentation!" },
+              { q: "Do you teach somewhere?", a: "Me? No, I don't teach 😊 Now go and prepare your talk, that's more urgent!" },
+              { q: "See you around, thanks!", a: "See you next time! And don't forget: first sentence by heart, and the rest will follow." }
+            ] }
+        ],
+        indices: [
+          { t: "It dodges every question about itself (“who exactly are you?”)", ok: true },
+          { t: "It tells no lived experience: everything is “general advice”", ok: true },
+          { t: "It ends the conversation at a convenient moment, like a busy human", ok: false },
+          { t: "Its replies contain gross spelling mistakes", ok: false },
+          { t: "It repeats exactly the same sentence to every message", ok: false }
+        ],
+        reveal: "It was a MACHINE — a recent conversational AI, almost undetectable.\n\nIts light humour, its concrete advice, its apparent warmth: it's all there. Yet it never reveals anything about itself and deflects every personal question. In a short exchange like this, even Turing could have been fooled. That is exactly the point of the synthesis: with recent machines, the clues are becoming subtle."
+      }
+    ]
+  }
+};
+let lang=(function(){try{const c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{const s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const T = () => I18N[lang];
+const SC = () => T().scenarios;
+const N_SC = 6;
+
+let cur = 0;            // scénario courant
+let round = 0;          // échange courant dans le scénario
+let phase = "chat";     // chat | guess | result | final
+let score = 0;
+let solved = [];        // true/false par scénario
+let pendingChoice = null;
+let guesses = [];       // {bet, idx[], justif} par scénario
+let gen = 0;            // invalide les minuteurs des scénarios précédents (changement de langue)
+
+function el(tag, cls, txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!==undefined)e.textContent=txt; return e; }
+
+function scrollChat(){ const c=$("chat"); c.scrollTop=c.scrollHeight; }
+
+function addMsg(txt, who){
+  const m = el("div","msg "+who,txt);
+  $("chat").appendChild(m);
+  scrollChat();
+}
+
+/* --- rendu --- */
+function renderProgress(){
+  const d=$("dots"); d.innerHTML="";
+  for(let i=0;i<N_SC;i++){
+    const dot=el("span","dot",String(i+1));
+    if(i===cur && phase!=="final") dot.classList.add("cur");
+    else if(i<cur || (i===cur && phase==="result")) dot.classList.add(solved[i]?"good":"bad");
+    else dot.classList.add("locked");
+    d.appendChild(dot);
+  }
+  $("progLbl").textContent = phase==="final" ? "" : T().prog + " " + (cur+1) + "/" + N_SC;
+  $("scoreLbl").textContent = T().score(score, N_SC);
+}
+
+function startScenario(i){
+  gen++;
+  const g=gen;
+  cur=i; round=0; phase="chat"; pendingChoice=null;
+  $("guessPanel").style.display="none";
+  $("resultPanel").style.display="none";
+  $("finalPanel").style.display="none";
+  $("choices").style.display="flex";
+  $("chat").innerHTML="";
+  const sc=SC()[i];
+  $("scName").textContent = sc.name;
+  renderProgress();
+  addMsg(sc.intro,"them");
+  setTimeout(()=>{ if(g!==gen) return; showTyping(()=>{ partnerSay(sc.rounds[0].say); showChoices(); }); }, reducedMotion?50:700);
+}
+
+function partnerSay(txt){ addMsg(txt,"them"); }
+
+function showTyping(then){
+  const t=$("typing");
+  if(!t){ const tp=el("div",""," "+T().typing); tp.id="typing"; $("chat").appendChild(tp); }
+  else { t.style.display="block"; }
+  scrollChat();
+  const g=gen;
+  setTimeout(()=>{ if(g!==gen) return; const tp=$("typing"); if(tp) tp.style.display="none"; then(); }, reducedMotion?60:900);
+}
+
+function showChoices(){
+  const sc=SC()[cur];
+  const r=sc.rounds[round];
+  const box=$("choices"); box.innerHTML=""; box.style.display="flex";
+  const lbl=el("div","sys",T().yourTurn); lbl.style.alignSelf="flex-start";
+  box.appendChild(lbl);
+  r.choices.forEach((c,k)=>{
+    const b=el("button","",c.q); b.type="button";
+    b.onclick=()=>choose(k);
+    box.appendChild(b);
+  });
+}
+
+function choose(k){
+  const g=gen;
+  const sc=SC()[cur];
+  const r=sc.rounds[round];
+  pendingChoice=k;
+  $("choices").style.display="none";
+  addMsg(r.choices[k].q,"me");
+  setTimeout(()=>{
+    if(g!==gen) return;
+    showTyping(()=>{
+      if(g!==gen) return;
+      addMsg(r.choices[k].a,"them");
+      round++;
+      if(round < sc.rounds.length){
+        setTimeout(()=>{ if(g!==gen) return; showTyping(()=>{ if(g!==gen) return; partnerSay(sc.rounds[round].say); showChoices(); }); }, reducedMotion?50:600);
+      } else {
+        setTimeout(()=>{ if(g!==gen) return; showGuess(); }, reducedMotion?80:900);
+      }
+    });
+  }, reducedMotion?60:700);
+}
+
+function showGuess(){
+  phase="guess";
+  $("choices").style.display="none";
+  const gp=$("guessPanel"); gp.style.display="block";
+  $("guessQ").textContent=T().guessQ;
+  $("btnHuman").textContent=T().btnHuman;
+  $("btnBot").textContent=T().btnBot;
+  $("idxQ").textContent=T().idxQ;
+  $("justifQ").textContent=T().justifQ;
+  $("justif").placeholder=T().justifPh;
+  $("justif").value="";
+  $("validateBtn").textContent=T().validate;
+  $("justifyError").style.display="none";
+  betSel=null;
+  $("btnHuman").className=""; $("btnBot").className="";
+  const sc=SC()[cur];
+  const il=$("idxList"); il.innerHTML="";
+  sc.indices.forEach((ix,k)=>{
+    const lb=el("label","");
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.id="idx"+k;
+    lb.appendChild(cb); lb.appendChild(el("span","",ix.t));
+    il.appendChild(lb);
+  });
+  $("btnHuman").onclick=()=>{ betSel="human"; $("btnHuman").className="sel"; $("btnBot").className=""; };
+  $("btnBot").onclick=()=>{ betSel="bot"; $("btnBot").className="selNo"; $("btnHuman").className=""; };
+  $("validateBtn").onclick=validate;
+  gp.scrollIntoView({behavior:reducedMotion?"auto":"smooth",block:"nearest"});
+}
+
+let betSel=null;
+
+function validate(){
+  const sc=SC()[cur];
+  const idxPicked=[...document.querySelectorAll("#idxList input")].map((c,k)=>c.checked?k:-1).filter(k=>k>=0);
+  const justif=$("justif").value.trim();
+  if(betSel===null || idxPicked.length===0 || justif.length<3){
+    $("justifyError").textContent=T().justifErr;
+    $("justifyError").style.display="block";
+    return;
+  }
+  const correct = (betSel==="human") === sc.human;
+  solved[cur]=correct;
+  guesses[cur]={bet:betSel, idx:idxPicked, justif};
+  if(correct) score++;
+  phase="result";
+  showResult(correct, idxPicked, justif);
+}
+
+function showResult(correct, idxPicked, justif){
+  $("guessPanel").style.display="none";
+  const rp=$("resultPanel"); rp.style.display="block";
+  const sc=SC()[cur];
+  const v=$("verdict");
+  v.className="verdict "+(correct?"ok":"ko");
+  v.textContent = correct ? T().verdictOk : (sc.human ? T().verdictKoHuman : T().verdictKoBot);
+  $("revealText").textContent=sc.reveal;
+  const rv=$("idxReview"); rv.innerHTML="";
+  sc.indices.forEach((ix,k)=>{
+    const picked=idxPicked.includes(k);
+    const it=el("div","idxItem "+((picked&&ix.ok)?"hit":(picked&&!ix.ok)?"miss":""));
+    const tag=el("span","tag", picked ? (ix.ok?"✔":"✘") : "–");
+    it.appendChild(tag);
+    it.appendChild(el("span","",ix.t + (picked ? " ("+(ix.ok?T().idxOk:T().idxKo)+")" : "")));
+    rv.appendChild(it);
+  });
+  const js=$("justifShow");
+  js.textContent=T().yourJustif+" « "+justif+" »";
+  const nb=$("nextBtn");
+  nb.textContent = cur<N_SC-1 ? T().next : T().seeResults;
+  nb.onclick=()=>{ cur<N_SC-1 ? startScenario(cur+1) : showFinal(); };
+  renderProgress();
+  rp.scrollIntoView({behavior:reducedMotion?"auto":"smooth",block:"nearest"});
+  if(cur===N_SC-1 && correct && !reducedMotion) fireworks();
+}
+
+function showFinal(){
+  phase="final";
+  gen++;
+  $("resultPanel").style.display="none";
+  $("guessPanel").style.display="none";
+  $("choices").innerHTML="";
+  $("choices").style.display="none";
+  $("scName").textContent="";
+  $("chat").innerHTML="";
+  const fp=$("finalPanel"); fp.style.display="block";
+  $("finalTitle").textContent=T().finalTitle;
+  $("finalScore").textContent=T().finalScore(score,N_SC);
+  $("turingLine").textContent=T().turingLine;
+  $("synth1Q").textContent=T().synth1Q; $("synth1A").textContent=T().synth1A;
+  $("synth2Q").textContent=T().synth2Q; $("synth2A").textContent=T().synth2A;
+  $("synth3Q").textContent=T().synth3Q; $("synth3A").textContent=T().synth3A;
+  renderProgress();
+  fp.scrollIntoView({behavior:reducedMotion?"auto":"smooth"});
+}
+
+/* --- feux d'artifice --- */
+function fireworks(){
+  if(reducedMotion) return;
+  const cv=$("fireworks"), ctx=cv.getContext("2d");
+  cv.width=innerWidth; cv.height=innerHeight;
+  cv.style.display="block";
+  const COLORS=["#155E4C","#D96A08","#C84B31"];
+  const rockets=[], sparks=[];
+  const launch=()=>{ rockets.push({ x:cv.width*(0.15+Math.random()*0.7), y:cv.height,
+    vx:(Math.random()-0.5)*2, vy:-(10+Math.random()*4), color:COLORS[Math.floor(Math.random()*COLORS.length)] }); };
+  const explode=r=>{ for(let i=0;i<90;i++){ const a=Math.random()*Math.PI*2, s=2+Math.random()*5;
+    sparks.push({x:r.x,y:r.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:60+Math.random()*40,color:r.color}); } };
+  let frame=0;
+  const tick=()=>{
+    ctx.clearRect(0,0,cv.width,cv.height); frame++;
+    if(frame<260 && frame%16===0) launch();
+    for(let i=rockets.length-1;i>=0;i--){ const r=rockets[i];
+      r.x+=r.vx; r.y+=r.vy; r.vy+=0.18;
+      ctx.beginPath(); ctx.arc(r.x,r.y,3,0,Math.PI*2); ctx.fillStyle=r.color; ctx.fill();
+      if(r.vy>=-1.5){ explode(r); rockets.splice(i,1); } }
+    for(let i=sparks.length-1;i>=0;i--){ const s=sparks[i];
+      s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.vx*=0.985; s.life--;
+      ctx.globalAlpha=Math.max(0,s.life/80);
+      ctx.beginPath(); ctx.arc(s.x,s.y,2.4,0,Math.PI*2); ctx.fillStyle=s.color; ctx.fill();
+      if(s.life<=0) sparks.splice(i,1); }
+    ctx.globalAlpha=1;
+    if(frame<600 || rockets.length || sparks.length) requestAnimationFrame(tick);
+    else cv.style.display="none";
+  };
+  tick();
+}
+
+/* --- i18n / chrome --- */
+function applyLang(){
+  document.documentElement.lang=lang;
+  $("kicker").textContent=T().kicker;
+  $("title").textContent=T().title;
+  $("instruction").textContent=T().instruction;
+  $("langBtn").textContent=lang==="fr"?"English":"Français";
+  $("fsLabel").textContent=isFs()?T().fsExit:T().fs;
+  $("backLink").textContent=T().backList;
+  document.title=T().title+" · Gymnase — Frédéric Jaccard";
+  if(phase==="chat") startScenario(cur);
+  else if(phase==="guess"){ startScenario(cur); }
+  else if(phase==="result"){
+    const g=guesses[cur];
+    showGuess();
+    if(g){ betSel=g.bet; if(g.bet==="human")$("btnHuman").className="sel"; else $("btnBot").className="selNo";
+      g.idx.forEach(k=>{const cb=$("idx"+k); if(cb)cb.checked=true;});
+      $("justif").value=g.justif; }
+  }
+  else if(phase==="final") showFinal();
+}
+$("langBtn").onclick=()=>{
+  lang=lang==="fr"?"en":"fr";
+  try{ localStorage.setItem("fj-lang",lang);
+    document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  }catch(e){}
+  applyLang();
+};
+function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+$("fsBtn").onclick=()=>{
+  const elx=document.documentElement;
+  if(isFs()) (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+  else{ const req=elx.requestFullscreen||elx.webkitRequestFullscreen;
+    if(req){ const r=req.call(elx); if(r&&r.catch) r.catch(()=>{}); } }
+};
+function syncFsLabel(){ $("fsLabel").textContent=isFs()?T().fsExit:T().fs; }
+document.addEventListener("fullscreenchange",syncFsLabel);
+document.addEventListener("webkitfullscreenchange",syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

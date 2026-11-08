@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Quiz interactif : devinez quelle application cache chaque clause réelle de conditions générales, puis découvrez le droit d'accès aux données de la nLPD suisse.">
+<title>Ce que vous avez accepté · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;max-width:860px;margin-left:auto;margin-right:auto}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);color:var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px;max-width:860px;margin-left:auto;margin-right:auto}
+main{max-width:860px;margin:0 auto}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* Accueil */
+.introCard{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:26px 24px;text-align:center}
+.introCard h2{color:var(--primary);font-size:21px;margin-bottom:12px;line-height:1.35}
+.introCard p{font-size:16px;line-height:1.55;margin-bottom:12px}
+.hint{color:var(--muted);font-size:14px;margin-bottom:18px}
+
+/* Quiz */
+.prog{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted);margin-bottom:6px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:16px}
+.barFill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease}
+.clause{background:var(--card);border:2px solid var(--line);border-left:6px solid var(--accent);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.clauseTag{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.clause p{font-size:17px;line-height:1.55;font-style:italic}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.choice{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left;min-height:52px;font-size:16px;padding:10px 14px}
+.choice .em{font-size:20px;line-height:1}
+.choice.correct{background:var(--primaryLight);border-color:var(--primary)}
+.choice.wrong{background:var(--accentLight);border-color:var(--error)}
+.choice.dim{opacity:.5}
+.choice:disabled{cursor:default}
+.explain{border-radius:12px;padding:14px 16px;border:2px solid var(--primary);background:var(--primaryLight)}
+.explain.ko{border-color:var(--error);background:var(--accentLight)}
+.verdict{font-weight:700;font-size:16px;margin-bottom:8px}
+.explain p{font-size:15px;line-height:1.55;margin-bottom:10px}
+.src{font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px}
+.takeaway{background:var(--card);border:2px solid var(--line);border-left:6px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.45;margin-bottom:16px}
+.cta{background:var(--accent);border-color:var(--accent);color:#fff;display:block;margin:0 auto;padding:12px 26px;font-size:16px}
+.cta:hover{background:var(--accent);opacity:.88}
+
+/* Bilan */
+.scoreCard{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:26px 24px;text-align:center}
+.scoreCard h2{color:var(--primary);font-size:22px;margin-bottom:6px}
+.scoreNum{font-size:56px;font-weight:700;color:var(--primary);line-height:1.1}
+.scoreNum span{font-size:24px;color:var(--muted)}
+.scoreMsg{font-size:17px;line-height:1.5;margin:8px auto 20px;max-width:560px}
+.nlpd{text-align:left;background:var(--primaryLight);border-radius:12px;padding:16px 18px;margin-bottom:20px}
+.nlpd h3{color:var(--primary);font-size:18px;margin-bottom:8px}
+.nlpd p,.nlpd li{font-size:15px;line-height:1.55}
+.nlpd ul{margin:8px 0 10px 22px}
+.nlpd li{margin-bottom:6px}
+.outro{font-weight:700;color:var(--primary)}
+
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;display:none}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .choices{grid-template-columns:1fr}
+  .clause p{font-size:16px}
+  .scoreNum{font-size:46px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<main id="stage"></main>
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<canvas id="fireworks"></canvas>
+<script>
+const $ = id => document.getElementById(id);
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Ce que vous avez accepté",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    instrIntro: "Découvrez ce que vous acceptez vraiment chaque fois que vous cliquez « J’accepte ».",
+    instrQuiz: "Lisez la clause, puis cliquez sur l’application dont elle provient.",
+    instrEnd: "Voici votre score — et ce que la loi suisse vous permet de faire.",
+    introTitle: "« J’ai lu et j’accepte les conditions » — le plus grand mensonge d’Internet ?",
+    introText: "Chaque jour, vous cliquez « J’accepte » sans lire. C’est humain : les conditions de quelques applications courantes représenteraient des heures de lecture. Ce quiz vous présente huit clauses bien réelles cachées dans ces textes. À vous de deviner à quelle application appartient chacune.",
+    introHint: "8 questions · environ 5 minutes",
+    start: "Commencer le quiz",
+    qLabel: (i, n) => "Question " + i + "/" + n,
+    scoreLabel: (s) => "Score : " + s,
+    excerpt: "Extrait de conditions générales",
+    qOpen: "« ", qClose: " »",
+    correct: "✔ Exact !",
+    wrong: (a) => "✘ Raté — il s’agissait de " + a + ".",
+    source: "Source : ",
+    takeawayLabel: "À retenir",
+    next: "Question suivante",
+    finish: "Voir le résultat",
+    scoreTitle: "Quiz terminé !",
+    scoreMsg: (s, n) => s === n ? "Score parfait ! Vous faites partie des rares personnes qui regardent ce qu’elles acceptent." :
+      s >= 6 ? "Très bon score ! Vous lisez entre les lignes mieux que la plupart des utilisateurs." :
+      s >= 4 ? "Pas mal — mais avouez que certaines clauses surprennent." :
+      "Rassurez-vous : l’immense majorité des utilisateurs se trompe aussi. C’est exactement le problème.",
+    nlpdTitle: "Et maintenant ? Ce que dit la loi suisse",
+    nlpdIntro: "En Suisse, la nouvelle loi sur la protection des données (nLPD, en vigueur depuis le 1er septembre 2023) vous donne un droit d’accès (art. 25 LPD) :",
+    nlpdList: [
+      "Vous pouvez demander à n’importe quelle entreprise quelles données elle détient sur vous, pour quelle finalité, combien de temps et à qui elle les transmet.",
+      "La réponse est en principe gratuite et doit vous parvenir dans les 30 jours.",
+      "Vous pouvez ensuite exiger la rectification ou l’effacement de vos données."
+    ],
+    nlpdOutro: "Vous ne pouvez pas tout lire — mais vous pouvez tout demander.",
+    replay: "Rejouer",
+    questions: [
+      {
+        clause: "En passant commande sur ce site le premier jour du quatrième mois de l’année 2010, vous acceptez de nous accorder une option non transférable de réclamer, pour aujourd’hui et pour toujours, votre âme immortelle. Nous nous réservons le droit de signifier cette demande en lettres de feu de 6 pieds de haut.",
+        choices: [{n:"Steam",e:"🕹️"},{n:"Gamestation",e:"🎮"},{n:"PlayStation Store",e:"🎯"},{n:"Epic Games Store",e:"🚀"}],
+        answer: 1,
+        explain: "Cette clause a réellement existé : un poisson d’avril du vendeur britannique de jeux vidéo Gamestation, le 1er avril 2010. Les 7 500 clients du jour l’ont acceptée sans la remarquer. Ceux qui la repéraient pouvaient l’annuler d’un clic — et recevaient un bon de 5 £. Presque personne ne l’a fait.",
+        source: "conditions de vente de Gamestation, 1er avril 2010",
+        takeaway: "Personne ne lit les conditions générales — pas même quand il y va de son âme."
+      },
+      {
+        clause: "Vous nous accordez une licence non exclusive, gratuite, transférable, sous-licenciable et valable dans le monde entier pour héberger, utiliser, distribuer, modifier, exécuter, copier, représenter ou afficher publiquement, traduire et créer des œuvres dérivées de vos contenus.",
+        choices: [{n:"WhatsApp",e:"💬"},{n:"Signal",e:"🔒"},{n:"Instagram",e:"📸"},{n:"Waze",e:"🚗"}],
+        answer: 2,
+        explain: "Ce sont les conditions d’utilisation d’Instagram (groupe Meta). Vous restez propriétaire de vos photos, mais cette licence autorise la plateforme à les utiliser très largement — y compris à les modifier et à les concéder à des tiers — sans vous prévenir ni vous rémunérer. Elle prend fin lorsque vous supprimez vos contenus.",
+        source: "conditions d’utilisation d’Instagram, « Autorisations que vous nous accordez »",
+        takeaway: "Un service « gratuit » se paie autrement : vos contenus font partie de la monnaie d’échange."
+      },
+      {
+        clause: "Parce que votre contenu public est intrinsèquement public, vous nous accordez, ainsi qu’à nos partenaires commerciaux, un droit et une licence illimités, mondiaux, libres de droits, irrévocables et perpétuels d’utiliser ce contenu — y compris votre nom, votre image et votre voix — à des fins commerciales et non commerciales.",
+        choices: [{n:"Snapchat",e:"👻"},{n:"Threema",e:"🛡️"},{n:"Signal",e:"🔒"},{n:"Proton Mail",e:"✉️"}],
+        answer: 0,
+        explain: "Cette clause figure dans les conditions d’utilisation de Snapchat. Elle vise tout ce que vous publiez dans les espaces publics de l’application : Stories publiques, Spotlight, profils publics. « Irrévocable et perpétuel » signifie que vous ne pouvez pas retirer ce droit, même en supprimant votre compte.",
+        source: "conditions d’utilisation de Snap Inc., « Contenu public »",
+        takeaway: "« Public » chez Snapchat signifie : réutilisable pour toujours, même à des fins commerciales."
+      },
+      {
+        clause: "Nous collectons certaines informations concernant l’appareil que vous utilisez : votre adresse IP, votre opérateur mobile, les noms et types des applications et fichiers présents sur votre appareil, vos motifs ou rythmes de frappe au clavier, l’état de votre batterie et vos appareils audio connectés.",
+        choices: [{n:"Google Maps",e:"🗺️"},{n:"Spotify",e:"🎧"},{n:"Duolingo",e:"🦉"},{n:"TikTok",e:"🎵"}],
+        answer: 3,
+        explain: "Cette liste figure noir sur blanc dans la politique de confidentialité de TikTok. Le « rythme de frappe » — la cadence à laquelle vous tapez — peut servir à vous reconnaître, comme une empreinte. TikTok affirme l’utiliser pour la sécurité et les performances, mais la collecte est prévue par le texte, sans possibilité de refus.",
+        source: "politique de confidentialité de TikTok, « Informations collectées automatiquement »",
+        takeaway: "Une application peut en apprendre sur vous par la manière dont vous tapez, sans même lire ce que vous écrivez."
+      },
+      {
+        clause: "Vos conversations personnelles sont protégées par le chiffrement de bout en bout. En revanche, nous partageons avec les autres entités de notre groupe vos informations de compte (votre numéro de téléphone et votre profil), les informations relatives à votre appareil et votre adresse IP, ainsi que des informations sur la manière dont vous utilisez nos services.",
+        choices: [{n:"Signal",e:"🔒"},{n:"WhatsApp",e:"💬"},{n:"Threema",e:"🛡️"},{n:"iMessage",e:"🍏"}],
+        answer: 1,
+        explain: "Ce sont les règles de WhatsApp, qui appartient à Meta (Facebook, Instagram). Le contenu de vos messages est illisible pour Meta, mais pas vos métadonnées : votre numéro, votre appareil, votre adresse IP, qui écrit à qui, quand et pendant combien de temps. Cela suffit à dresser un portrait précis de votre vie sociale.",
+        source: "politique de confidentialité et FAQ de WhatsApp, « Informations partagées avec les entités Meta »",
+        takeaway: "Chiffrer le contenu ne suffit pas : les métadonnées racontent déjà presque tout."
+      },
+      {
+        clause: "Nous utilisons vos demandes vocales pour entraîner nos systèmes de reconnaissance vocale et de compréhension du langage naturel. À cette fin, une petite partie des enregistrements peut être écoutée, transcrite et annotée par des employés ou des sous-traitants.",
+        choices: [{n:"Alexa (Amazon)",e:"🔊"},{n:"Spotify",e:"🎧"},{n:"Netflix",e:"🎬"},{n:"Waze",e:"🚗"}],
+        answer: 0,
+        explain: "En 2019, une enquête a révélé qu’Amazon employait des milliers de personnes pour écouter des extraits d’enregistrements Alexa afin d’améliorer l’assistant — sans que les utilisateurs en soient clairement informés. Un réglage permet aujourd’hui de refuser cette utilisation de vos enregistrements… encore faut-il savoir qu’il existe.",
+        source: "enquête Bloomberg (2019) ; réglage « Gérer la manière dont vos données améliorent Alexa »",
+        takeaway: "« Améliorer le service » peut vouloir dire : un humain écoute ce qui se passe chez vous."
+      },
+      {
+        clause: "Vous nous accordez un droit perpétuel, mondial, non exclusif et libre de redevances d’utiliser le contenu de vos réunions — audio, vidéo, chat, partages d’écran — à des fins de machine learning et d’intelligence artificielle, y compris pour l’entraînement et le réglage de nos modèles.",
+        choices: [{n:"Microsoft Teams",e:"🧑‍💼"},{n:"Google Meet",e:"🎥"},{n:"Zoom",e:"📹"},{n:"Jitsi Meet",e:"🤝"}],
+        answer: 2,
+        explain: "Cette clause est réellement apparue dans les conditions de Zoom en mars 2023. Devant la polémique, l’entreprise a reculé quelques mois plus tard : elle s’engage désormais à ne pas utiliser le contenu des réunions pour entraîner ses modèles d’IA. Les conditions changent en permanence — et la réaction des utilisateurs peut, elle aussi, les faire changer.",
+        source: "conditions de service de Zoom, section 10.4 (mars 2023), modifiées en août 2023",
+        takeaway: "Les conditions peuvent changer du jour au lendemain — en mal comme en bien."
+      },
+      {
+        clause: "À compter du 3 novembre 2025, nous pourrons utiliser les données de votre profil — nom, photo, parcours professionnel, formation — ainsi que vos publications et commentaires pour entraîner nos modèles d’IA générative, y compris si vous résidez en Suisse. Vous pouvez vous y opposer dans les paramètres de confidentialité.",
+        choices: [{n:"X (Twitter)",e:"✖️"},{n:"Facebook",e:"👍"},{n:"WhatsApp",e:"💬"},{n:"LinkedIn",e:"💼"}],
+        answer: 3,
+        explain: "Depuis le 3 novembre 2025, LinkedIn (Microsoft) utilise par défaut les données de ses membres — y compris en Suisse et dans l’Union européenne — pour entraîner son IA générative. Pour refuser, il faut aller décocher soi-même l’option dans les paramètres. Attention : les données déjà absorbées par un modèle ne peuvent plus en être retirées.",
+        source: "avis de confidentialité de LinkedIn, « Données pour l’amélioration de l’IA générative » (2025)",
+        takeaway: "« Par défaut » signifie « accepté pour vous » : à vous de trouver le bouton pour refuser."
+      }
+    ]
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "What you agreed to",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    instrIntro: "Find out what you actually agree to every time you click “I accept”.",
+    instrQuiz: "Read the clause, then click the app it comes from.",
+    instrEnd: "Here is your score — and what Swiss law lets you do.",
+    introTitle: "“I have read and accept the terms” — the biggest lie on the Internet?",
+    introText: "Every day, you click “I accept” without reading. That's only human: the terms of just a few everyday apps would take hours to read. This quiz shows you eight very real clauses buried in those texts. Can you guess which app each one belongs to?",
+    introHint: "8 questions · about 5 minutes",
+    start: "Start the quiz",
+    qLabel: (i, n) => "Question " + i + "/" + n,
+    scoreLabel: (s) => "Score: " + s,
+    excerpt: "Excerpt from terms of service",
+    qOpen: "“", qClose: "”",
+    correct: "✔ Correct!",
+    wrong: (a) => "✘ Not quite — it was " + a + ".",
+    source: "Source: ",
+    takeawayLabel: "Takeaway",
+    next: "Next question",
+    finish: "See my result",
+    scoreTitle: "Quiz complete!",
+    scoreMsg: (s, n) => s === n ? "A perfect score! You are one of the few people who actually look at what they accept." :
+      s >= 6 ? "Great score! You read between the lines better than most users." :
+      s >= 4 ? "Not bad — but admit it, some of those clauses are surprising." :
+      "Don't worry: the vast majority of users get it wrong too. That's exactly the problem.",
+    nlpdTitle: "What now? What Swiss law says",
+    nlpdIntro: "In Switzerland, the new Federal Act on Data Protection (nFADP, in force since 1 September 2023) gives you a right of access (Art. 25):",
+    nlpdList: [
+      "You can ask any company what data it holds about you, for what purpose, for how long, and who it shares it with.",
+      "The answer is in principle free of charge and must reach you within 30 days.",
+      "You can then demand that your data be corrected or deleted."
+    ],
+    nlpdOutro: "You can't read everything — but you can ask for everything.",
+    replay: "Play again",
+    questions: [
+      {
+        clause: "By placing an order via this website on the first day of the fourth month of the year 2010, you agree to grant Us a non-transferable option to claim, for now and for ever more, your immortal soul. We reserve the right to serve such notice in 6 (six) foot high letters of fire.",
+        choices: [{n:"Steam",e:"🕹️"},{n:"Gamestation",e:"🎮"},{n:"PlayStation Store",e:"🎯"},{n:"Epic Games Store",e:"🚀"}],
+        answer: 1,
+        explain: "This clause really existed: an April Fools' prank by British video game retailer Gamestation on 1 April 2010. All 7,500 customers that day accepted it without noticing. Anyone who spotted it could opt out with one click — and received a £5 voucher. Almost nobody did.",
+        source: "Gamestation terms of sale, 1 April 2010",
+        takeaway: "Nobody reads terms and conditions — not even when their soul is at stake."
+      },
+      {
+        clause: "You hereby grant us a non-exclusive, royalty-free, transferable, sub-licensable, worldwide license to host, use, distribute, modify, run, copy, publicly perform or display, translate, and create derivative works of your content.",
+        choices: [{n:"WhatsApp",e:"💬"},{n:"Signal",e:"🔒"},{n:"Instagram",e:"📸"},{n:"Waze",e:"🚗"}],
+        answer: 2,
+        explain: "These are Instagram's terms of use (Meta group). You still own your photos, but this licence lets the platform use them very broadly — including modifying them and sub-licensing them to third parties — without notifying or paying you. It ends when you delete your content.",
+        source: "Instagram Terms of Use, “Permissions You Give to Us”",
+        takeaway: "A “free” service is paid for in other ways: your content is part of the currency."
+      },
+      {
+        clause: "Because Public Content is inherently public, you grant us and our business partners an unrestricted, worldwide, royalty-free, irrevocable, and perpetual right and license to use that content — including your name, image, and voice — for commercial and non-commercial purposes.",
+        choices: [{n:"Snapchat",e:"👻"},{n:"Threema",e:"🛡️"},{n:"Signal",e:"🔒"},{n:"Proton Mail",e:"✉️"}],
+        answer: 0,
+        explain: "This clause appears in Snap Inc.'s terms of service. It covers anything you post in Snapchat's public spaces: Public Stories, Spotlight, Public Profiles. “Irrevocable and perpetual” means you cannot take this right back — even by deleting your account.",
+        source: "Snap Inc. Terms of Service, “Public Content”",
+        takeaway: "“Public” on Snapchat means: reusable forever, even for advertising."
+      },
+      {
+        clause: "We collect certain information about the device you use to access the Platform, such as your IP address, your mobile carrier, app and file names and types, your keystroke patterns or rhythms, your battery state and your connected audio devices.",
+        choices: [{n:"Google Maps",e:"🗺️"},{n:"Spotify",e:"🎧"},{n:"Duolingo",e:"🦉"},{n:"TikTok",e:"🎵"}],
+        answer: 3,
+        explain: "This list appears verbatim in TikTok's privacy policy. Your “keystroke rhythm” — the cadence of your typing — can be used to recognise you, like a fingerprint. TikTok says it uses it for security and performance, but the collection is written into the policy, with no way to opt out.",
+        source: "TikTok Privacy Policy, “Automatically Collected Information”",
+        takeaway: "An app can learn about you from how you type, without even reading what you write."
+      },
+      {
+        clause: "Your personal conversations are protected by end-to-end encryption. However, we share with the other companies in our group your account information (your phone number and profile), information about your mobile device and your IP address, and information about how you use our services.",
+        choices: [{n:"Signal",e:"🔒"},{n:"WhatsApp",e:"💬"},{n:"Threema",e:"🛡️"},{n:"iMessage",e:"🍏"}],
+        answer: 1,
+        explain: "These are the rules of WhatsApp, which belongs to Meta (Facebook, Instagram). The content of your messages is unreadable to Meta, but your metadata is not: your number, your device, your IP address, who messages whom, when, and for how long. That is enough to build a detailed picture of your social life.",
+        source: "WhatsApp Privacy Policy and FAQ, “Information shared with Meta companies”",
+        takeaway: "Encrypting content is not enough: metadata already tells almost everything."
+      },
+      {
+        clause: "We use your voice requests to train our speech recognition and natural language understanding systems. For that purpose, a small fraction of recordings may be listened to, transcribed and annotated by employees or contractors.",
+        choices: [{n:"Alexa (Amazon)",e:"🔊"},{n:"Spotify",e:"🎧"},{n:"Netflix",e:"🎬"},{n:"Waze",e:"🚗"}],
+        answer: 0,
+        explain: "In 2019, an investigation revealed that Amazon employed thousands of people to listen to snippets of Alexa recordings to improve the assistant — without clearly telling users. A setting now lets you refuse this use of your recordings… but you have to know it exists.",
+        source: "Bloomberg investigation (2019); “Manage how your data improves Alexa” setting",
+        takeaway: "“Improving the service” can mean: a human is listening to your living room."
+      },
+      {
+        clause: "You grant us a perpetual, worldwide, non-exclusive, royalty-free right to use your meeting content — audio, video, chat, screen sharing — for machine learning and artificial intelligence purposes, including training and tuning our models and algorithms.",
+        choices: [{n:"Microsoft Teams",e:"🧑‍💼"},{n:"Google Meet",e:"🎥"},{n:"Zoom",e:"📹"},{n:"Jitsi Meet",e:"🤝"}],
+        answer: 2,
+        explain: "This clause really appeared in Zoom's terms of service in March 2023. Faced with public outcry, the company backtracked a few months later: it now commits not to use meeting content to train AI models. Terms change all the time — and user pushback can change them too.",
+        source: "Zoom Terms of Service, section 10.4 (March 2023), amended August 2023",
+        takeaway: "Terms can change overnight — for worse, but also for better."
+      },
+      {
+        clause: "Starting 3 November 2025, we may use your profile data — name, photo, professional history, education — as well as your posts and comments to train our generative AI models, including if you live in Switzerland. You can opt out in your privacy settings.",
+        choices: [{n:"X (Twitter)",e:"✖️"},{n:"Facebook",e:"👍"},{n:"WhatsApp",e:"💬"},{n:"LinkedIn",e:"💼"}],
+        answer: 3,
+        explain: "Since 3 November 2025, LinkedIn (Microsoft) has been using its members' data by default — including in Switzerland and the EU — to train its generative AI. To refuse, you must untick the option yourself in the settings. Beware: data already absorbed into a model can no longer be removed from it.",
+        source: "LinkedIn Privacy Notice, “Data for Generative AI Improvement” (2025)",
+        takeaway: "“By default” means “accepted for you”: it's up to you to find the off switch."
+      }
+    ]
+  }
+};
+let lang = (function () {
+  try {
+    var c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);
+    if (c && (c[1] === "fr" || c[1] === "en")) return c[1];
+  } catch (e) {}
+  try {
+    var s = localStorage.getItem("fj-lang");
+    if (s === "fr" || s === "en") return s;
+  } catch (e) {}
+  return "fr";
+})();
+const T = () => I18N[lang];
+
+let screen = "intro", qi = 0, score = 0, answered = false, picked = -1, fwDone = false;
+
+function esc(s){ return s; }
+
+function introHTML(){
+  return '<div class="introCard">' +
+    '<h2>' + T().introTitle + '</h2>' +
+    '<p>' + T().introText + '</p>' +
+    '<div class="hint">' + T().introHint + '</div>' +
+    '<button class="cta" id="startBtn" type="button">' + T().start + '</button>' +
+  '</div>';
+}
+
+function quizHTML(){
+  const q = T().questions[qi], n = T().questions.length;
+  const w = Math.round((qi + (answered ? 1 : 0)) / n * 100);
+  let h = '<div class="prog"><span>' + T().qLabel(qi + 1, n) + '</span><span>' + T().scoreLabel(score) + '</span></div>' +
+    '<div class="bar"><div class="barFill" style="width:' + w + '%"></div></div>' +
+    '<div class="clause"><div class="clauseTag">' + T().excerpt + '</div><p>' + T().qOpen + q.clause + T().qClose + '</p></div>' +
+    '<div class="choices">';
+  q.choices.forEach((c, i) => {
+    let cls = "choice";
+    if(answered){
+      if(i === q.answer) cls += " correct";
+      else if(i === picked) cls += " wrong";
+      else cls += " dim";
+    }
+    h += '<button class="' + cls + '" data-i="' + i + '" type="button"' + (answered ? " disabled" : "") + '><span class="em">' + c.e + '</span><span>' + c.n + '</span></button>';
+  });
+  h += '</div>';
+  if(answered){
+    const ok = picked === q.answer;
+    h += '<div class="explain ' + (ok ? "ok" : "ko") + '">' +
+      '<div class="verdict">' + (ok ? T().correct : T().wrong(q.choices[q.answer].n)) + '</div>' +
+      '<p>' + q.explain + '</p>' +
+      '<div class="src">' + T().source + q.source + '</div>' +
+      '<div class="takeaway"><strong>' + T().takeawayLabel + '</strong> — ' + q.takeaway + '</div>' +
+      '<button class="cta" id="nextBtn" type="button">' + (qi + 1 < n ? T().next : T().finish) + '</button>' +
+    '</div>';
+  }
+  return h;
+}
+
+function endHTML(){
+  const n = T().questions.length;
+  return '<div class="scoreCard">' +
+    '<h2>' + T().scoreTitle + '</h2>' +
+    '<div class="scoreNum">' + score + '<span>/' + n + '</span></div>' +
+    '<div class="scoreMsg">' + T().scoreMsg(score, n) + '</div>' +
+    '<div class="nlpd"><h3>' + T().nlpdTitle + '</h3>' +
+      '<p>' + T().nlpdIntro + '</p>' +
+      '<ul>' + T().nlpdList.map(x => '<li>' + x + '</li>').join("") + '</ul>' +
+      '<p class="outro">' + T().nlpdOutro + '</p>' +
+    '</div>' +
+    '<button class="cta" id="replayBtn" type="button">' + T().replay + '</button>' +
+  '</div>';
+}
+
+function render(){
+  const st = $("stage");
+  if(screen === "intro"){
+    st.innerHTML = introHTML();
+    $("startBtn").onclick = () => { screen = "quiz"; qi = 0; score = 0; answered = false; picked = -1; fwDone = false; render(); syncInstr(); };
+  } else if(screen === "quiz"){
+    st.innerHTML = quizHTML();
+    st.querySelectorAll(".choice").forEach(b => {
+      b.onclick = () => pick(parseInt(b.getAttribute("data-i"), 10));
+    });
+    if(answered && $("nextBtn")) $("nextBtn").onclick = nextQ;
+  } else {
+    st.innerHTML = endHTML();
+    $("replayBtn").onclick = () => { screen = "quiz"; qi = 0; score = 0; answered = false; picked = -1; render(); syncInstr(); window.scrollTo(0, 0); };
+    if(score === T().questions.length && !fwDone){ fwDone = true; fireworks(); }
+  }
+}
+
+function pick(i){
+  if(answered) return;
+  answered = true; picked = i;
+  if(i === T().questions[qi].answer) score++;
+  render();
+}
+
+function nextQ(){
+  qi++;
+  if(qi >= T().questions.length){ screen = "end"; }
+  answered = false; picked = -1;
+  render(); syncInstr();
+  window.scrollTo(0, 0);
+}
+
+function syncInstr(){
+  $("instruction").textContent = screen === "intro" ? T().instrIntro : screen === "quiz" ? T().instrQuiz : T().instrEnd;
+}
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  document.getElementById("backLink").textContent = T().backList;
+  document.title = T().title + " — " + T().kicker;
+  syncInstr();
+  render();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if(isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(req){ const r = req.call(el); if(r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel(){ $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+let fwRunning = false;
+function fireworks(){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = document.getElementById("fireworks"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  cv.style.display = "block";
+  fwRunning = true;
+  const COLORS = ["#155E4C","#D96A08","#C84B31"];
+  const rockets = [], sparks = [];
+  const launch = () => {
+    rockets.push({
+      x: cv.width * (0.15 + Math.random() * 0.7), y: cv.height,
+      vx: (Math.random() - 0.5) * 2, vy: -(10 + Math.random() * 4),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  };
+  const explode = r => {
+    for(let i = 0; i < 90; i++){
+      const ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+      sparks.push({ x: r.x, y: r.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+                    life: 60 + Math.random() * 40, color: r.color });
+    }
+  };
+  let frame = 0;
+  const tick = () => {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    frame++;
+    if(frame < 260 && frame % 16 === 0) launch();
+    for(let i = rockets.length - 1; i >= 0; i--){
+      const r = rockets[i];
+      r.x += r.vx; r.y += r.vy; r.vy += 0.18;
+      ctx.beginPath(); ctx.arc(r.x, r.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = r.color; ctx.fill();
+      if(r.vy >= -1.5){ explode(r); rockets.splice(i, 1); }
+    }
+    for(let i = sparks.length - 1; i >= 0; i--){
+      const s = sparks[i];
+      s.x += s.vx; s.y += s.vy; s.vy += 0.05; s.vx *= 0.985; s.life--;
+      ctx.globalAlpha = Math.max(0, s.life / 80);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.fill();
+      if(s.life <= 0) sparks.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    if(frame < 600 || rockets.length || sparks.length) requestAnimationFrame(tick);
+    else { cv.style.display = "none"; fwRunning = false; }
+  };
+  tick();
+}
+
+applyLang();
+</script>
+</body>
+</html>

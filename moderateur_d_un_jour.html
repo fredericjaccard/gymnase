@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Classez huit messages signalés (publier, limiter, supprimer) et découvrez les conséquences de vos choix — activité de citoyenneté numérique pour le gymnase.">
+<title>Modérateur·rice d'un jour · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:860px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+h2{font-size:20px;color:var(--primary);margin:18px 0 10px}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer}
+button:hover{background:var(--primaryLight)}
+.instruction{background:var(--primaryLight);color:var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.progressWrap{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.progressBar{flex:1;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+#progFill{height:100%;background:var(--accent);width:0;transition:width .3s}
+.progLabel{font-size:13px;color:var(--muted);white-space:nowrap;font-weight:700}
+.balanceTop{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+.bal{flex:1;min-width:200px}
+.balLabel{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:700}
+.balBar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.balFill{height:100%;width:0;transition:width .3s}
+.balFill.freedom{background:var(--primary)}
+.balFill.protection{background:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.msgHead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--primaryLight);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.author{font-weight:700}
+.msgText{font-size:17px;line-height:1.5;margin-bottom:12px}
+.msgMeta{margin-bottom:10px}
+.tag{display:inline-block;background:var(--accentLight);color:var(--ink);font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px}
+.context{font-size:14px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;line-height:1.4}
+.context b{color:var(--ink)}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.act{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;padding:12px;min-height:68px;text-align:center}
+.act small{font-weight:400;font-size:12px}
+.act.publish{border-color:var(--primary);color:var(--primary)}
+.act.publish:hover{background:var(--primaryLight)}
+.act.limit{border-color:var(--accent);color:var(--accent)}
+.act.limit:hover{background:var(--accentLight)}
+.act.delete{border-color:var(--error);color:var(--error)}
+.act.delete:hover{background:var(--accentLight)}
+.consequence{border:2px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;background:var(--card)}
+.consequence.publish{border-color:var(--primary);background:var(--primaryLight)}
+.consequence.limit{border-color:var(--accent);background:var(--accentLight)}
+.consequence.delete{border-color:var(--error);background:var(--accentLight)}
+.consTitle{font-weight:700;margin-bottom:6px}
+.consBody{line-height:1.5}
+.nextBtn{margin-top:12px;background:var(--accent);border-color:var(--accent);color:#fff;min-height:44px}
+.summaryItem{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.summaryItem .head{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.num{width:24px;height:24px;border-radius:50%;background:var(--primaryLight);color:var(--primary);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.excerpt{font-size:14px;font-weight:700;flex:1;min-width:180px}
+.chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;flex:none}
+.chip.publish{background:var(--primaryLight);color:var(--primary)}
+.chip.limit{background:var(--accentLight);color:var(--accent)}
+.chip.delete{background:var(--accentLight);color:var(--error)}
+.consSum{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.45}
+.debate{background:var(--primaryLight);border-radius:12px;padding:14px 16px;margin:16px 0}
+.debate h2{margin-top:0}
+.debate li{margin:6px 0 6px 18px;line-height:1.45}
+.note{font-size:13px;color:var(--muted);font-style:italic;margin-bottom:16px}
+.restartBtn{min-height:44px}
+footer{margin-top:20px;text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+[hidden]{display:none!important}
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%}
+  button{min-height:44px}
+  .actions{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<main>
+  <section id="gameArea">
+    <div class="progressWrap">
+      <div class="progressBar"><div id="progFill"></div></div>
+      <div class="progLabel" id="progLabel"></div>
+    </div>
+    <div class="balanceTop">
+      <div class="bal">
+        <div class="balLabel"><span id="balFreeLbl"></span><span id="balFreeVal"></span></div>
+        <div class="balBar"><div class="balFill freedom" id="balFree"></div></div>
+      </div>
+      <div class="bal">
+        <div class="balLabel"><span id="balProtLbl"></span><span id="balProtVal"></span></div>
+        <div class="balBar"><div class="balFill protection" id="balProt"></div></div>
+      </div>
+    </div>
+    <div class="card" id="msgCard">
+      <div class="msgHead">
+        <div class="avatar" id="avatar"></div>
+        <div class="author" id="author"></div>
+      </div>
+      <div class="msgText" id="msgText"></div>
+      <div class="msgMeta"><span class="tag" id="reasonTag"></span></div>
+      <div class="context" id="context"></div>
+    </div>
+    <div class="actions" id="actions">
+      <button type="button" class="act publish" id="btnPublish"></button>
+      <button type="button" class="act limit" id="btnLimit"></button>
+      <button type="button" class="act delete" id="btnDelete"></button>
+    </div>
+    <div class="consequence" id="consequence" hidden>
+      <div class="consTitle" id="consTitle"></div>
+      <div class="consBody" id="consText"></div>
+      <button type="button" class="nextBtn" id="nextBtn"></button>
+    </div>
+  </section>
+
+  <section id="summaryArea" hidden>
+    <h2 id="summaryTitle"></h2>
+    <div class="balanceTop">
+      <div class="bal">
+        <div class="balLabel"><span id="sBalFreeLbl"></span><span id="sBalFreeVal"></span></div>
+        <div class="balBar"><div class="balFill freedom" id="sBalFree"></div></div>
+      </div>
+      <div class="bal">
+        <div class="balLabel"><span id="sBalProtLbl"></span><span id="sBalProtVal"></span></div>
+        <div class="balBar"><div class="balFill protection" id="sBalProt"></div></div>
+      </div>
+    </div>
+    <div id="summaryList"></div>
+    <div class="debate">
+      <h2 id="debateTitle"></h2>
+      <ul id="debateList"></ul>
+    </div>
+    <div class="note" id="summaryNote"></div>
+    <button type="button" class="restartBtn" id="restartBtn"></button>
+  </section>
+</main>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Modérateur·rice d'un jour",
+    instruction: "Huit messages ont été signalés sur un réseau social scolaire. Pour chacun, décidez : publier, limiter ou supprimer. Il n'y a pas de bonne réponse unique — chaque décision a des conséquences que vous découvrirez. Votre bilan final servira au débat en classe.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    msgOf: (n, t) => `Message ${n} sur ${t}`,
+    reportedFor: "Signalé pour",
+    contextLbl: "Contexte",
+    actPublish: "Publier", actPublishSub: "Le message reste visible",
+    actLimit: "Limiter", actLimitSub: "Moins visible, encore accessible",
+    actDelete: "Supprimer", actDeleteSub: "Retiré de la plateforme",
+    actNames: { publish: "Publier", limit: "Limiter", delete: "Supprimer" },
+    chosen: (a) => `Vous avez choisi « ${a} »`,
+    nextBtn: "Message suivant",
+    summaryBtn: "Voir le bilan",
+    summaryTitle: "Bilan de votre journée de modération",
+    balanceTitleFree: "Liberté d'expression",
+    balanceTitleProt: "Protection des personnes",
+    debateTitle: "Pour lancer le débat en classe",
+    debate: [
+      "Quels messages étaient les plus faciles à trancher ? Lesquels vous ont fait hésiter — et pourquoi ?",
+      "Qui devrait fixer les règles : la plateforme, l'État, les juges, les utilisatrices et utilisateurs ?",
+      "Comparez votre bilan avec celui de vos camarades : où sont vos désaccords les plus forts ?"
+    ],
+    summaryNote: "Il n'y a pas de bonne réponse unique : c'est votre capacité à justifier chaque choix qui compte.",
+    restart: "Recommencer",
+    messages: [
+      {
+        author: "@citoyen_vigilant",
+        text: "« Ce maire est le pire voleur que la ville ait connu ! Démission immédiate ! »",
+        reason: "Diffamation",
+        context: "Une enquête sur la gestion communale est en cours, mais aucune malversation n'est établie.",
+        cons: {
+          publish: "Le message reste visible. Les opposants du maire applaudissent la liberté de critiquer un élu ; l'équipe du maire dénonce une accusation sans preuve et dépose une plainte.",
+          limit: "Le message circule moins. Certains y voient un compromis raisonnable ; d'autres se demandent pourquoi on pourrait critiquer un artiste plus violemment qu'un élu.",
+          delete: "Le message disparaît. Le maire se dit protégé des rumeurs ; l'auteur dénonce une censure au service des puissants et reposte ailleurs, en criant au complot."
+        }
+      },
+      {
+        author: "@info_rapide",
+        text: "« URGENT : le vaccin contre la grippe contient une puce de traçage — partagez avant que ça ne disparaisse ! »",
+        reason: "Fausse information",
+        context: "L'affirmation est démentie par les autorités sanitaires, mais le message est partagé 12 000 fois en une soirée.",
+        cons: {
+          publish: "Le message continue de circuler. La clinique scolaire signale une baisse des inscriptions à la vaccination ; les partisans du « libre débat » estiment que chacun peut vérifier par soi-même.",
+          limit: "Le message s'affiche avec un avertissement et cesse d'être recommandé. Sa diffusion chute de 80 % ; l'auteur accuse la plateforme de manipuler l'information.",
+          delete: "Le message disparaît. La campagne de vaccination reprend son rythme ; certains utilisateurs estiment que la plateforme a « quelque chose à cacher » et migrent vers un réseau concurrent."
+        }
+      },
+      {
+        author: "@pur_local",
+        text: "« Les gens de cette religion n'ont rien à faire dans notre école. »",
+        reason: "Discrimination, appel à la haine",
+        context: "Plusieurs élèves visés par ce message disent ne plus oser venir au gymnase.",
+        cons: {
+          publish: "Le message reste en ligne au nom de la liberté d'expression. Les élèves visés se sentent abandonnés ; la direction du gymnase ouvre une procédure contre la plateforme.",
+          limit: "Le message devient peu visible, mais reste accessible. Les élèves visés le trouvent encore ; l'auteur s'en sert comme preuve qu'on « ne peut plus rien dire ».",
+          delete: "Le message est retiré et le compte suspendu sept jours. Les élèves visés respirent ; l'auteur crée un nouveau compte et publie le même message, en pire."
+        }
+      },
+      {
+        author: "@vert_avenir",
+        text: "« Dimanche, votez pour les Verts si vous voulez que vos enfants respirent un air propre ! »",
+        reason: "Propagande politique",
+        context: "Vous êtes en pleine période électorale ; le message est un avis politique ordinaire, sans fausse information.",
+        cons: {
+          publish: "Le message reste visible, comme tous les appels au vote. Les partis rivaux se mettent à signaler leurs adversaires en masse pour « propagande ».",
+          limit: "Le message est moins diffusé. Des partisans du parti visé accusent la plateforme de favoritisme envers les autres listes.",
+          delete: "Le message disparaît. Des journalistes s'emparent de l'affaire : une plateforme privée vient de retirer un appel au vote parfaitement légal, à trois jours du scrutin."
+        }
+      },
+      {
+        author: "@rigolo_max",
+        text: "📷 Photo d'une camarade endormie en cours, avec la légende « Regardez notre championne de maths ».",
+        reason: "Atteinte à la dignité",
+        context: "La photo a été prise sans son accord ; le message a déjà récolté 200 commentaires moqueurs.",
+        cons: {
+          publish: "La photo reste en ligne. Les commentaires continuent d'affluer ; l'élève photographiée sèche le cours de maths le lendemain.",
+          limit: "La photo cesse d'être recommandée, mais circule toujours dans les groupes privés. L'élève photographiée estime que ce n'est pas suffisant.",
+          delete: "La photo est supprimée et son auteur averti. L'élève photographiée revient en cours ; l'auteur et ses amis crient à l'exagération pour une simple blague."
+        }
+      },
+      {
+        author: "@jeunes_debout",
+        text: "« Samedi 14 h, rendez-vous devant le Parlement : marche pacifique pour le climat. Pas d'autorisation, pas besoin ! »",
+        reason: "Appel à une manifestation non autorisée",
+        context: "Le rassemblement annoncé est pacifique ; la loi communale exige une autorisation, mais le simple fait de manifester pacifiquement est protégé par la Constitution.",
+        cons: {
+          publish: "Le message reste en ligne. Samedi, 800 personnes manifestent dans le calme ; la police a pu s'organiser grâce au message. Certains élus fustigent une plateforme qui « tolère l'illégalité ».",
+          limit: "Le message circule moins. Samedi, 200 personnes viennent quand même, mais la police, surprise, bloque la rue et la tension monte.",
+          delete: "Le message disparaît. La manifestation a lieu quand même, organisée de bouche à oreille ; la presse note que la censure a surtout empêché les autorités de se préparer."
+        }
+      },
+      {
+        author: "@satire_du_soir",
+        text: "🖼️ Montage photo : la ministre des transports conduisant un tracteur, légendé « Sa nouvelle stratégie autoroutière ».",
+        reason: "Outrage à une personnalité publique",
+        context: "Le montage est clairement humoristique ; il est publié pendant une polémique sur les péages autoroutiers.",
+        cons: {
+          publish: "Le montage devient viral et nourrit le débat sur les péages. La ministre répond elle-même par une photo d'elle à bicyclette — l'humour politique fait partie du jeu.",
+          limit: "Le montage est moins diffusé. Des humoristes dénoncent un traitement plus sévère que pour les critiques ordinaires : la satire est-elle devenue suspecte ?",
+          delete: "Le montage est retiré. La « victoire » de la ministre se retourne contre elle : toute la presse reparle du montage (effet Streisand) et s'interroge sur la censure de l'humour."
+        }
+      },
+      {
+        author: "@hacker_du_gym",
+        text: "« J'ai la liste des adresses et numéros de portable de tous les profs. Qui veut la copie ? »",
+        reason: "Atteinte à la vie privée",
+        context: "La liste semble authentique et provient d'une fuite de données.",
+        cons: {
+          publish: "Le message reste visible. Dans la journée, trois enseignants reçoivent des appels malveillants ; la police est avisée. Votre décision sera mentionnée dans le rapport d'incident.",
+          limit: "Le message circule moins, mais les réponses privées continuent : la liste a déjà fuité dans trois groupes. Le mal est fait.",
+          delete: "Le message et la liste disparaissent avant d'être copiés. La fuite est contenue ; l'auteur est signalé à la direction, qui découvre une faille dans son propre réseau."
+        }
+      }
+    ]
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Moderator for a day",
+    instruction: "Eight posts have been reported on a school social network. For each one, decide: publish, limit or remove. There is no single right answer — every decision has consequences you will discover. Your final record will fuel the class debate.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    msgOf: (n, t) => `Post ${n} of ${t}`,
+    reportedFor: "Reported for",
+    contextLbl: "Context",
+    actPublish: "Publish", actPublishSub: "The post stays visible",
+    actLimit: "Limit", actLimitSub: "Less visible, still accessible",
+    actDelete: "Remove", actDeleteSub: "Taken off the platform",
+    actNames: { publish: "Publish", limit: "Limit", delete: "Remove" },
+    chosen: (a) => `You chose “${a}”`,
+    nextBtn: "Next post",
+    summaryBtn: "See the record",
+    summaryTitle: "Your day of moderation: the record",
+    balanceTitleFree: "Freedom of expression",
+    balanceTitleProt: "Protection of people",
+    debateTitle: "To kick off the class debate",
+    debate: [
+      "Which posts were easiest to decide? Which ones made you hesitate — and why?",
+      "Who should set the rules: the platform, the state, the courts, or the users?",
+      "Compare your record with your classmates': where are your biggest disagreements?"
+    ],
+    summaryNote: "There is no single right answer: what matters is your ability to justify each choice.",
+    restart: "Start again",
+    messages: [
+      {
+        author: "@watchful_citizen",
+        text: "“This mayor is the worst thief this town has ever seen! Resign now!”",
+        reason: "Defamation",
+        context: "An investigation into the town's finances is under way, but no wrongdoing has been established.",
+        cons: {
+          publish: "The post stays up. The mayor's opponents applaud the freedom to criticise an elected official; the mayor's team denounces an unproven accusation and files a complaint.",
+          limit: "The post spreads less. Some see a reasonable compromise; others wonder why one could criticise an artist more harshly than an elected official.",
+          delete: "The post disappears. The mayor feels protected from rumours; the author denounces censorship in the service of the powerful and reposts elsewhere, crying conspiracy."
+        }
+      },
+      {
+        author: "@fast_news",
+        text: "“URGENT: the flu vaccine contains a tracking chip — share before it disappears!”",
+        reason: "False information",
+        context: "Health authorities have debunked the claim, but the post was shared 12,000 times in one evening.",
+        cons: {
+          publish: "The post keeps spreading. The school clinic reports fewer vaccination sign-ups; supporters of “free debate” say everyone can check facts for themselves.",
+          limit: "The post is shown with a warning and stops being recommended. Its spread drops by 80%; the author accuses the platform of manipulating information.",
+          delete: "The post disappears. The vaccination campaign returns to normal; some users believe the platform has “something to hide” and move to a rival network."
+        }
+      },
+      {
+        author: "@local_pride",
+        text: "“People of that religion have no place in our school.”",
+        reason: "Discrimination, hate speech",
+        context: "Several students targeted by this post say they no longer dare to come to school.",
+        cons: {
+          publish: "The post stays online in the name of free speech. The targeted students feel abandoned; the school management opens proceedings against the platform.",
+          limit: "The post becomes less visible but remains accessible. The targeted students still find it; the author uses it as proof that “you can't say anything anymore”.",
+          delete: "The post is removed and the account suspended for seven days. The targeted students breathe again; the author creates a new account and posts the same message, only worse."
+        }
+      },
+      {
+        author: "@green_future",
+        text: "“On Sunday, vote Green if you want your children to breathe clean air!”",
+        reason: "Political propaganda",
+        context: "It is election season; the post is ordinary political opinion, with no false information.",
+        cons: {
+          publish: "The post stays up, like all get-out-the-vote messages. Rival parties start mass-reporting each other as “propaganda”.",
+          limit: "The post spreads less. Supporters of the targeted party accuse the platform of favouring the other lists.",
+          delete: "The post disappears. Journalists pick up the story: a private platform has removed a perfectly legal call to vote, three days before the election."
+        }
+      },
+      {
+        author: "@funny_max",
+        text: "📷 Photo of a classmate asleep in class, captioned “Meet our maths champion”.",
+        reason: "Attack on personal dignity",
+        context: "The photo was taken without her consent; the post already has 200 mocking comments.",
+        cons: {
+          publish: "The photo stays online. The comments keep coming; the photographed student skips maths class the next day.",
+          limit: "The photo stops being recommended but keeps circulating in private groups. The photographed student says that is not enough.",
+          delete: "The photo is removed and its author warned. The photographed student returns to class; the author and his friends call it an overreaction to a simple joke."
+        }
+      },
+      {
+        author: "@youth_rising",
+        text: "“Saturday 2 p.m., in front of Parliament: peaceful climate march. No permit, no problem!”",
+        reason: "Call for an unauthorised demonstration",
+        context: "The announced gathering is peaceful; local law requires a permit, but peaceful assembly itself is protected by the Constitution.",
+        cons: {
+          publish: "The post stays up. On Saturday, 800 people march peacefully; the police were able to prepare thanks to the post. Some officials slam a platform that “tolerates illegality”.",
+          limit: "The post spreads less. On Saturday, 200 people still show up, but the surprised police block the street and tension rises.",
+          delete: "The post disappears. The march happens anyway, organised by word of mouth; the press notes that censorship mainly prevented the authorities from preparing."
+        }
+      },
+      {
+        author: "@evening_satire",
+        text: "🖼️ Photomontage: the transport minister driving a tractor, captioned “Her new motorway strategy”.",
+        reason: "Insulting a public figure",
+        context: "The montage is clearly humorous; it is posted during a controversy over motorway tolls.",
+        cons: {
+          publish: "The montage goes viral and fuels the toll debate. The minister replies with a photo of herself on a bicycle — political humour is part of the game.",
+          limit: "The montage spreads less. Comedians denounce harsher treatment than ordinary criticism: has satire become suspect?",
+          delete: "The montage is removed. The minister's “victory” backfires: the whole press talks about the montage again (the Streisand effect) and questions the censorship of humour."
+        }
+      },
+      {
+        author: "@school_hacker",
+        text: "“I have the list of every teacher's address and mobile number. Who wants a copy?”",
+        reason: "Privacy violation",
+        context: "The list looks genuine and comes from a data leak.",
+        cons: {
+          publish: "The post stays up. By the evening, three teachers receive malicious calls; the police are notified. Your decision will be mentioned in the incident report.",
+          limit: "The post spreads less, but private replies continue: the list has already leaked into three groups. The damage is done.",
+          delete: "The post and the list disappear before being copied. The leak is contained; the author is reported to the school management, which discovers a flaw in its own network."
+        }
+      }
+    ]
+  }
+};
+let lang = (function () {
+  try {
+    const c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);
+    if (c && (c[1] === "fr" || c[1] === "en")) return c[1];
+  } catch (e) {}
+  try {
+    const s = localStorage.getItem("fj-lang");
+    return (s === "fr" || s === "en") ? s : "fr";
+  } catch (e) { return "fr"; }
+})();
+const T = () => I18N[lang];
+
+let idx = 0;
+let decisions = [];
+let freedom = 0, protection = 0;
+const W = { publish: [2, 0], limit: [1, 1], delete: [0, 2] };
+
+function total() { return T().messages.length; }
+function maxPts() { return total() * 2; }
+
+function renderBars(freeEl, protEl, freeVal, protVal) {
+  freeEl.style.width = (freedom / maxPts() * 100) + "%";
+  protEl.style.width = (protection / maxPts() * 100) + "%";
+  freeVal.textContent = freedom + " / " + maxPts();
+  protVal.textContent = protection + " / " + maxPts();
+}
+
+function renderCard() {
+  const m = T().messages[idx];
+  $("progLabel").textContent = T().msgOf(idx + 1, total());
+  $("progFill").style.width = (decisions.length / total() * 100) + "%";
+  renderBars($("balFree"), $("balProt"), $("balFreeVal"), $("balProtVal"));
+  $("avatar").textContent = m.author.replace("@", "").charAt(0).toUpperCase();
+  $("author").textContent = m.author;
+  $("msgText").textContent = m.text;
+  $("reasonTag").textContent = T().reportedFor + " : " + m.reason;
+  $("context").innerHTML = "<b>" + T().contextLbl + " :</b> " + m.context;
+  $("btnPublish").innerHTML = T().actPublish + "<small>" + T().actPublishSub + "</small>";
+  $("btnLimit").innerHTML = T().actLimit + "<small>" + T().actLimitSub + "</small>";
+  $("btnDelete").innerHTML = T().actDelete + "<small>" + T().actDeleteSub + "</small>";
+  const choice = decisions[idx];
+  if (choice) {
+    $("actions").hidden = true;
+    const c = $("consequence");
+    c.hidden = false;
+    c.className = "consequence " + choice;
+    $("consTitle").textContent = T().chosen(T().actNames[choice]);
+    $("consText").textContent = m.cons[choice];
+    $("nextBtn").textContent = (idx === total() - 1) ? T().summaryBtn : T().nextBtn;
+  } else {
+    $("actions").hidden = false;
+    $("consequence").hidden = true;
+  }
+}
+
+function decide(choice) {
+  decisions[idx] = choice;
+  freedom += W[choice][0];
+  protection += W[choice][1];
+  renderCard();
+}
+$("btnPublish").onclick = () => decide("publish");
+$("btnLimit").onclick = () => decide("limit");
+$("btnDelete").onclick = () => decide("delete");
+
+$("nextBtn").onclick = () => {
+  idx++;
+  if (idx >= total()) renderSummary();
+  else renderCard();
+};
+
+function renderSummary() {
+  $("gameArea").hidden = true;
+  $("summaryArea").hidden = false;
+  $("summaryTitle").textContent = T().summaryTitle;
+  $("sBalFreeLbl").textContent = T().balanceTitleFree;
+  $("sBalProtLbl").textContent = T().balanceTitleProt;
+  renderBars($("sBalFree"), $("sBalProt"), $("sBalFreeVal"), $("sBalProtVal"));
+  const list = $("summaryList");
+  list.innerHTML = "";
+  T().messages.forEach((m, i) => {
+    const d = decisions[i];
+    const item = document.createElement("div");
+    item.className = "summaryItem";
+    const head = document.createElement("div");
+    head.className = "head";
+    const num = document.createElement("span");
+    num.className = "num";
+    num.textContent = i + 1;
+    const ex = document.createElement("span");
+    ex.className = "excerpt";
+    ex.textContent = m.text;
+    const chip = document.createElement("span");
+    chip.className = "chip " + d;
+    chip.textContent = T().actNames[d];
+    head.appendChild(num); head.appendChild(ex); head.appendChild(chip);
+    const cons = document.createElement("div");
+    cons.className = "consSum";
+    cons.textContent = m.cons[d];
+    item.appendChild(head); item.appendChild(cons);
+    list.appendChild(item);
+  });
+  $("debateTitle").textContent = T().debateTitle;
+  const dl = $("debateList");
+  dl.innerHTML = "";
+  T().debate.forEach(q => {
+    const li = document.createElement("li");
+    li.textContent = q;
+    dl.appendChild(li);
+  });
+  $("summaryNote").textContent = T().summaryNote;
+  $("restartBtn").textContent = T().restart;
+}
+
+$("restartBtn").onclick = () => {
+  idx = 0;
+  decisions = [];
+  freedom = 0;
+  protection = 0;
+  $("summaryArea").hidden = true;
+  $("gameArea").hidden = false;
+  renderCard();
+};
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  $("balFreeLbl").textContent = T().balanceTitleFree;
+  $("balProtLbl").textContent = T().balanceTitleProt;
+  if (!$("summaryArea").hidden) renderSummary();
+  else renderCard();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>

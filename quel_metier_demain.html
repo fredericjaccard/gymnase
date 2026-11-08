@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Glissez-déposez les tâches de différents métiers entre « plutôt IA » et « plutôt humain », puis comparez vos choix sur les 6 métiers.">
+<title>Quel métier demain ? · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+  --error:#C84B31;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Quattrocento Sans",sans-serif;padding:20px;max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:26px;color:var(--primary)}
+.hdrBtns{display:flex;gap:8px}
+button{font-family:inherit;font-size:14px;font-weight:700;padding:8px 16px;border-radius:10px;
+  border:2px solid var(--primary);background:var(--card);color:var(--primary);cursor:pointer;min-height:40px}
+button:hover{background:var(--primaryLight)}
+button:disabled{opacity:.4;cursor:default}
+.instruction{background:var(--primaryLight);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+h2{font-size:17px;color:var(--primary);margin-bottom:10px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);font-weight:400;text-decoration:none}
+footer a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* Sélecteur de métiers */
+.profs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.prof{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border:2px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;font-size:14px;font-weight:700;color:var(--ink);text-align:center;min-height:76px}
+.prof:hover{border-color:var(--primary);background:var(--primaryLight)}
+.prof.sel{border-color:var(--primary);background:var(--primaryLight);box-shadow:0 0 0 2px var(--primary) inset}
+.prof .em{font-size:24px}
+.prof .tick{font-size:11px;color:var(--primary);font-weight:700}
+.prog{font-size:13px;color:var(--muted);margin-bottom:10px}
+
+/* Zone de jeu */
+.board{display:none}
+.board.on{display:block}
+.stackTitle{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.stack{min-height:56px;border:2px dashed var(--line);border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;background:var(--bg)}
+.task{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;cursor:grab;max-width:280px;line-height:1.35}
+.task:hover{border-color:var(--primary)}
+.task.picked{border-color:var(--accent);background:var(--accentLight);box-shadow:0 0 0 2px var(--accent)}
+.zones{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.zone{border:2px dashed var(--line);border-radius:12px;padding:10px;min-height:150px;background:var(--card);display:flex;flex-direction:column;gap:8px}
+.zone.sel{border:2px solid var(--accent);background:var(--accentLight)}
+.zone.auto{border-top:6px solid var(--primary)}
+.zone.hum{border-top:6px solid var(--accent)}
+.zone h3{font-size:15px;margin-bottom:2px}
+.zone.auto h3{color:var(--primary)}
+.zone.hum h3{color:var(--accent)}
+.zone .inner{display:flex;flex-direction:column;gap:8px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.btnAccent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnAccent:hover{background:var(--accent);opacity:.88}
+.hint{font-size:13px;color:var(--muted)}
+.doneMsg{background:var(--primaryLight);border:2px solid var(--primary);border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:15px;color:var(--primary);display:none}
+.doneMsg.on{display:block}
+
+/* Résumé */
+.summary{display:none}
+.summary.on{display:block}
+.sumGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:14px}
+.sumCard{border:2px solid var(--line);border-radius:12px;background:var(--card);padding:14px}
+.sumCard h3{font-size:15px;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sumTask{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.45;margin-bottom:6px}
+.sumBadge{flex-shrink:0;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.sumBadge.auto{background:var(--primaryLight);color:var(--primary)}
+.sumBadge.hum{background:var(--accentLight);color:var(--accent)}
+.sumLead{font-size:14px;line-height:1.55;margin-bottom:14px}
+
+/* Discussion */
+.discuss{border:2px solid var(--line);border-radius:12px;background:var(--card);padding:16px;margin-bottom:6px}
+.discuss ul{margin:8px 0 0 20px;font-size:14px;line-height:1.55}
+.discuss li{margin-bottom:4px}
+
+@media(max-width:640px){
+  body{padding:14px}
+  h1{font-size:22px}
+  .hdrBtns{width:100%;justify-content:flex-end}
+  .zones{grid-template-columns:1fr}
+  .task{max-width:100%;width:100%}
+  .stack{flex-direction:column}
+  .sumGrid{grid-template-columns:1fr}
+  button{min-height:44px}
+  .prof{min-height:64px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+
+<div class="prog" id="prog"></div>
+<div class="profs" id="profs"></div>
+
+<div class="board" id="board">
+  <div class="stackTitle" id="stackTitle"></div>
+  <div class="stack" id="stack" data-which="todo"></div>
+  <div class="zones">
+    <div class="zone auto" id="zoneAuto" data-which="auto" role="button" tabindex="0" aria-label="">
+      <h3 id="autoTitle"></h3>
+      <div class="inner" id="innerAuto"></div>
+    </div>
+    <div class="zone hum" id="zoneHum" data-which="hum" role="button" tabindex="0" aria-label="">
+      <h3 id="humTitle"></h3>
+      <div class="inner" id="innerHum"></div>
+    </div>
+  </div>
+  <div class="doneMsg" id="doneMsg">
+    <strong id="doneTitle"></strong>
+    <div id="doneText" style="margin-top:4px"></div>
+  </div>
+  <div class="actions">
+    <button id="nextBtn" type="button" class="btnAccent" disabled></button>
+    <button id="resetBtn" type="button"></button>
+    <button id="backBtn" type="button"></button>
+    <span class="hint" id="hint"></span>
+  </div>
+</div>
+
+<div class="summary" id="summary">
+  <h2 id="sumTitle"></h2>
+  <div class="sumLead" id="sumLead"></div>
+  <div class="sumGrid" id="sumGrid"></div>
+  <div class="actions">
+    <button id="restartBtn" type="button" class="btnAccent"></button>
+  </div>
+</div>
+
+<div class="discuss">
+  <h2 id="discTitle"></h2>
+  <div class="hint" id="discLead" style="margin-bottom:6px"></div>
+  <ul id="discList"></ul>
+</div>
+
+<footer><a href="index.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ================= I18N ================= */
+const I18N = {
+  fr: {
+    kicker: "ENJEUX SOCIAUX",
+    title: "Quel métier demain ?",
+    instruction: "Choisissez un métier, puis glissez chaque tâche dans la colonne « plutôt IA » ou « plutôt humain » (sur tactile : touchez une tâche, puis la colonne). Explorez les 6 métiers, puis discutez en classe.",
+    fs: "Plein écran", fsExit: "Quitter",
+    backList: "← Toutes les applications",
+    prog: (n, t) => `Métiers explorés : ${n} / ${t}`,
+    stackTitle: "Tâches à classer",
+    autoTitle: "🤖 Plutôt IA",
+    humTitle: "🧑 Plutôt humain",
+    nextBtn: "Métier suivant",
+    nextBtnLast: "Voir le résumé",
+    resetBtn: "Recommencer",
+    backBtn: "Choisir un autre métier",
+    hint: "Astuce : touchez une tâche pour la sélectionner, puis touchez une colonne. Touchez-la à nouveau pour la renvoyer en attente.",
+    doneTitle: "Toutes les tâches sont classées !",
+    doneText: "Passez au métier suivant, ou revenez en arrière pour modifier vos choix.",
+    sumTitle: "Vos choix sur les 6 métiers",
+    sumLead: "Voici comment vous avez classé les tâches. En classe, discutez : pourquoi ces choix ? Quelles tâches surprennent le plus ? Certains métiers sont-ils plus « mixtes » que d'autres ?",
+    restartBtn: "Recommencer depuis le début",
+    discTitle: "Automatiser une tâche n'est pas supprimer un métier",
+    discLead: "Les grandes idées à retenir pour la discussion :",
+    disc: [
+      "Un métier est un panier de tâches : certaines peuvent être automatisées, d'autres résistent, et de nouvelles apparaissent.",
+      "Les prévisions sur l'avenir du travail vieillissent vite : ce qui semblait impossible en 2013 est réalisable aujourd'hui.",
+      "Automatiser une tâche change le métier : il se transforme et demande souvent de nouvelles compétences.",
+      "Il n'y a pas de bonne réponse absolue : le débat est ouvert, et vos choix valent la discussion."
+    ]
+  },
+  en: {
+    kicker: "SOCIAL ISSUES",
+    title: "Which job tomorrow?",
+    instruction: "Pick a profession, then drag each task into the “rather AI” or “rather human” column (on touch screens: tap a task, then tap a column). Explore all 6 professions, then discuss in class.",
+    fs: "Fullscreen", fsExit: "Exit",
+    backList: "← All applications",
+    prog: (n, t) => `Professions explored: ${n} / ${t}`,
+    stackTitle: "Tasks to sort",
+    autoTitle: "🤖 Rather AI",
+    humTitle: "🧑 Rather human",
+    nextBtn: "Next profession",
+    nextBtnLast: "View summary",
+    resetBtn: "Start over",
+    backBtn: "Pick another profession",
+    hint: "Tip: tap a task to select it, then tap a column. Tap it again to send it back to the pending list.",
+    doneTitle: "All tasks are sorted!",
+    doneText: "Move on to the next profession, or go back to change your choices.",
+    sumTitle: "Your choices across the 6 professions",
+    sumLead: "Here is how you sorted the tasks. In class, discuss: why these choices? Which tasks are most surprising? Are some professions more “mixed” than others?",
+    restartBtn: "Start over from the beginning",
+    discTitle: "Automating a task is not abolishing a job",
+    discLead: "Key ideas for the discussion:",
+    disc: [
+      "A job is a bundle of tasks: some can be automated, some resist, and new ones appear.",
+      "Forecasts about the future of work age fast: what looked impossible in 2013 is feasible today.",
+      "Automating a task changes the job: it transforms and often requires new skills.",
+      "There is no single right answer: the debate is open, and your choices are worth discussing."
+    ]
+  }
+};
+
+/* ================= DONNÉES ================= */
+const DATA = [
+  {
+    em: "🛒", name: { fr: "Caissier·ère", en: "Cashier" },
+    tasks: [
+      { fr: "Scanner les produits et encaisser le paiement", en: "Scan products and take payment" },
+      { fr: "Appliquer les promotions et la carte de fidélité", en: "Apply promotions and the loyalty card" },
+      { fr: "Aider un client âgé à utiliser la caisse automatique", en: "Help an elderly customer use the self-checkout" },
+      { fr: "Apaiser un client mécontent ou gérer un litige", en: "Calm an unhappy customer or handle a dispute" }
+    ]
+  },
+  {
+    em: "🚚", name: { fr: "Chauffeur·euse routier·ère", en: "Truck driver" },
+    tasks: [
+      { fr: "Conduire des heures durant sur autoroute", en: "Drive for hours on the motorway" },
+      { fr: "Calculer l'itinéraire et l'ordre des livraisons", en: "Compute the route and the delivery order" },
+      { fr: "Gérer une route barrée, une panne ou un accident", en: "Handle a closed road, a breakdown or an accident" },
+      { fr: "Accueillir le client et gérer une réclamation", en: "Welcome the customer and handle a complaint" }
+    ]
+  },
+  {
+    em: "🌐", name: { fr: "Traducteur·trice", en: "Translator" },
+    tasks: [
+      { fr: "Traduire un mode d'emploi ou un courrier type", en: "Translate a user manual or a standard letter" },
+      { fr: "Traduire une page web à la volée", en: "Translate a web page on the fly" },
+      { fr: "Adapter un slogan ou un jeu de mots à une autre culture", en: "Adapt a slogan or a pun to another culture" },
+      { fr: "Interpréter en direct une négociation délicate", en: "Interpret a delicate negotiation live" }
+    ]
+  },
+  {
+    em: "📰", name: { fr: "Journaliste", en: "Journalist" },
+    tasks: [
+      { fr: "Rédiger automatiquement les résultats sportifs à partir de données", en: "Automatically write sports results from data" },
+      { fr: "Publier les horaires et chiffres d'information de routine", en: "Publish routine timetables and figures" },
+      { fr: "Mener une enquête et interroger des sources", en: "Run an investigation and question sources" },
+      { fr: "Vérifier et croiser une information avant publication", en: "Verify and cross-check information before publishing" }
+    ]
+  },
+  {
+    em: "🩻", name: { fr: "Radiologue", en: "Radiologist" },
+    tasks: [
+      { fr: "Repérer une anomalie sur un scanner ou une IRM", en: "Spot an anomaly on a CT scan or MRI" },
+      { fr: "Comparer l'évolution des images d'un patient", en: "Compare the evolution of a patient's images" },
+      { fr: "Annoncer un diagnostic et répondre aux questions du patient", en: "Announce a diagnosis and answer the patient's questions" },
+      { fr: "Choisir le bon examen pour un cas complexe et atypique", en: "Choose the right exam for a complex, atypical case" }
+    ]
+  },
+  {
+    em: "🧑‍🏫", name: { fr: "Enseignant·e du secondaire", en: "Secondary teacher" },
+    tasks: [
+      { fr: "Corriger automatiquement des QCM", en: "Automatically mark multiple-choice tests" },
+      { fr: "Générer des exercices et du feedback de base", en: "Generate exercises and basic feedback" },
+      { fr: "Motiver un élève découragé", en: "Motivate a discouraged student" },
+      { fr: "Adapter son cours aux réactions de la classe", en: "Adapt the lesson to the class's reactions" }
+    ]
+  }
+];
+
+/* ================= ÉTAT ================= */
+let lang = (function () {
+  try { const c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/); if (c && (c[1] === "fr" || c[1] === "en")) return c[1]; } catch (e) {}
+  try { const s = localStorage.getItem("fj-lang"); if (s === "fr" || s === "en") return s; } catch (e) {}
+  return "fr";
+})();
+const T = () => I18N[lang];
+
+let cur = null;
+let placed = {};           // id -> "auto" | "hum"
+let selected = null;
+const explored = new Set();
+
+function allPlaced() { return cur !== null && DATA[cur].tasks.every((_, i) => placed["t" + i]); }
+function allExplored() { return explored.size === DATA.length; }
+
+/* ================= RENDU ================= */
+function taskCard(i) {
+  const d = document.createElement("div");
+  d.className = "task";
+  d.id = "task" + i;
+  d.textContent = DATA[cur].tasks[i][lang];
+  d.draggable = true;
+  if (selected === "t" + i) d.classList.add("picked");
+  d.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", "t" + i); });
+  d.addEventListener("click", e => {
+    e.stopPropagation();
+    const id = "t" + i;
+    if (placed[id]) { delete placed[id]; selected = null; }
+    else { selected = selected === id ? null : id; }
+    render();
+  });
+  return d;
+}
+
+function fill(containerId, which) {
+  const c = $(containerId);
+  c.innerHTML = "";
+  DATA[cur].tasks.forEach((_, i) => {
+    if (which === "todo" ? !placed["t" + i] : placed["t" + i] === which) c.appendChild(taskCard(i));
+  });
+}
+
+function renderProfs() {
+  const c = $("profs");
+  c.innerHTML = "";
+  DATA.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "prof" + (cur === i ? " sel" : "");
+    b.innerHTML = '<span class="em">' + p.em + '</span><span>' + p.name[lang] + "</span>" +
+      (explored.has(i) ? '<span class="tick">✓ ' + (lang === "fr" ? "exploré" : "explored") + "</span>" : "");
+    b.onclick = () => { cur = i; placed = {}; selected = null; render(); };
+    c.appendChild(b);
+  });
+  $("prog").textContent = T().prog(explored.size, DATA.length);
+}
+
+function renderBoard() {
+  $("board").classList.add("on");
+  $("stackTitle").textContent = T().stackTitle;
+  $("autoTitle").textContent = T().autoTitle;
+  $("humTitle").textContent = T().humTitle;
+  $("zoneAuto").setAttribute("aria-label", T().autoTitle);
+  $("zoneHum").setAttribute("aria-label", T().humTitle);
+  fill("stack", "todo");
+  fill("innerAuto", "auto");
+  fill("innerHum", "hum");
+  const done = allPlaced();
+  $("doneMsg").classList.toggle("on", done);
+  $("doneTitle").textContent = T().doneTitle;
+  $("doneText").textContent = T().doneText;
+  const isLast = explored.size === DATA.length - 1 && done;
+  $("nextBtn").textContent = isLast ? T().nextBtnLast : T().nextBtn;
+  $("nextBtn").disabled = !done;
+  $("nextBtn").style.display = "";
+  $("resetBtn").textContent = T().resetBtn;
+  $("backBtn").textContent = T().backBtn;
+  $("hint").textContent = T().hint;
+}
+
+function renderSummary() {
+  $("summary").classList.add("on");
+  $("board").classList.remove("on");
+  $("profs").style.display = "none";
+  $("prog").style.display = "none";
+  $("sumTitle").textContent = T().sumTitle;
+  $("sumLead").textContent = T().sumLead;
+  const grid = $("sumGrid");
+  grid.innerHTML = "";
+  DATA.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "sumCard";
+    const h3 = document.createElement("h3");
+    h3.textContent = p.em + " " + p.name[lang];
+    card.appendChild(h3);
+    p.tasks.forEach((t, j) => {
+      const id = "t" + j;
+      const w = placedAll[i] && placedAll[i][id];
+      const row = document.createElement("div");
+      row.className = "sumTask";
+      const badge = document.createElement("span");
+      badge.className = "sumBadge " + (w === "auto" ? "auto" : "hum");
+      badge.textContent = w === "auto" ? "IA" : "🧑";
+      const txt = document.createElement("span");
+      txt.textContent = t[lang];
+      row.appendChild(badge);
+      row.appendChild(txt);
+      card.appendChild(row);
+    });
+    grid.appendChild(card);
+  });
+  $("restartBtn").textContent = T().restartBtn;
+}
+
+let placedAll = {};  // index métier -> { t0: "auto", ... }
+
+function render() {
+  $("profs").style.display = "";
+  $("prog").style.display = "";
+  $("board").classList.remove("on");
+  $("summary").classList.remove("on");
+  renderProfs();
+  if (allExplored() && explored.size > 0) {
+    renderSummary();
+  } else if (cur !== null) {
+    renderBoard();
+  }
+  renderDiscussion();
+}
+
+function renderDiscussion() {
+  $("discTitle").textContent = T().discTitle;
+  $("discLead").textContent = T().discLead;
+  const ul = $("discList");
+  ul.innerHTML = "";
+  T().disc.forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+}
+
+/* ================= INTERACTIONS ================= */
+function place(id, which) {
+  if (cur === null || !/^t[0-3]$/.test(id)) return;
+  placed[id] = which;
+  selected = null;
+  render();
+}
+["zoneAuto", "zoneHum"].forEach(zid => {
+  const z = $(zid), which = zid === "zoneAuto" ? "auto" : "hum";
+  z.addEventListener("dragover", e => { e.preventDefault(); });
+  z.addEventListener("drop", e => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain");
+    if (id) place(id, which);
+  });
+  z.addEventListener("click", () => { if (selected) place(selected, which); });
+  z.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && selected) { e.preventDefault(); place(selected, which); }
+  });
+});
+$("stack").addEventListener("dragover", e => { e.preventDefault(); });
+$("stack").addEventListener("drop", e => {
+  e.preventDefault();
+  const id = e.dataTransfer.getData("text/plain");
+  if (id) { delete placed[id]; selected = null; render(); }
+});
+$("stack").addEventListener("click", () => { selected = null; render(); });
+
+$("nextBtn").onclick = () => {
+  if (!allPlaced()) return;
+  placedAll[cur] = { ...placed };
+  explored.add(cur);
+  // trouver le prochain métier non exploré
+  let next = null;
+  for (let i = 0; i < DATA.length; i++) if (!explored.has(i)) { next = i; break; }
+  if (next !== null) {
+    cur = next; placed = {}; selected = null;
+    render();
+  } else {
+    cur = null; placed = {}; selected = null;
+    render();
+  }
+};
+$("resetBtn").onclick = () => { placed = {}; selected = null; render(); };
+$("backBtn").onclick = () => { cur = null; placed = {}; selected = null; render(); };
+$("restartBtn").onclick = () => {
+  cur = null; placed = {}; selected = null; placedAll = {}; explored.clear();
+  render();
+};
+
+/* ================= LANGUE / PLEIN ÉCRAN ================= */
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? T().fsExit : T().fs;
+  $("backLink").textContent = T().backList;
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  render();
+}
+$("langBtn").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  applyLang();
+};
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+applyLang();
+</script>
+</body>
+</html>
