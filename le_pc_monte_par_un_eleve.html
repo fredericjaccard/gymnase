@@ -94,6 +94,21 @@ button:disabled{cursor:default;opacity:.65}
 .final-photo{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--ink)}
 .final-photo img{display:block;width:100%;height:auto}
 .final-actions{text-align:center;margin-top:16px}
+.corentin-note{margin-top:14px;padding:12px 14px;border-left:3px solid var(--primary);border-radius:0 10px 10px 0;background:var(--bg);color:var(--muted);font-size:14px}
+.corentin-note strong{color:var(--primary)}
+.corentin-note p{margin-top:3px}
+.corentin-story{margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
+.corentin-story h2{font-size:21px}
+.story-intro{color:var(--muted);font-size:15px;margin-bottom:12px}
+.story-question{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden}
+.story-question summary{position:relative;min-height:44px;padding:13px 44px 13px 15px;display:flex;align-items:center;cursor:pointer;list-style:none;color:var(--primary);font-weight:700}
+.story-question summary::-webkit-details-marker{display:none}
+.story-question summary::after{content:"+";position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:22px}
+.story-question[open] summary::after{content:"−"}
+.story-answer{padding:0 15px 15px;color:var(--muted);font-size:15px}
+.story-answer p+p{margin-top:10px}
+.story-answer .explanation{padding:10px 12px;border-radius:9px;background:var(--primaryLight);color:var(--primary);font-size:14px}
+.story-conclusion{margin-top:16px}
 footer{margin-top:20px;text-align:center;font-size:13px;color:var(--muted)}
 footer a{color:var(--muted);font-weight:400;text-decoration:none}
 footer a:hover{text-decoration:underline}
@@ -143,7 +158,7 @@ const I18N = {
   fr: {
     kicker:"Architecture des ordinateurs", title:"Le PC monté par un élève",
     instruction:"Explorez un vrai montage en trois missions. Identifiez les éléments sur les photos, puis reliez chaque composant à son rôle.",
-    builder:"Ce PC a été assemblé par un élève du gymnase pour un ami. Suivez son travail, des composants jusqu’au PC allumé.",
+    builder:"Ce PC a été assemblé par Corentin, un étudiant de la région lausannoise, pour un ami. Suivez son travail, des composants jusqu’au PC allumé.",
     fs:"Plein écran", fsExit:"Quitter", backList:"← Toutes les applications",
     missions:["Sur la carte mère","Dans le boîtier","Le système complet"], locked:"Terminez d’abord la mission précédente.",
     m1Title:"Mission 1 — Les composants", m1Intro:"Cliquez sur la zone de la photo qui correspond à l’élément demandé.",
@@ -152,10 +167,12 @@ const I18N = {
     find:"À vous de trouver", found:"éléments identifiés", identified:"Élément identifié",
     wrongZone:"Cette zone correspond à un autre élément. Observez la photo et cherchez encore.",
     alreadyFound:"Cet élément est déjà identifié.",
-    photoCredit:"Photo du montage réalisé par l’élève.",
+    photoCredit:"Photo du montage réalisé par Corentin.",
     next:"Mission suivante →", finalMission:"Dernière mission →",
     m1Done:"Bravo ! Vous avez identifié les cinq éléments. La deuxième mission est débloquée.",
     m2Done:"Un rangement soigné aide à retrouver les connexions et à vérifier le montage.",
+    cableCorentinNote:"Corentin indique justement que l’alimentation du watercooling et des ventilateurs RGB a été la partie la plus difficile du montage.",
+    corentinNoteTitle:"Le mot de Corentin",
     correctAnswer:"Bonne réponse !", tryAgain:"À revoir",
     cableQuestion:"Pourquoi soigner le passage et le regroupement des câbles ?",
     cableAnswers:["Pour augmenter la vitesse du processeur.","Pour retrouver les connexions, dégager l’espace et faciliter les vérifications.","Pour stocker davantage de fichiers.","Pour protéger les composants contre les décharges électrostatiques."],
@@ -191,8 +208,17 @@ const I18N = {
       "Les cartes performantes sont généralement produites en série, pas uniquement sur commande : leur prix vient plutôt des technologies coûteuses, du refroidissement et du rapport entre l’offre et la demande."
     ],
     finalTitle:"Du premier composant au PC allumé !",
-    finalText:"Vous avez exploré le vrai montage réalisé par un élève pour un ami : composants installés, câbles organisés et PC prêt à fonctionner.",
-    finalCaption:"Le PC assemblé par l’élève, une fois le montage terminé.",
+    finalText:"Vous avez exploré le montage réalisé par Corentin pour un ami : composants installés, câbles organisés et PC prêt à fonctionner.",
+    finalCaption:"Le PC assemblé par Corentin, une fois le montage terminé.",
+    corentinStoryTitle:"Le montage raconté par Corentin",
+    corentinStoryIntro:"Découvrez son expérience en quatre questions. Ouvrez celles qui vous intéressent.",
+    corentinStory:[
+      {q:"Combien ce PC a-t-il coûté ?",a:"« Ce PC a coûté environ 1 500 à 1 700 CHF au moment de l’achat, avant la hausse du prix de la RAM. »"},
+      {q:"Combien de temps le montage a-t-il pris ?",a:"« Le montage lui-même m’a pris environ une heure. Avec les réglages de l’UEFI et l’installation du système d’exploitation, cela a pris environ trois heures au total. »",e:"L’UEFI permet notamment de configurer le PC avant le démarrage du système d’exploitation."},
+      {q:"Qu’est-ce qui a été le plus difficile ?",a:"« Le plus difficile a été l’alimentation du watercooling et des ventilateurs RGB. »",e:"Le watercooling est un système de refroidissement liquide. Les ventilateurs RGB possèdent un éclairage dont on peut régler les couleurs."},
+      {q:"Quelle a été votre plus grande satisfaction ?",a:"« Le PC s’est allumé du premier coup. Nous étions très contents. »"}
+    ],
+    corentinStoryConclusion:"Monter un PC ne consiste pas seulement à assembler les composants : il faut aussi le configurer, installer le système d’exploitation et vérifier que tout fonctionne.",
     restart:"Recommencer l’exploration", resetDone:"L’exploration a recommencé.",
     altBoard:"Carte mère avec processeur, barrettes de RAM, ports PCIe, dissipateurs et SSD M.2 dans son emballage",
     altCase:"Arrière du boîtier pendant le montage, avec l’alimentation et les câbles",
@@ -214,7 +240,7 @@ const I18N = {
   en: {
     kicker:"COMPUTER ARCHITECTURE", title:"A student’s PC build",
     instruction:"Explore a real PC build in three missions. Identify parts in the photos, then match each component to its role.",
-    builder:"This PC was assembled by a high-school student for a friend. Follow their work, from the components to the powered-on PC.",
+    builder:"This PC was assembled by Corentin, a student from the Lausanne region, for a friend. Follow his work, from the components to the powered-on PC.",
     fs:"Fullscreen", fsExit:"Exit", backList:"← All applications",
     missions:["On the motherboard","Inside the case","The complete system"], locked:"Complete the previous mission first.",
     m1Title:"Mission 1 — The components", m1Intro:"Click the area of the photo that matches the requested item.",
@@ -223,10 +249,12 @@ const I18N = {
     find:"Your target", found:"items identified", identified:"Item identified",
     wrongZone:"That area shows a different item. Look at the photo and try again.",
     alreadyFound:"You have already identified this item.",
-    photoCredit:"Photo of the student’s PC build.",
+    photoCredit:"Photo of Corentin’s PC build.",
     next:"Next mission →", finalMission:"Final mission →",
     m1Done:"Well done! You identified all five items. Mission two is now unlocked.",
     m2Done:"Neat cable management makes connections easier to find and the build easier to check.",
+    cableCorentinNote:"Corentin says that supplying power to the water cooling system and RGB fans was the hardest part of the build.",
+    corentinNoteTitle:"A note from Corentin",
     correctAnswer:"Correct answer!", tryAgain:"Try again",
     cableQuestion:"Why route and group the cables carefully?",
     cableAnswers:["To make the processor faster.","To find connections, keep space clear and make checks easier.","To store more files.","To protect components against electrostatic discharge."],
@@ -262,8 +290,17 @@ const I18N = {
       "Powerful cards are generally mass-produced, not made only to order: their price comes mainly from costly technology, cooling and the balance between supply and demand."
     ],
     finalTitle:"From the first component to a powered-on PC!",
-    finalText:"You have explored a real PC built by a student for a friend: components installed, cables organised and the computer ready to run.",
-    finalCaption:"The student’s completed PC after assembly.",
+    finalText:"You have explored Corentin’s build for a friend: components installed, cables organised and the computer ready to run.",
+    finalCaption:"Corentin’s completed PC after assembly.",
+    corentinStoryTitle:"The build in Corentin’s own words",
+    corentinStoryIntro:"Discover his experience through four questions. Open the ones that interest you.",
+    corentinStory:[
+      {q:"How much did this PC cost?",a:"“This PC cost approximately CHF 1,500 to CHF 1,700 when it was purchased, before RAM prices rose.”"},
+      {q:"How long did the build take?",a:"“The assembly itself took me about an hour. Including the UEFI settings and the installation of the operating system, it took about three hours in total.”",e:"The UEFI is used, among other things, to configure the PC before the operating system starts."},
+      {q:"What was the hardest part?",a:"“The hardest part was supplying power to the water cooling system and the RGB fans.”",e:"Water cooling uses liquid to cool the computer. RGB fans have lighting whose colours can be adjusted."},
+      {q:"What was your greatest satisfaction?",a:"“The PC switched on first time. We were very happy.”"}
+    ],
+    corentinStoryConclusion:"Building a PC is not just about assembling the components: you also have to configure it, install the operating system and check that everything works.",
     restart:"Start the exploration again", resetDone:"The exploration has restarted.",
     altBoard:"Motherboard with CPU, RAM modules, PCIe slots, heatsinks and an M.2 SSD in its packaging",
     altCase:"Back of the case during assembly, showing the power supply and cables",
@@ -345,6 +382,7 @@ function renderMission2(){
   <aside class="side-card"><div>${current?`<div class="target-box"><span class="small">${esc(T().find)}</span><strong>${esc(T().partsData[current.id].name)}</strong></div>`:""}${fact?`<h3>${esc(fact.short)}</h3><p>${esc(fact.fact)}</p>`:""}</div>${listHtml(ITEMS2,found2)}</aside></div>
   ${showQuestion?`<div class="question"><h3>${esc(T().cableQuestion)}</h3><div class="answers">${T().cableAnswers.map((a,i)=>`<button type="button" class="answer ${mission2Done()&&i===1?"correct":""}" data-answer="${i}" ${mission2Done()?"disabled":""}>${esc(a)}</button>`).join("")}</div></div>`:""}
   ${mission2Done()?`<div class="feedback success answer-feedback" role="status"><strong>${esc(T().correctAnswer)}</strong>${esc(T().m2Done)}</div>`:feedback&&showQuestion?`<div class="feedback ${feedback.kind} answer-feedback" role="status"><strong>${esc(T().tryAgain)}</strong>${esc(feedback.text)}</div>`:feedbackHtml()}
+  ${mission2Done()?`<div class="corentin-note"><strong>${esc(T().corentinNoteTitle)}</strong><p>${esc(T().cableCorentinNote)}</p></div>`:""}
   ${mission2Done()?`<div class="next-row"><button type="button" class="accent" id="nextBtn">${esc(T().finalMission)}</button></div>`:""}`;
   document.querySelectorAll("[data-zone]").forEach(b=>b.onclick=()=>{
     const id=b.dataset.zone,target=ITEMS2.find(it=>!found2.has(it.id));
@@ -379,6 +417,7 @@ function renderMission3(){
       ${gpuCostSolved?`<div class="feedback success answer-feedback" role="status"><strong>${esc(T().correctAnswer)}</strong>${esc(T().gpuCostRight)}</div>`:""}
     </div>`:""}
     ${gpuCostSolved?`<div class="final-actions"><button type="button" id="restartBtn">${esc(T().restart)}</button></div>`:""}
+    ${gpuCostSolved?`<section class="corentin-story" id="corentinStory" aria-labelledby="storyTitle"><h2 id="storyTitle">${esc(T().corentinStoryTitle)}</h2><p class="story-intro">${esc(T().corentinStoryIntro)}</p>${T().corentinStory.map(item=>`<details class="story-question"><summary>${esc(item.q)}</summary><div class="story-answer"><p>${esc(item.a)}</p>${item.e?`<p class="explanation">${esc(item.e)}</p>`:""}</div></details>`).join("")}<div class="feedback success story-conclusion">${esc(T().corentinStoryConclusion)}</div></section>`:""}
   </div>`:""}`;
   document.querySelectorAll("[data-part]").forEach(b=>b.onclick=()=>{selectedPart=b.dataset.part;feedback=null;render();});
   document.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>{
