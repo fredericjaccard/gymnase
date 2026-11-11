@@ -1,0 +1,136 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Représentation de l'information — Applications d'informatique</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F; --muted:#6E726B;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);margin:0;padding:32px 16px;min-height:100vh;
+  font-family:'Quattrocento Sans','Segoe UI',system-ui,sans-serif;color:var(--ink)}
+button{font:inherit;cursor:pointer}
+.app{max-width:860px;margin:0 auto}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.14em;font-size:12px;text-transform:uppercase;margin-bottom:4px}
+h1{font-size:24px;font-weight:700}
+.btns{display:flex;gap:8px;flex-shrink:0;padding-top:2px}
+.iconBtn{min-width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+  color:var(--primary);font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px}
+.iconBtn:hover{border-color:var(--primary)}
+.sub{font-size:15px;color:var(--muted);margin:6px 0 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.cardApp{display:block;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:20px;transition:border-color .15s,transform .15s}
+.cardApp:hover{border-color:var(--primary);transform:translateY(-2px)}
+.cardApp .em{font-size:34px;line-height:1;margin-bottom:12px}
+.cardApp h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.cardApp p{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.cardApp .count{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;color:var(--primary);
+  background:var(--primaryLight);border-radius:8px;padding:3px 9px}
+footer{margin-top:32px;text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media(max-width:640px){
+  body{padding:20px 12px}
+  h1{font-size:19px}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div>
+    <div class="kicker" id="kicker">INFORMATIQUE · GYMNASE</div>
+    <h1 id="title"></h1>
+  </div>
+  <div class="btns">
+    <button class="iconBtn" id="langBtn" title="English">EN</button>
+    <button class="iconBtn" id="fsBtn" title="Plein écran">⛶</button>
+  </div>
+</div>
+<div class="sub" id="sub"></div>
+<div id="content"></div>
+<footer><a href="index.html" id="backCats"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+</div>
+
+<script>
+let lang=(function(){try{var c=document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);if(c&&(c[1]==="fr"||c[1]==="en"))return c[1];}catch(e){}try{var s=localStorage.getItem("fj-lang");return(s==="fr"||s==="en")?s:"fr";}catch(e){return"fr";}})();
+const I18N={
+ fr:{
+  kicker:"INFORMATIQUE · GYMNASE",
+  title:"Représentation de l'information",
+  sub:"Binaire, hexadécimal, couleurs et codage : les bases pour comprendre comment l'ordinateur représente les données.",
+  backCats:"← Toutes les catégories",
+  apps:[
+   {file:"conversions_bases.html",em:"🔢",title:"D'une base à l'autre",
+    desc:"Entraînez-vous aux conversions binaire, décimal et hexadécimal, avec soustractions et divisions successives guidées."},
+   {file:"rvb.html",em:"🎨",title:"Synthèse additive RVB",
+    desc:"Réglez l'intensité des trois projecteurs rouge, vert et bleu : la couleur résultante et ses codes décimal, hexadécimal et binaire se mettent à jour en direct."},
+   {file:"revision_quiz.html",em:"📝",title:"Quiz de révision",
+    desc:"Questions générées à l'infini sur le binaire, l'hexadécimal, les couleurs, les tailles, les images, les caractères et AlgoPython."}
+  ],
+  fsTitle:"Plein écran",langBtn:"EN"
+ },
+ en:{
+  kicker:"COMPUTER SCIENCE · HIGH SCHOOL",
+  title:"Representing information",
+  sub:"Binary, hexadecimal, colours and encoding: the basics of how a computer represents data.",
+  backCats:"← All categories",
+  apps:[
+   {file:"conversions_bases.html",em:"🔢",title:"From one base to another",
+    desc:"Practise binary, decimal and hexadecimal conversions, with guided successive subtraction and division methods."},
+   {file:"rvb.html",em:"🎨",title:"RGB additive synthesis",
+    desc:"Adjust the intensity of the red, green and blue spotlights: the resulting color and its decimal, hexadecimal and binary codes update live."},
+   {file:"revision_quiz.html",em:"📝",title:"Revision quiz",
+    desc:"Infinitely generated questions on binary, hexadecimal, colors, file sizes, images, characters and AlgoPython."}
+  ],
+  fsTitle:"Fullscreen",langBtn:"FR"
+ }
+};
+const T=()=>I18N[lang];
+
+function applyLang(){
+  try{localStorage.setItem("fj-lang",lang);document.cookie="fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";}catch(e){}
+  const t=T();
+  document.documentElement.lang=lang;
+  document.getElementById("kicker").textContent=t.kicker;
+  document.getElementById("title").textContent=t.title;
+  document.getElementById("sub").textContent=t.sub;
+  document.getElementById("langBtn").textContent=t.langBtn;
+  document.getElementById("fsBtn").title=t.fsTitle;
+  document.title=t.title;
+  document.getElementById("backCats").textContent=t.backCats;
+  const box=document.getElementById("content");
+  box.innerHTML="";
+  const g=document.createElement("div");g.className="grid";
+  t.apps.forEach(a=>{
+    const c=document.createElement("a");
+    c.className="cardApp";c.href=a.file;
+    c.innerHTML=`<div class="em">${a.em}</div><h2>${a.title}</h2><p>${a.desc}</p>`;
+    g.appendChild(c);
+  });
+  box.appendChild(g);
+}
+document.getElementById("langBtn").onclick=()=>{lang=lang==="fr"?"en":"fr";applyLang();};
+
+const fsBtn=document.getElementById("fsBtn");
+function isFs(){return document.fullscreenElement||document.webkitFullscreenElement;}
+fsBtn.onclick=()=>{
+  const el=document.documentElement;
+  if(isFs()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
+  else{const req=el.requestFullscreen||el.webkitRequestFullscreen;if(req)req.call(el);}
+};
+function fsChange(){fsBtn.style.background=isFs()?"var(--primaryLight)":"var(--card)";}
+document.addEventListener("fullscreenchange",fsChange);
+document.addEventListener("webkitfullscreenchange",fsChange);
+
+applyLang();
+</script>
+</body></html>
