@@ -52,6 +52,7 @@ button:disabled { opacity:.48; cursor:default }
 table { width:100%; table-layout:fixed; border-collapse:collapse; font-variant-numeric:tabular-nums }
 col.rowNumber { width:34px }
 col.numeric { width:17% }
+#grid.two-column col.numeric { width:45% }
 th, td { padding:0; border:1px solid var(--line) }
 th { text-align:center; color:var(--primary); background:var(--primaryLight); font-size:14px }
 thead th { height:27px }
@@ -152,23 +153,47 @@ const I18N = {
     instruction:'Sélectionnez une cellule dans la grille. Pour modifier une cellule, saisissez son contenu dans la barre de formule, puis appuyez sur Entrée ou sur ✓.',
     fs:'Plein écran', fsExit:'Quitter', fsUnavailable:'Le plein écran est indisponible dans ce navigateur.',
     backList:'← Toutes les applications',
-    titles:['Cellules et formats','Réparer le budget','Prédire le recalcul'],
+    titles:['Cellules et formats','Réparer le budget','Prédire le recalcul','Calculer une moyenne','Trouver le meilleur prix'],
     prompts:[
       'Cliquez sur la cellule qui contient le prix unitaire des bouteilles de sirop.',
       'Touchez C6, puis « Étendre la sélection », puis C10. Appliquez le format Nombre à deux décimales.',
       'Corrigez le sous-total en D6. Recopiez sa formule jusqu’à D10, puis calculez le total en D12 et le maximum en D13.',
       'Si la quantité de serviettes passe de 3 à 6, quels résultats vont changer ? Cochez les cellules concernées.',
       'Passez maintenant la quantité en B8 de 3 à 6. Observez le recalcul en D8, D12 et D13.',
-      'Vous avez terminé les trois défis.'
+      'Utilisez MOYENNE pour calculer les ventes par jour sur les cinq jours. Saisissez votre formule en B12. La fonction additionne les ventes et divise le total par le nombre de jours.',
+      'Les ventes du lundi sont corrigées de 18 à 23. Modifiez B6 et observez la nouvelle moyenne en B12.',
+      'Quatre fournisseurs proposent le même paquet de gobelets. Utilisez MIN en B12 pour trouver le prix le plus bas. MIN renvoie la plus petite valeur d’une plage. MAX renvoie la plus grande.',
+      'Le fournisseur D baisse son prix de 2,90 à 2,30. Modifiez B9 et observez le recalcul en B12.',
+      'Vous avez terminé les cinq défis.'
     ],
     hints:[
       'Repérez la colonne « Prix unitaire », puis suivez la ligne des bouteilles de sirop.',
       'Cliquez sur C6, puis sur C10 en maintenant Maj. Vous pouvez aussi saisir C6:C10 dans la zone d’adresse et valider avec ✓ ou Entrée.',
       'Multipliez la quantité par le prix unitaire de la même ligne. Utilisez SOMME et MAX sur les cinq sous-totaux.',
       'Comparez le nouveau sous-total des serviettes à celui des bouteilles de sirop, qui vaut 13,00.',
-      'Sélectionnez B8, saisissez 6 dans la barre de formule et validez.'
+      'Sélectionnez B8, saisissez 6 dans la barre de formule et validez.',
+      'Indiquez les cinq ventes dans une seule plage, de B6 à B10. Exemple de syntaxe sur une autre plage : =MOYENNE(C2:C4).',
+      'Sélectionnez B6, saisissez 23 dans la barre de formule et validez.',
+      'Indiquez les quatre prix dans une seule plage, de B6 à B9. Exemple sur une autre plage : =MIN(C2:C4).',
+      'Sélectionnez B9, saisissez 2,30 dans la barre de formule et validez.'
     ],
     items:['Paquets de gobelets','Bouteilles de sirop','Paquets de serviettes','Pailles réutilisables','Sacs en papier'],
+    priceHeaders:['Fournisseur','Prix par paquet'],
+    supplier:letter=>'Fournisseur '+letter, priceResult:'Prix le plus bas', priceSheet:'Offres des fournisseurs',
+    minFunction:'En B12, utilisez MIN pour trouver le prix le plus bas.',
+    minRange:'Vérifiez que la plage contient les quatre prix, de B6 à B9.',
+    minRight:'Le prix le plus bas est 2,45 chez le fournisseur B.',
+    minInput:'Saisissez 2,30 en B9, puis validez.',
+    minDone:'Le prix minimum passe de 2,45 à 2,30. Le fournisseur D propose désormais le prix le plus bas.',
+    salesHeaders:['Jour','Boissons vendues'],
+    days:['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],
+    salesAverage:'Moyenne par jour', salesSheet:'Ventes de boissons du stand',
+    budgetDone:'Vous avez vérifié le recalcul du budget.',
+    averageFunction:'En B12, utilisez la fonction MOYENNE. SOMME donnerait le total des ventes.',
+    averageRange:'Vérifiez que la plage contient les ventes des cinq jours, de B6 à B10.',
+    averageRight:'120 boissons en 5 jours donnent une moyenne de 24 boissons par jour.',
+    averageInput:'Saisissez le nombre 23 en B6, puis validez.',
+    averageDone:'Le total passe à 125 boissons sur 5 jours. La moyenne se recalcule et passe de 24 à 25 boissons par jour.',
     headers:['Article','Quantité','Prix unitaire','Sous-total'],
     total:'Total du budget', max:'Montant le plus élevé', sheet:'Grille du budget du stand',
     address:'Adresse de cellule ou de plage', addressCommit:'Valider l’adresse', extendRange:'Étendre la sélection', formula:'Barre de formule', commit:'Valider la saisie',
@@ -199,23 +224,47 @@ const I18N = {
     instruction:'Select a cell in the grid. To edit a cell, type in the formula bar, then press Enter or ✓.',
     fs:'Fullscreen', fsExit:'Exit', fsUnavailable:'Fullscreen is unavailable in this browser.',
     backList:'← All applications',
-    titles:['Cells and formats','Fix the budget','Predict the changes'],
+    titles:['Cells and formats','Fix the budget','Predict the changes','Calculate an average','Find the best price'],
     prompts:[
       'Click the cell containing the unit price of the syrup bottles.',
       'Select C6, then “Extend selection”, then C10. Apply the Number format with two decimal places.',
       'Correct the subtotal in D6. Fill its formula down to D10, then calculate the total in D12 and the maximum in D13.',
       'If the number of packs of napkins goes from 3 to 6, which results will change? Tick the relevant cells.',
       'Now change the quantity in B8 from 3 to 6. Watch D8, D12 and D13 recalculate.',
-      'You have completed all three challenges.'
+      'Use AVERAGE to calculate the daily sales across all five days. Enter your formula in B12. The function adds the sales and divides the total by the number of days.',
+      'Monday’s sales are corrected from 18 to 23. Update B6 and watch the average in B12 recalculate.',
+      'Four suppliers offer the same pack of cups. Use MIN in B12 to find the lowest price. MIN returns the smallest value in a range. MAX returns the largest.',
+      'Supplier D lowers its price from 2.90 to 2.30. Update B9 and watch B12 recalculate.',
+      'You have completed all five challenges.'
     ],
     hints:[
       'Find the Unit price column, then follow the row for the syrup bottles.',
       'Click C6, then hold Shift and click C10. You can also type C6:C10 in the address box and confirm with ✓ or Enter.',
       'Multiply the quantity by the unit price from the same row. Use SUM and MAX on the five subtotals.',
       'Compare the new subtotal for napkins with the subtotal for syrup bottles, which is 13.00.',
-      'Select B8, type 6 in the formula bar and press Enter.'
+      'Select B8, type 6 in the formula bar and press Enter.',
+      'Include all five sales figures in one range, from B6 to B10. For another range, the syntax would be =AVERAGE(C2:C4).',
+      'Select B6, type 23 in the formula bar and confirm.',
+      'Include all four prices in one range, from B6 to B9. For another range, the syntax would be =MIN(C2:C4).',
+      'Select B9, type 2.30 in the formula bar and confirm.'
     ],
     items:['Packs of cups','Syrup bottles','Packs of napkins','Reusable straws','Paper bags'],
+    priceHeaders:['Supplier','Price per pack'],
+    supplier:letter=>'Supplier '+letter, priceResult:'Lowest price', priceSheet:'Supplier quotes',
+    minFunction:'In B12, use MIN to find the lowest price.',
+    minRange:'Make sure the range contains all four prices, from B6 to B9.',
+    minRight:'Supplier B has the lowest price at 2.45.',
+    minInput:'Enter 2.30 in B9, then confirm the entry.',
+    minDone:'The minimum price falls from 2.45 to 2.30. Supplier D now offers the lowest price.',
+    salesHeaders:['Day','Drinks sold'],
+    days:['Monday','Tuesday','Wednesday','Thursday','Friday'],
+    salesAverage:'Daily average', salesSheet:'Drink sales at the stand',
+    budgetDone:'You have checked how the budget recalculates.',
+    averageFunction:'In B12, use AVERAGE. SUM would give you the total sales.',
+    averageRange:'Make sure the range contains the sales figures for all five days, from B6 to B10.',
+    averageRight:'120 drinks sold over 5 days gives an average of 24 drinks per day.',
+    averageInput:'Enter the number 23 in B6, then confirm the entry.',
+    averageDone:'The total rises to 125 drinks over 5 days. The average recalculates from 24 to 25 drinks per day.',
     headers:['Item','Quantity','Unit price','Subtotal'],
     total:'Budget total', max:'Largest expense', sheet:'Stand budget grid',
     address:'Cell or range address', addressCommit:'Confirm address', extendRange:'Extend selection', formula:'Formula bar', commit:'Confirm entry',
@@ -246,6 +295,17 @@ const rowNumbers = [5,6,7,8,9,10,11,12,13];
 const itemRows = rowNumbers.slice(1,6);
 const prices = [2.5,6.5,1.2,3.8,1.4];
 const quantities = [4,2,3,2,5];
+const dailySales = [18,24,21,27,30];
+const supplierPrices = [2.8,2.45,2.65,2.9];
+const salesStart = 5;
+const pricesStart = 7;
+const finishedPhase = 9;
+const phaseSteps = [0,0,1,2,2,3,3,4,4,4];
+const isSales = () => phase >= salesStart && phase < pricesStart;
+const isPrices = () => phase >= pricesStart;
+const isTwoColumn = () => phase >= salesStart;
+const visibleCols = () => isTwoColumn() ? cols.slice(0,2) : cols;
+const lastRow = () => isTwoColumn() || phase < 2 ? 12 : 13;
 const T = () => I18N[lang];
 let lang = 'fr';
 try {
@@ -279,8 +339,11 @@ function parseFormula(input) {
   const text = String(input ?? '').toUpperCase().replace(/\s+/g,'');
   const product = text.match(/^=([A-D][5-9]|[A-D]1[0-3])\*([A-D][5-9]|[A-D]1[0-3])$/);
   if (product) return {kind:'product', refs:product.slice(1)};
-  const aggregate = text.match(/^=(SUM|SOMME|MAX)\(([A-D](?:[5-9]|1[0-3])):([A-D](?:[5-9]|1[0-3]))\)$/);
-  if (aggregate) return {kind:aggregate[1] === 'MAX' ? 'max' : 'sum', refs:aggregate.slice(2)};
+  const aggregate = text.match(/^=(SUM|SOMME|MAX|MIN|AVERAGE|MOYENNE)\(([A-D](?:[5-9]|1[0-3])):([A-D](?:[5-9]|1[0-3]))\)$/);
+  if (aggregate) {
+    const kinds = {SUM:'sum',SOMME:'sum',MAX:'max',MIN:'min',AVERAGE:'average',MOYENNE:'average'};
+    return {kind:kinds[aggregate[1]], refs:aggregate.slice(2)};
+  }
   return null;
 }
 function cellRange(first, last) {
@@ -301,7 +364,13 @@ function calculate(id, trail = []) {
   if (values.some(Number.isNaN)) return NaN;
   if (expr.kind === 'product') return values[0] * values[1];
   if (expr.kind === 'sum') return values.reduce((sum,value) => sum + value,0);
-  return Math.max(0,...values.filter(value => value !== null));
+  if (expr.kind === 'average') {
+    const numbers = values.filter(value => value !== null);
+    return numbers.length ? numbers.reduce((sum,value) => sum + value,0) / numbers.length : NaN;
+  }
+  const numbers = values.filter(value => value !== null);
+  if (!numbers.length) return 0;
+  return expr.kind === 'min' ? Math.min(...numbers) : Math.max(...numbers);
 }
 function number(value, digits) {
   if (digits === undefined) return String(value).replace('.', lang === 'fr' ? ',' : '.');
@@ -311,6 +380,19 @@ function number(value, digits) {
 }
 function staticLabel(id) {
   const row = Number(id.slice(1));
+  if (isPrices()) {
+    if (row === 5) return T().priceHeaders[cols.indexOf(id[0])];
+    if (id[0] !== 'A') return '';
+    const supplier = cols[row-6];
+    if (supplier) return T().supplier(supplier);
+    return row === 12 ? T().priceResult : '';
+  }
+  if (isSales()) {
+    if (row === 5) return T().salesHeaders[cols.indexOf(id[0])];
+    if (id[0] !== 'A') return '';
+    if (itemRows.includes(row)) return T().days[row-6];
+    return row === 12 ? T().salesAverage : '';
+  }
   if (row === 5) return T().headers[cols.indexOf(id[0])];
   if (id[0] !== 'A') return '';
   if (itemRows.includes(row)) return T().items[row-6];
@@ -328,13 +410,19 @@ function display(id) {
 function rawDisplay(id) {
   const raw = entries[id];
   if (typeof raw === 'number') return number(raw);
-  if (typeof raw === 'string') return raw.replace(/^=(SUM|SOMME)(?=\s*\()/i,lang === 'fr' ? '=SOMME' : '=SUM');
+  if (typeof raw === 'string') return raw
+    .replace(/^=(SUM|SOMME)(?=\s*\()/i,lang === 'fr' ? '=SOMME' : '=SUM')
+    .replace(/^=(AVERAGE|MOYENNE)(?=\s*\()/i,lang === 'fr' ? '=MOYENNE' : '=AVERAGE');
   return staticLabel(id);
 }
 function canEdit(id) {
   if (waiting) return false;
   if (phase === 2) return id === 'D6' || id === 'D12' || id === 'D13' ||
     itemRows.slice(1).some(row => id === 'D'+row);
+  if (phase === salesStart) return id === 'B12';
+  if (phase === salesStart + 1) return id === 'B6';
+  if (phase === pricesStart) return id === 'B12';
+  if (phase === pricesStart + 1) return id === 'B9';
   return phase === 4 && id === 'B8';
 }
 function setFeedback(key, error = false, detail) {
@@ -383,14 +471,20 @@ function renderSelection() {
 function renderGrid() {
   const rows = $('rows');
   rows.replaceChildren();
+  $('grid').classList.toggle('two-column',isTwoColumn());
+  const sheetLabel = isPrices() ? T().priceSheet : isSales() ? T().salesSheet : T().sheet;
+  $('sheet').setAttribute('aria-label',sheetLabel);
+  for (const element of $('grid').querySelectorAll('col:nth-child(n+4), thead th:nth-child(n+4)')) {
+    element.hidden = isTwoColumn();
+  }
   for (const row of rowNumbers) {
-    if (row === 13 && phase < 2) continue;
+    if (row > lastRow()) continue;
     const tr = rows.insertRow();
     const heading = document.createElement('th');
     heading.scope = 'row';
     heading.textContent = row;
     tr.append(heading);
-    for (const col of cols) {
+    for (const col of visibleCols()) {
       const id = col+row;
       const td = tr.insertCell();
       td.classList.toggle('number',col !== 'A' && row !== 5);
@@ -417,26 +511,27 @@ function refreshValues() {
   }
 }
 function render() {
-  const step = Math.min(2,phase < 2 ? 0 : phase === 2 ? 1 : 2);
+  const step = phaseSteps[phase];
+  const finished = phase === finishedPhase;
   $('progress').replaceChildren(...T().titles.map((title,i) => {
     const item = document.createElement('li');
     item.textContent = (i+1)+'. '+title;
-    item.className = i < step || phase === 5 || (waiting && i === step)
+    item.className = i < step || finished || (waiting && i === step)
       ? 'complete' : i === step ? 'current' : '';
-    if (i === step && phase !== 5) item.setAttribute('aria-current','step');
+    if (i === step && !finished) item.setAttribute('aria-current','step');
     return item;
   }));
   $('taskTitle').textContent = T().titles[step];
-  $('prompt').textContent = T().prompts[phase];
+  $('prompt').textContent = phase === 4 && waiting ? T().budgetDone : T().prompts[phase];
   $('prediction').hidden = phase !== 3;
   $('formatTools').hidden = phase !== 1 || waiting;
   $('addressCommit').hidden = $('formatTools').hidden;
   $('fillTools').hidden = phase !== 2 || waiting;
-  $('check').hidden = waiting || phase === 5;
-  $('hint').hidden = waiting || phase === 5;
-  $('next').hidden = !waiting && phase !== 5;
-  $('next').textContent = phase === 5 ? T().restart : T().next;
-  $('hintText').hidden = !hintVisible || waiting || phase === 5;
+  $('check').hidden = waiting || finished;
+  $('hint').hidden = waiting || finished;
+  $('next').hidden = !waiting && !finished;
+  $('next').textContent = finished ? T().restart : T().next;
+  $('hintText').hidden = !hintVisible || waiting || finished;
   $('hintText').textContent = T().hints[phase] || '';
   $('hint').setAttribute('aria-expanded',String(!$('hintText').hidden));
   renderGrid();
@@ -482,9 +577,10 @@ function validProduct(row) {
   const expr = parseFormula(entries['D'+row]);
   return expr?.kind === 'product' && [...expr.refs].sort().join(',') === 'B'+row+',C'+row;
 }
-function validAggregate(id, kind) {
+function validAggregate(id, kind, col = 'D', endRow = 10) {
   const expr = parseFormula(entries[id]);
-  return expr?.kind === kind && cellRange(...expr.refs).join(',') === itemRows.map(row => 'D'+row).join(',');
+  return expr?.kind === kind &&
+    cellRange(...expr.refs).join(',') === cellRange(col+'6',col+endRow).join(',');
 }
 function check() {
   commit();
@@ -517,9 +613,34 @@ function check() {
     movePhase(4,'B8');
     return setFeedback('predictRight');
   }
-  if (entries.B8 !== 6) return setFeedback('quantityWrong',true);
-  movePhase(5,'B8');
-  setFeedback('success');
+  if (phase === 4) {
+    if (entries.B8 !== 6) return setFeedback('quantityWrong',true);
+    waiting = true;
+    render();
+    return setFeedback('success');
+  }
+  if (phase === salesStart) {
+    if (parseFormula(entries.B12)?.kind !== 'average') return setFeedback('averageFunction',true);
+    if (!validAggregate('B12','average','B')) return setFeedback('averageRange',true);
+    movePhase(salesStart + 1,'B6');
+    return setFeedback('averageRight');
+  }
+  if (phase === salesStart + 1) {
+    if (entries.B6 !== 23) return setFeedback('averageInput',true);
+    waiting = true;
+    active = anchor = 'B12';
+    render();
+    return setFeedback('averageDone');
+  }
+  if (phase === pricesStart) {
+    if (parseFormula(entries.B12)?.kind !== 'min') return setFeedback('minFunction',true);
+    if (!validAggregate('B12','min','B',9)) return setFeedback('minRange',true);
+    movePhase(pricesStart + 1,'B9');
+    return setFeedback('minRight');
+  }
+  if (entries.B9 !== 2.3) return setFeedback('minInput',true);
+  movePhase(finishedPhase,'B12');
+  setFeedback('minDone');
 }
 $('rows').addEventListener('click',event => {
   const cell = event.target.closest('[data-cell]');
@@ -536,9 +657,10 @@ $('rows').addEventListener('keydown',event => {
   const move = moves[event.key];
   if (move) {
     event.preventDefault();
-    const col = cols[cols.indexOf(active[0])+move[0]];
+    const columns = visibleCols();
+    const col = columns[columns.indexOf(active[0])+move[0]];
     const row = Number(active.slice(1))+move[1];
-    if (col && row >= 5 && row <= (phase < 2 ? 12 : 13)) {
+    if (col && row >= 5 && row <= lastRow()) {
       selectCell(col+row,event.shiftKey || extendOnNextCell,true);
     }
   }
@@ -562,7 +684,7 @@ $('rows').addEventListener('pointerdown',event => {
 });
 function selectAddress() {
   const [first,last = first,...extra] = $('address').value.toUpperCase().replace(/\s/g,'').split(':');
-  const valid = id => /^[A-D](?:[5-9]|1[0-3])$/.test(id) && (phase >= 2 || !id.endsWith('13'));
+  const valid = id => /^[A-D](?:[5-9]|1[0-3])$/.test(id) && visibleCols().includes(id[0]) && Number(id.slice(1)) <= lastRow();
   if (extra.length || !valid(first) || !valid(last)) return setFeedback('addressWrong',true);
   commit();
   anchor = first;
@@ -615,6 +737,14 @@ $('next').onclick = () => {
     movePhase(2,'D6');
   } else if (phase === 2) {
     movePhase(3,'D8');
+  } else if (phase === 4) {
+    entries = Object.fromEntries(itemRows.map((row,i) => ['B'+row,dailySales[i]]));
+    formats = {};
+    movePhase(salesStart,'B12');
+  } else if (phase === salesStart + 1) {
+    entries = Object.fromEntries(supplierPrices.map((price,i) => ['B'+(i+6),price]));
+    formats = {B6:2,B7:2,B8:2,B9:2,B12:2};
+    movePhase(pricesStart,'B12');
   } else {
     reset();
   }
