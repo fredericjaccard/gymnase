@@ -45,7 +45,8 @@ button:disabled { opacity:.48; cursor:default }
 .tool input[readonly] { background:var(--card) }
 #address { flex:0 0 87px; font-family:monospace; font-size:14px }
 .fx { font-weight:700; font-style:italic; color:var(--primary) }
-#commit { flex-shrink:0 }
+#addressCommit, #commit { flex:0 0 44px; padding:0 }
+#extendRange[aria-pressed="true"] { background:var(--primary); color:var(--bg) }
 #formatTools, #fillTools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px }
 #formatChoice { max-width:100% }
 table { width:100%; table-layout:fixed; border-collapse:collapse; font-variant-numeric:tabular-nums }
@@ -104,12 +105,14 @@ footer a:hover { text-decoration:underline }
 <div class="workspace">
   <section class="sheet" id="sheet">
     <div class="tool">
-      <input id="address" autocomplete="off" spellcheck="false" maxlength="7">
+      <input id="address" autocomplete="off" spellcheck="false" maxlength="7" autocapitalize="characters" enterkeyhint="go">
+      <button id="addressCommit" type="button" hidden>✓</button>
       <span class="fx" aria-hidden="true">ƒx</span>
       <input id="formula" autocomplete="off" spellcheck="false" maxlength="60">
       <button id="commit" type="button" hidden>✓</button>
     </div>
     <div id="formatTools" hidden>
+      <button id="extendRange" type="button" aria-pressed="false"></button>
       <select id="formatChoice"></select>
       <button id="formatApply" type="button"></button>
     </div>
@@ -152,7 +155,7 @@ const I18N = {
     titles:['Cellules et formats','Réparer le budget','Prédire le recalcul'],
     prompts:[
       'Cliquez sur la cellule qui contient le prix unitaire des bouteilles de sirop.',
-      'Sélectionnez la plage C6:C10. Appliquez le format Nombre à deux décimales.',
+      'Touchez C6, puis « Étendre la sélection », puis C10. Appliquez le format Nombre à deux décimales.',
       'Corrigez le sous-total en D6. Recopiez sa formule jusqu’à D10, puis calculez le total en D12 et le maximum en D13.',
       'Si la quantité de serviettes passe de 3 à 6, quels résultats vont changer ? Cochez les cellules concernées.',
       'Passez maintenant la quantité en B8 de 3 à 6. Observez le recalcul en D8, D12 et D13.',
@@ -160,7 +163,7 @@ const I18N = {
     ],
     hints:[
       'Repérez la colonne « Prix unitaire », puis suivez la ligne des bouteilles de sirop.',
-      'Cliquez sur C6, puis sur C10 en maintenant Maj. Vous pouvez aussi saisir C6:C10 dans la zone d’adresse et appuyer sur Entrée.',
+      'Cliquez sur C6, puis sur C10 en maintenant Maj. Vous pouvez aussi saisir C6:C10 dans la zone d’adresse et valider avec ✓ ou Entrée.',
       'Multipliez la quantité par le prix unitaire de la même ligne. Utilisez SOMME et MAX sur les cinq sous-totaux.',
       'Comparez le nouveau sous-total des serviettes à celui des bouteilles de sirop, qui vaut 13,00.',
       'Sélectionnez B8, saisissez 6 dans la barre de formule et validez.'
@@ -168,7 +171,7 @@ const I18N = {
     items:['Paquets de gobelets','Bouteilles de sirop','Paquets de serviettes','Pailles réutilisables','Sacs en papier'],
     headers:['Article','Quantité','Prix unitaire','Sous-total'],
     total:'Total du budget', max:'Montant le plus élevé', sheet:'Grille du budget du stand',
-    address:'Adresse de cellule ou de plage', formula:'Barre de formule', commit:'Valider la saisie',
+    address:'Adresse de cellule ou de plage', addressCommit:'Valider l’adresse', extendRange:'Étendre la sélection', formula:'Barre de formule', commit:'Valider la saisie',
     format:'Format de nombre', general:'Standard', zero:'Nombre · 0 décimale', two:'Nombre · 2 décimales',
     apply:'Appliquer', fill:'Recopier D6 jusqu’à D10', handle:'Poignée de recopie', check:'Vérifier',
     hint:'Indice', next:'Défi suivant', restart:'Recommencer',
@@ -199,7 +202,7 @@ const I18N = {
     titles:['Cells and formats','Fix the budget','Predict the changes'],
     prompts:[
       'Click the cell containing the unit price of the syrup bottles.',
-      'Select the range C6:C10. Apply the Number format with two decimal places.',
+      'Select C6, then “Extend selection”, then C10. Apply the Number format with two decimal places.',
       'Correct the subtotal in D6. Fill its formula down to D10, then calculate the total in D12 and the maximum in D13.',
       'If the number of packs of napkins goes from 3 to 6, which results will change? Tick the relevant cells.',
       'Now change the quantity in B8 from 3 to 6. Watch D8, D12 and D13 recalculate.',
@@ -207,7 +210,7 @@ const I18N = {
     ],
     hints:[
       'Find the Unit price column, then follow the row for the syrup bottles.',
-      'Click C6, then hold Shift and click C10. You can also type C6:C10 in the address box and press Enter.',
+      'Click C6, then hold Shift and click C10. You can also type C6:C10 in the address box and confirm with ✓ or Enter.',
       'Multiply the quantity by the unit price from the same row. Use SUM and MAX on the five subtotals.',
       'Compare the new subtotal for napkins with the subtotal for syrup bottles, which is 13.00.',
       'Select B8, type 6 in the formula bar and press Enter.'
@@ -215,7 +218,7 @@ const I18N = {
     items:['Packs of cups','Syrup bottles','Packs of napkins','Reusable straws','Paper bags'],
     headers:['Item','Quantity','Unit price','Subtotal'],
     total:'Budget total', max:'Largest expense', sheet:'Stand budget grid',
-    address:'Cell or range address', formula:'Formula bar', commit:'Confirm entry',
+    address:'Cell or range address', addressCommit:'Confirm address', extendRange:'Extend selection', formula:'Formula bar', commit:'Confirm entry',
     format:'Number format', general:'General', zero:'Number · 0 decimal places', two:'Number · 2 decimal places',
     apply:'Apply', fill:'Fill D6 down to D10', handle:'Fill handle', check:'Check',
     hint:'Hint', next:'Next challenge', restart:'Start again',
@@ -251,9 +254,11 @@ try {
   if (saved === 'fr' || saved === 'en') lang = saved;
 } catch {}
 let phase, waiting, active, anchor, entries, formats, fillUsed, feedback, hintVisible, formatChoice;
+let extendOnNextCell = false;
 const predictions = [...$('prediction').querySelectorAll('input')];
 
 function reset() {
+  extendOnNextCell = false;
   phase = 0;
   waiting = false;
   active = anchor = 'A5';
@@ -348,11 +353,13 @@ function selectCell(id, extend = false, focus = false) {
   commit(false);
   if (!extend) anchor = id;
   active = id;
+  extendOnNextCell = false;
   renderSelection();
   if (focus) $('rows').querySelector('[data-cell="'+id+'"]')?.focus();
 }
 function renderSelection() {
   const selected = new Set(cellRange(anchor,active));
+  $('extendRange').setAttribute('aria-pressed',String(extendOnNextCell));
   $('address').value = anchor === active ? active : anchor+':'+active;
   $('formula').value = rawDisplay(active);
   $('formula').readOnly = !canEdit(active);
@@ -423,6 +430,7 @@ function render() {
   $('prompt').textContent = T().prompts[phase];
   $('prediction').hidden = phase !== 3;
   $('formatTools').hidden = phase !== 1 || waiting;
+  $('addressCommit').hidden = $('formatTools').hidden;
   $('fillTools').hidden = phase !== 2 || waiting;
   $('check').hidden = waiting || phase === 5;
   $('hint').hidden = waiting || phase === 5;
@@ -444,6 +452,7 @@ function commit(updateBar = true) {
   refreshValues();
 }
 function movePhase(target, id) {
+  extendOnNextCell = false;
   phase = target;
   waiting = false;
   active = anchor = id;
@@ -514,7 +523,7 @@ function check() {
 }
 $('rows').addEventListener('click',event => {
   const cell = event.target.closest('[data-cell]');
-  if (cell) selectCell(cell.dataset.cell,event.shiftKey,true);
+  if (cell) selectCell(cell.dataset.cell,event.shiftKey || extendOnNextCell,true);
 });
 $('rows').addEventListener('dblclick',event => {
   const cell = event.target.closest('[data-cell]');
@@ -530,7 +539,7 @@ $('rows').addEventListener('keydown',event => {
     const col = cols[cols.indexOf(active[0])+move[0]];
     const row = Number(active.slice(1))+move[1];
     if (col && row >= 5 && row <= (phase < 2 ? 12 : 13)) {
-      selectCell(col+row,event.shiftKey,true);
+      selectCell(col+row,event.shiftKey || extendOnNextCell,true);
     }
   }
   if (event.key === 'F2' && canEdit(active)) {
@@ -551,16 +560,29 @@ $('rows').addEventListener('pointerdown',event => {
     if (cell?.dataset.cell.startsWith('D') && row >= 7 && row <= 10) fillDown(row);
   },{once:true});
 });
-$('address').addEventListener('keydown',event => {
-  if (event.key !== 'Enter') return;
+function selectAddress() {
   const [first,last = first,...extra] = $('address').value.toUpperCase().replace(/\s/g,'').split(':');
   const valid = id => /^[A-D](?:[5-9]|1[0-3])$/.test(id) && (phase >= 2 || !id.endsWith('13'));
   if (extra.length || !valid(first) || !valid(last)) return setFeedback('addressWrong',true);
   commit();
   anchor = first;
   active = last;
+  extendOnNextCell = false;
   renderSelection();
+  if (feedback?.key === 'addressWrong') {
+    feedback = null;
+    renderFeedback();
+  }
+}
+$('address').addEventListener('keydown',event => {
+  if (event.key === 'Enter') selectAddress();
 });
+$('addressCommit').onclick = selectAddress;
+$('extendRange').onclick = () => {
+  if (!extendOnNextCell) anchor = active;
+  extendOnNextCell = !extendOnNextCell;
+  renderSelection();
+};
 $('formula').addEventListener('keydown',event => {
   if (event.key === 'Enter') commit();
   if (event.key === 'Escape') $('formula').value = rawDisplay(active);
@@ -630,12 +652,13 @@ function applyLang() {
   document.documentElement.lang = lang;
   document.title = T().title+' · Gymnase — Frédéric Jaccard';
   document.querySelector('meta[name="description"]').content = T().desc;
-  for (const id of ['kicker','title','instruction','check','hint','fill']) {
+  for (const id of ['kicker','title','instruction','check','hint','fill','extendRange']) {
     $(id).textContent = T()[id];
   }
   $('backLink').textContent = T().backList;
   $('langBtn').textContent = lang === 'fr' ? 'English' : 'Français';
-  for (const id of ['sheet','address','formula','commit']) $(id).setAttribute('aria-label',T()[id]);
+  for (const id of ['sheet','address','addressCommit','formula','commit']) $(id).setAttribute('aria-label',T()[id]);
+  $('addressCommit').title = T().addressCommit;
   $('prediction').setAttribute('aria-label',T().prompts[3]);
   $('formatApply').textContent = T().apply;
   $('formatChoice').setAttribute('aria-label',T().format);
