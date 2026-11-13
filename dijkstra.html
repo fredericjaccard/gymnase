@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Suivez deux démonstrations de Dijkstra et entraînez-vous à trouver les plus courts chemins dans cinq exercices.">
+<title>Dijkstra : trouver le plus court chemin · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --card: #F7F6F2;
+  --primary: #155E4C;
+  --primaryLight: #E3F0EA;
+  --accent: #D96A08;
+  --accentLight: #FDEBD8;
+  --line: #D8D5CB;
+  --ink: #20241F;
+  --muted: #6E726B;
+  --error: #C84B31;
+}
+*, *::before, *::after { box-sizing: border-box }
+[hidden] { display: none !important }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.45 "Quattrocento Sans", sans-serif;
+}
+.page { max-width: 1340px; margin: auto; padding: 28px 24px 20px }
+h1, h2, h3, p { margin: 0 }
+h1, h2, h3 { color: var(--primary); line-height: 1.18 }
+h1 { font-size: clamp(27px, 4vw, 40px) }
+h2 { font-size: clamp(23px, 2.7vw, 30px) }
+h3 { font-size: 20px }
+p { max-width: 76ch }
+.masthead, .header-actions, .actions, #navigation, .legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.masthead { justify-content: space-between; gap: 12px; margin-bottom: 18px }
+.header-actions { margin-left: auto }
+.kicker {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+button, input, select { min-height: 44px; font: inherit }
+button, select, input {
+  border: 1px solid var(--primary);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--ink);
+}
+button {
+  padding: 7px 12px;
+  background: var(--card);
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--primaryLight) }
+button:disabled { cursor: default }
+button:disabled:not(.correct) { color: var(--muted); border-color: var(--line) }
+button.active { background: var(--primary); color: var(--bg) }
+button.active:hover { color: var(--primary) }
+button.primary:not(:disabled) { background: var(--accentLight); color: var(--ink); border-color: var(--accent) }
+button.primary:hover:not(:disabled) { border-color: var(--ink) }
+button.correct { background: var(--primaryLight); color: var(--primary) }
+button.incorrect { background: var(--accentLight); color: var(--ink); border-color: var(--error) }
+button.secondary { border-color: var(--line) }
+.vertex-choice { min-width: 44px }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px }
+.instruction {
+  max-width: none;
+  padding: 11px 15px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primaryLight);
+}
+#navigation { margin-bottom: 15px }
+#navigation button { font-size: 15px }
+.badge {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--primaryLight);
+  color: var(--primary);
+  font-size: 13px;
+}
+.screen, .graph-card, .quiz-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--card);
+}
+.screen { padding: clamp(13px, 2.2vw, 24px) }
+.screen-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+.screen-heading p { margin-top: 6px }
+.screen-heading button { flex-shrink: 0 }
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(12px, 2.1vw, 24px);
+  align-items: start;
+  margin-top: 16px;
+}
+.worksheet { display: grid; gap: 12px; min-width: 0; align-content: start }
+.graph-card { background: var(--bg); padding: 10px 12px }
+.graph-card svg { width: 100%; height: auto; display: block; overflow: visible }
+.graph-card .actions { margin-top: 6px }
+.graph-card details { margin-top: 8px }
+.edge { stroke: var(--muted); stroke-width: 1.4px; vector-effect: non-scaling-stroke }
+.edge.examined { stroke: var(--accent); stroke-width: 2.8px; stroke-dasharray: 7 4 }
+.edge.route { stroke: var(--primary); stroke-width: 3.7px }
+.weight, .vertex-name, .node-distance {
+  fill: var(--ink);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.weight, .node-distance {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 6px;
+  stroke-linejoin: round;
+}
+.weight { font-size: 20px; font-weight: 700 }
+.node-distance { font-size: 18px; fill: var(--primary) }
+.vertex-name { font-size: 24px; font-weight: 700 }
+.cities .vertex-name { font-size: 20px }
+.cities [data-node="Lausanne"] .vertex-name { font-size: 17px }
+.cities [data-node="Fribourg"] .vertex-name { font-size: 18px }
+.node-shape { fill: var(--card); stroke: var(--muted); stroke-width: 1.5px; vector-effect: non-scaling-stroke }
+.hit-area { fill: transparent; stroke: none }
+.vertex[role="button"] { cursor: pointer }
+.vertex[role="button"]:hover .node-shape, .vertex[role="button"]:focus .node-shape {
+  stroke: var(--accent);
+  stroke-width: 3px;
+}
+.vertex.fixed .node-shape { fill: var(--primary); stroke: var(--primary) }
+.vertex.fixed .vertex-name { fill: var(--bg) }
+.vertex.route-vertex:not(.fixed) .node-shape { fill: var(--primaryLight); stroke: var(--primary); stroke-width: 2.5px }
+.vertex.current .node-shape { stroke: var(--accent); stroke-width: 3.4px }
+.vertex.goal:not(.current) .node-shape { stroke-width: 2.6px }
+.legend { gap: 7px 12px; padding: 8px 0 4px; margin: 0; list-style: none; font-size: 14px }
+.legend li { display: flex; gap: 6px; align-items: center }
+.key { display: inline-block; width: 18px; height: 14px; flex: none }
+.key.current, .key.fixed { width: 13px; height: 13px; border-radius: 50%; background: var(--primary) }
+.key.current { border: 2px solid var(--accent) }
+.key.examined { height: 0; border-top: 2px dashed var(--accent) }
+.key.route { height: 0; border-top: 3px solid var(--primary) }
+.edge-list { padding-left: 20px; columns: 2; column-gap: 24px; margin: 0 0 8px; font-size: 15px }
+.edge-list li { break-inside: avoid }
+details { min-width: 0 }
+summary {
+  color: var(--primary);
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  font-weight: 700;
+}
+.guide-notes { margin: 12px 0 0 }
+.guide-notes h3 { margin-bottom: 6px }
+.guide-notes p + p, .explanation p + p { margin-top: 8px }
+.demo-control { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin-top: 14px }
+.demo-control p { font-weight: 700; color: var(--primary) }
+.step-indicator { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums }
+.feedback, .result {
+  padding: 10px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 9px;
+  background: var(--primaryLight);
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+.feedback.error { border-color: var(--error); background: var(--accentLight); color: var(--ink) }
+.feedback p + p, .result p + p { margin-top: 5px }
+#fullscreen-message { margin-bottom: 10px }
+.result strong { font-size: 1.06em }
+.table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 9px }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--bg) }
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  text-align: center;
+  padding: 6px 4px;
+  font-variant-numeric: tabular-nums;
+}
+tr:last-child > * { border-bottom: 0 }
+tr > :last-child { border-right: 0 }
+thead th { background: var(--primary); color: var(--bg); font-weight: 700 }
+thead th:first-child { width: 17%; min-width: 46px }
+tbody th { font-weight: 700; color: var(--primary); overflow-wrap: anywhere }
+tr.latest th { background: var(--primaryLight) }
+tr.latest td.improved { background: var(--primaryLight); font-weight: 700 }
+tr.draft th, tr.draft td.pending { background: var(--accentLight); font-weight: 700 }
+.cell-value { white-space: nowrap }
+.fixed-mark { color: var(--primary); font-size: .8em; margin-left: 3px }
+.comparisons { display: grid; gap: 5px; list-style: none; padding: 0; margin: 0 }
+.comparisons li { padding: 6px 8px; border-left: 3px solid var(--line); background: var(--bg) }
+.comparisons li.improved { border-color: var(--primary) }
+.guide-form, .route-form { display: grid; gap: 10px }
+.guide-fields { display: grid; gap: 6px }
+.entry-row {
+  display: grid;
+  grid-template-columns: minmax(48px, .55fr) repeat(2,minmax(0,1fr));
+  gap: 8px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 8px;
+  background: var(--bg);
+}
+.entry-row > strong { padding-top: 26px; color: var(--primary) }
+label { display: block; color: var(--primary); font-weight: 700; font-size: 15px }
+input, select {
+  width: 100%;
+  padding: 5px 8px;
+  border-color: var(--line);
+  border-radius: 7px;
+  font-variant-numeric: tabular-nums;
+}
+label input, label select { margin-top: 3px }
+[aria-invalid="true"] { border-color: var(--error); background: var(--accentLight) }
+.field-error { display: block; color: var(--ink); font-size: 13px; margin-top: 3px }
+.route-form input { display: block; max-width: 190px }
+.sequence { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; padding: 0; list-style: none }
+.sequence li { display: flex; align-items: center; gap: 5px }
+.sequence li span { padding: 3px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--primary); font-weight: 700 }
+.sequence li:not(:last-child)::after { content: "→"; color: var(--muted) }
+.note { color: var(--muted); font-size: 15px }
+.correction-note { margin-top: 8px }
+.quiz-grid { display: grid; gap: 10px; margin-top: 14px }
+.quiz-card { padding: 10px 13px; background: var(--bg) }
+.quiz-card .actions, .quiz-card .feedback { margin-top: 8px }
+footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 13px }
+footer a { color: var(--muted); font-weight: 400; text-decoration: none }
+footer a:hover { text-decoration: underline }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+@media (max-width: 800px) {
+  .workspace { grid-template-columns: minmax(0, 1fr) }
+  .graph-card { width: 100% }
+}
+@media (max-width: 640px) {
+  body { font-size: 16px }
+  .page { padding: 14px 10px 18px }
+  .screen { padding: 11px }
+  .graph-card { padding: 6px }
+  .weight { font-size: 33px; stroke-width: 8px }
+  .vertex-name { font-size: 32px }
+  .cities .vertex-name { font-size: 26px }
+  .cities :is([data-node="Geneve"], [data-node="Zurich"]) .vertex-name { font-size: 22px }
+  .node-distance { font-size: 29px }
+  .edge-list { columns: 1 }
+  table { font-size: 13px }
+  th, td { padding: 4px 1px }
+  .fixed-mark { display: block; line-height: 1; margin: 0 }
+  .entry-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px 8px }
+  .entry-row > strong { grid-column: 1 / -1; padding-top: 0 }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div>
+      <p class="kicker" id="kicker"></p>
+      <h1 id="title"></h1>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="language" lang="en">English</button>
+      <button type="button" id="fullscreen"></button>
+    </div>
+  </header>
+  <p class="feedback error" id="fullscreen-message" role="status" hidden></p>
+  <p class="instruction" id="instruction"></p>
+  <nav id="navigation"></nav>
+  <main id="activity"></main>
+  <p class="sr-only" id="announcement" role="status" aria-atomic="true"></p>
+  <footer><a href="algorithmique.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+</div>
+<script>
+"use strict";
+
+const I18N = {
+  fr: {
+    kicker: "Algorithmique",
+    title: "Dijkstra : trouver le plus court chemin",
+    description: "Suivez deux démonstrations de Dijkstra et entraînez-vous à trouver les plus courts chemins dans cinq exercices.",
+    instruction: "Suivez une démonstration ou choisissez un exercice. Dijkstra cherche les chemins de plus petit coût dans un graphe dont les poids sont positifs ou nuls.",
+    navigation: "Démonstrations et exercices",
+    sections: ["Information", "Chemins pondérés", "Dijkstra guidé", "Dijkstra autonome", "Situation réelle", "Analyse critique"],
+    done: "Terminé",
+    backList: "← Toutes les applications",
+    fullscreen: "Plein écran",
+    exitFullscreen: "Quitter le plein écran",
+    fullscreenUnavailable: "Le plein écran n’est pas disponible dans ce navigateur.",
+    restart: "Recommencer",
+    previous: "Précédent",
+    next: "Étape suivante",
+    secondExample: "Deuxième exemple",
+    purposeHeading: "À quoi ça sert ?",
+    purpose: "On cherche souvent le chemin le plus rapide ou le moins coûteux, par exemple pour préparer un itinéraire GPS dans Google Maps, choisir un trajet en transports en commun, acheminer des paquets sur Internet ou déplacer un personnage dans un jeu vidéo. Quand les poids des liaisons sont positifs ou nuls, Dijkstra trouve efficacement un chemin qui minimise leur somme. Selon le problème, ces poids peuvent représenter des kilomètres, des minutes, une dépense ou de l’énergie.",
+    demoHeading: "L’algorithme de Dijkstra, pas à pas",
+    notation: "La distance provisoire est le meilleur coût connu depuis le départ. Le prédécesseur est le sommet qui précède celui étudié sur ce chemin.",
+    notationExample: "∞ signifie qu’aucun chemin n’a encore été trouvé. Dans le tableau, 5 · A signifie « coût cumulé de 5 depuis le départ, en arrivant depuis A ». Le tiret indique l’absence de prédécesseur.",
+    ruleTitle: "La règle de Dijkstra",
+    rules: [
+      "Donnez la distance 0 au départ et la distance ∞ aux autres sommets.",
+      "Parmi les sommets non fixés, choisissez celui dont la distance provisoire finie est la plus petite. Cette distance devient définitive.",
+      "Pour chaque arc sortant vers un sommet non fixé, additionnez la distance du sommet fixé et le poids de l’arc. Si le coût obtenu est plus petit que le coût connu, remplacez la distance et notez le sommet fixé comme prédécesseur.",
+      "Pour un trajet précis, arrêtez-vous quand la destination est fixée. Pour toutes les distances, continuez tant qu’il reste une distance provisoire finie."
+    ],
+    tieRule: "En cas d’égalité entre deux coûts pour le même sommet, le tableau conserve le prédécesseur déjà noté.",
+    demoStep: (ex, step, total) => `Exemple ${ex} sur 2 · Étape ${step} sur ${total}`,
+    init: "Initialisation",
+    initialRow: "État initial",
+    initialise: start => `Le départ ${start} vaut 0. Aucun sommet n’est encore fixé et les autres distances valent ∞.`,
+    process: (node, distance) => `Fixer ${node} à ${distance}`,
+    whyFixed: (node, distance) => `${node} a la plus petite distance provisoire parmi les sommets non fixés. Sa distance ${distance} est maintenant définitive.`,
+    table: "Tableau des distances et des prédécesseurs",
+    turn: "Tour",
+    fixed: "fixé",
+    provisional: "provisoire",
+    unknown: "inconnue",
+    tableLegend: "Chaque case indique la distance et le prédécesseur. Le symbole ✓ indique une distance définitive.",
+    currentVertex: "Sommet en cours",
+    fixedVertex: "Sommet fixé",
+    examinedEdge: "Arc examiné",
+    finalPath: "Chemin final",
+    selectedPath: "Trajet saisi",
+    graph: "Graphe pondéré",
+    graphEndpoints: (start, goal) => `Départ ${start} · Destination ${goal}`,
+    edgeList: "Liste des liaisons et de leurs poids",
+    vertices: "Choix des sommets",
+    nodeLabel: (node, distance, status) => `${node}, distance ${status} ${distance}`,
+    reached: node => `Destination atteinte · ${node} est fixé`,
+    pathCost: (path, cost) => `${path} · coût ${cost}`,
+    backtrack: path => `Depuis la destination, remontez les prédécesseurs : ${path}.`,
+    comparisons: "Comparaisons de ce tour",
+    noOutgoing: node => `Aucun arc ne sort de ${node}. Les autres distances restent inchangées.`,
+    onlyFixed: node => `Les arcs sortant de ${node} mènent tous à des sommets déjà fixés. Les distances restent inchangées.`,
+    improve: (arc, sum, oldValue, node, value, predecessor) =>
+      `${arc} : ${sum} < ${oldValue}. ${node} prend la valeur ${value} · ${predecessor}.`,
+    retain: (arc, sum, oldValue, sign, node, entry) =>
+      `${arc} : ${sum} ${sign} ${oldValue}. ${node} garde ${entry}.`,
+    weightedHeading: "Exercice 1 — Chemins pondérés",
+    weightedPart: n => `Question ${n} sur 2`,
+    weightedPrompt: (start, goal) => `Calculez le coût des trajets de ${start} à ${goal}, puis choisissez le moins coûteux.`,
+    weightedMore: "Comparez le nombre d’arêtes et la somme de leurs poids. Le trajet de moindre coût peut emprunter davantage d’arêtes.",
+    weightedCorrect: "Bonne réponse. Voici le coût de chaque trajet.",
+    weightedWrong: "Additionnez les poids sur chaque trajet complet, puis comparez les totaux.",
+    weightedLine: (path, count, expression, cost) => `${path} (${count} arêtes) · ${expression} = ${cost}`,
+    nextQuestion: "Question suivante",
+    guidedHeading: "Exercice 2 — Dijkstra guidé",
+    guidedIntro: "Cherchez le plus court chemin de A à F. Choisissez un sommet, complétez sa ligne et vérifiez les comparaisons avant de passer au tour suivant.",
+    pickVertex: "Quel sommet faut-il fixer ?",
+    guidedStart: "Commencez par le sommet dont la distance provisoire est la plus petite.",
+    guidedPick: "Comparez les distances provisoires de la dernière ligne. Les sommets marqués ✓ sont déjà fixés.",
+    wrongVertex: "Comparez les distances des sommets non fixés et choisissez la plus petite.",
+    fillHeading: node => `Ligne de ${node} à compléter`,
+    fillPrompt: node => `${node} est fixé. Complétez les cases marquées ? pour les voisins indiqués. Gardez la distance et le prédécesseur précédents si le coût ne baisse pas.`,
+    distLabel: "Distance",
+    predLabel: "Prédécesseur",
+    distOf: node => `Distance pour ${node}`,
+    predOf: node => `Prédécesseur pour ${node}`,
+    choose: "Choisissez",
+    validateRow: "Valider la ligne",
+    lineInvalid: "Corrigez les champs signalés avant de valider la ligne.",
+    badDistance: "Comparez le coût par le sommet fixé à la distance précédente.",
+    badPredecessor: "Gardez le prédécesseur précédent si le coût ne baisse pas.",
+    lineValid: "Ligne validée.",
+    nextVertex: "Choisir le sommet suivant",
+    continueAll: "Continuer pour obtenir toutes les distances",
+    continueNote: "Le trajet vers F est connu. La suite sert à rendre définitives les distances des sommets restants.",
+    allDistances: "Toutes les distances sont définitives.",
+    independentHeading: "Exercice 3 — Dijkstra autonome",
+    independentIntro: "Travaillez d’abord sur papier. Notez l’ordre des sommets fixés, remplissez le tableau des distances et trouvez un plus court chemin de A à G. Vérifiez ensuite vos résultats ici.",
+    verifyOrder: "Vérifiez l’ordre de fixation",
+    order: "Ordre de fixation",
+    orderOk: "À chaque tour, vous avez choisi le sommet non fixé dont la distance provisoire était la plus petite.",
+    buildPath: "Reconstruisez un plus court chemin",
+    independentBuild: "Choisissez les sommets du chemin de A à G, puis validez.",
+    empty: "Aucune sélection",
+    undo: "Annuler le dernier clic",
+    validatePath: "Valider le chemin",
+    correction: "Tableau corrigé",
+    tieExplanation: (vertex, start, via, direct, first, second) =>
+      `Le coût vers ${vertex} vaut ${direct} par l’arc direct depuis ${start} et ${first} + ${second} = ${direct} en passant par ${via}. Le tableau garde ${start} comme prédécesseur, car le coût ne baisse pas. Les deux chemins optimaux vers G sont acceptés.`,
+    pathSuccess: "Vous avez trouvé un plus court chemin.",
+    pathNotOptimal: (cost, best) => `Ce chemin est valide et coûte ${cost}. Le plus petit coût est ${best}. Essayez un autre chemin.`,
+    startError: start => `Commencez par ${start}.`,
+    invalidArc: (from, to) => `Aucun arc ne va de ${from} vers ${to}. Suivez le sens des flèches.`,
+    invalidRoad: (from, to) => `Aucune liaison ne relie ${from} à ${to}. Choisissez une ville reliée à ${from}.`,
+    incomplete: goal => `Votre trajet doit se terminer à ${goal}.`,
+    invalidPath: "Vérifiez que chaque étape du trajet suit une liaison du graphe.",
+    realHeading: "Exercice 4 — Situation réelle",
+    realIntro: "Trouvez le trajet le plus rapide de Lausanne à Zurich. Les durées indiquées en minutes sont fictives.",
+    realBuild: "Composez votre trajet en suivant les liaisons",
+    duration: "Durée de votre trajet en minutes",
+    validateRoute: "Valider le trajet",
+    badDuration: "Additionnez les durées des liaisons que vous avez empruntées et vérifiez le total.",
+    durationRequired: "Saisissez la durée totale en minutes.",
+    routeNotOptimal: (sum, best) => `Votre trajet est valide et dure ${sum} min. Le minimum est ${best} min. Vous pouvez modifier votre trajet.`,
+    routeSuccess: "Vous avez trouvé le trajet le plus rapide.",
+    routeCost: (sum, cost) => `${sum} = ${cost} min`,
+    cities: { Geneve: "Genève", Berne: "Berne" },
+    quizHeading: "Exercice 5 — Analyse critique",
+    quizIntro: "Choisissez Vrai ou Faux pour chaque affirmation, puis lisez la justification.",
+    yes: "Vrai",
+    no: "Faux",
+    correct: "Réponse correcte.",
+    incorrect: "Réponse incorrecte.",
+    quiz: [
+      {
+        statement: "Dijkstra garantit un plus court chemin sur un graphe comportant des poids négatifs.",
+        answer: false,
+        explanation: "Avec un poids négatif, un détour peut réduire la distance d’un sommet déjà fixé. La garantie de Dijkstra exige des poids positifs ou nuls."
+      },
+      {
+        statement: "Quand un sommet est fixé, sa distance est définitive si tous les poids sont positifs ou nuls.",
+        answer: true,
+        explanation: "Pour atteindre un sommet en passant par un sommet encore libre, il faut d’abord quitter les sommets fixés. À ce point, le coût est déjà au moins égal à la distance du sommet que l’on vient de fixer. Les arcs suivants ne peuvent pas le réduire."
+      },
+      {
+        statement: "Sur un graphe fini à poids positifs ou nuls, l’algorithme termine toujours.",
+        answer: true,
+        explanation: "Chaque tour fixe un nouveau sommet. Il y a au plus autant de tours que de sommets."
+      },
+      {
+        statement: "Le nombre d’opérations dépend seulement du nombre de sommets, jamais des poids.",
+        answer: false,
+        explanation: "Le nombre d’arcs influe sur le nombre de comparaisons. Chercher le prochain minimum est une autre opération. Si l’on parcourt tous les sommets restants à chaque tour, cette recherche peut à elle seule coûter de l’ordre de n² opérations pour n sommets. Les poids peuvent changer le nombre de mises à jour des distances."
+      },
+      {
+        statement: "On peut s’arrêter dès qu’on trouve un premier chemin vers la destination.",
+        answer: false,
+        explanation: "Dans le premier exemple, le premier chemin connu vers Z coûte 10. En passant par W, le coût descend à 6. On peut s’arrêter dès que Z est fixé."
+      }
+    ]
+  },
+  en: {
+    kicker: "ALGORITHMS",
+    title: "Dijkstra: finding the shortest path",
+    description: "Follow two demonstrations of Dijkstra’s algorithm and practise finding shortest paths in five exercises.",
+    instruction: "Follow a demonstration or choose an exercise. Dijkstra finds minimum-cost paths in a graph with non-negative weights.",
+    navigation: "Demonstrations and exercises",
+    sections: ["Information", "Weighted paths", "Guided Dijkstra", "Independent Dijkstra", "Real situation", "Critical analysis"],
+    done: "Completed",
+    backList: "← All applications",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit fullscreen",
+    fullscreenUnavailable: "Fullscreen is unavailable in this browser.",
+    restart: "Start again",
+    previous: "Previous",
+    next: "Next step",
+    secondExample: "Second example",
+    purposeHeading: "What is it used for?",
+    purpose: "We often look for the fastest or cheapest route, for example when planning a journey in a GPS app such as Google Maps, choosing a public transport route, routing packets across the internet or moving a character in a video game. When all links have non-negative weights, Dijkstra’s algorithm efficiently finds a path with the lowest total weight. Depending on the problem, a weight can represent distance, time, money or energy.",
+    demoHeading: "Dijkstra’s algorithm, step by step",
+    notation: "A provisional distance is the best known cost from the start. A predecessor is the vertex immediately before the one you are looking at on that path.",
+    notationExample: "∞ means no path has been found yet. In the table, 5 · A means ‘a total cost of 5 from the start, arriving from A’. A dash indicates that there is no predecessor.",
+    ruleTitle: "Dijkstra’s rule",
+    rules: [
+      "Set the starting distance to 0 and all other distances to ∞.",
+      "Choose the unsettled vertex with the smallest finite provisional distance. Its distance is now final.",
+      "For each outgoing arc to an unsettled vertex, add the weight of the arc to the settled vertex’s distance. If this cost is smaller than the current cost, update the distance and record the settled vertex as its predecessor.",
+      "For a single route, stop when the destination is settled. For all distances, continue while there is a finite provisional distance."
+    ],
+    tieRule: "When two costs to the same vertex are equal, the table keeps the predecessor that is already recorded.",
+    demoStep: (ex, step, total) => `Example ${ex} of 2 · Step ${step} of ${total}`,
+    init: "Initialisation",
+    initialRow: "Initial state",
+    initialise: start => `The start ${start} has distance 0. No vertex is settled yet and the other distances are ∞.`,
+    process: (node, distance) => `Settle ${node} at ${distance}`,
+    whyFixed: (node, distance) => `${node} has the smallest provisional distance among the unsettled vertices. Its distance ${distance} is now final.`,
+    table: "Table of distances and predecessors",
+    turn: "Turn",
+    fixed: "settled",
+    provisional: "provisional",
+    unknown: "unknown",
+    tableLegend: "Each cell gives the distance and predecessor. A ✓ marks a final distance.",
+    currentVertex: "Current vertex",
+    fixedVertex: "Settled vertex",
+    examinedEdge: "Arc under consideration",
+    finalPath: "Final path",
+    selectedPath: "Your route",
+    graph: "Weighted graph",
+    graphEndpoints: (start, goal) => `Start ${start} · Destination ${goal}`,
+    edgeList: "List of connections and their weights",
+    vertices: "Vertex choices",
+    nodeLabel: (node, distance, status) => `${node}, ${status} distance ${distance}`,
+    reached: node => `Destination reached · ${node} is settled`,
+    pathCost: (path, cost) => `${path} · cost ${cost}`,
+    backtrack: path => `Starting at the destination, follow the predecessors: ${path}.`,
+    comparisons: "Comparisons for this turn",
+    noOutgoing: node => `No arc leaves ${node}. The other distances stay the same.`,
+    onlyFixed: node => `All arcs leaving ${node} lead to settled vertices. The distances stay the same.`,
+    improve: (arc, sum, oldValue, node, value, predecessor) =>
+      `${arc}: ${sum} < ${oldValue}. ${node} is updated to ${value} · ${predecessor}.`,
+    retain: (arc, sum, oldValue, sign, node, entry) =>
+      `${arc}: ${sum} ${sign} ${oldValue}. ${node} stays at ${entry}.`,
+    weightedHeading: "Exercise 1 — Weighted paths",
+    weightedPart: n => `Question ${n} of 2`,
+    weightedPrompt: (start, goal) => `Work out the cost of each path from ${start} to ${goal}, then choose the cheapest.`,
+    weightedMore: "Compare the number of edges and the sum of their weights. The cheapest path can use more edges.",
+    weightedCorrect: "Correct. Here is the cost of each path.",
+    weightedWrong: "Add the weights for each complete path, then compare the totals.",
+    weightedLine: (path, count, expression, cost) => `${path} (${count} edges) · ${expression} = ${cost}`,
+    nextQuestion: "Next question",
+    guidedHeading: "Exercise 2 — Guided Dijkstra",
+    guidedIntro: "Find the shortest path from A to F. Choose a vertex, complete its row and check the comparisons before going on to the next turn.",
+    pickVertex: "Which vertex should be settled?",
+    guidedStart: "Start with the vertex with the smallest provisional distance.",
+    guidedPick: "Compare the provisional distances on the last row. Vertices marked ✓ are already settled.",
+    wrongVertex: "Compare the unsettled vertices’ distances and choose the smallest.",
+    fillHeading: node => `Complete the row for ${node}`,
+    fillPrompt: node => `${node} is settled. Fill the cells marked ? for the neighbours listed below. Keep the previous distance and predecessor if the cost stays the same or increases.`,
+    distLabel: "Distance",
+    predLabel: "Predecessor",
+    distOf: node => `Distance for ${node}`,
+    predOf: node => `Predecessor for ${node}`,
+    choose: "Select",
+    validateRow: "Check the row",
+    lineInvalid: "Correct the highlighted fields before checking the row again.",
+    badDistance: "Compare the cost through the settled vertex with the previous distance.",
+    badPredecessor: "Keep the previous predecessor if the cost stays the same or increases.",
+    lineValid: "Row checked.",
+    nextVertex: "Choose the next vertex",
+    continueAll: "Continue to find all distances",
+    continueNote: "The path to F is known. Continue to make the distances to the remaining vertices final.",
+    allDistances: "All distances are final.",
+    independentHeading: "Exercise 3 — Independent Dijkstra",
+    independentIntro: "Start on paper. Record the settling order, fill in the distance table and find a shortest path from A to G. Then check your results here.",
+    verifyOrder: "Check the settling order",
+    order: "Settling order",
+    orderOk: "At each turn, you chose the unsettled vertex with the smallest provisional distance.",
+    buildPath: "Reconstruct a shortest path",
+    independentBuild: "Choose the vertices on your path from A to G, then check it.",
+    empty: "Nothing selected",
+    undo: "Undo last selection",
+    validatePath: "Check path",
+    correction: "Worked table",
+    tieExplanation: (vertex, start, via, direct, first, second) =>
+      `The cost to ${vertex} is ${direct} directly from ${start}, and ${first} + ${second} = ${direct} via ${via}. The table keeps ${start} as the predecessor because the cost does not decrease. Both shortest paths to G are accepted.`,
+    pathSuccess: "You found a shortest path.",
+    pathNotOptimal: (cost, best) => `This path is valid and costs ${cost}. The minimum is ${best}. Try another path.`,
+    startError: start => `Start at ${start}.`,
+    invalidArc: (from, to) => `There is no arc from ${from} to ${to}. Follow the direction of the arrows.`,
+    invalidRoad: (from, to) => `There is no link between ${from} and ${to}. Choose a town connected to ${from}.`,
+    incomplete: goal => `Your route must end at ${goal}.`,
+    invalidPath: "Check that each step of the route follows a connection in the graph.",
+    realHeading: "Exercise 4 — Real situation",
+    realIntro: "Find the fastest route from Lausanne to Zurich. The times shown in minutes are fictional.",
+    realBuild: "Build your route by following the connections",
+    duration: "Your travel time in minutes",
+    validateRoute: "Check route",
+    badDuration: "Add the times for the connections you used and check the total.",
+    durationRequired: "Enter the total travel time in minutes.",
+    routeNotOptimal: (sum, best) => `Your route is valid and takes ${sum} min. The minimum is ${best} min. You can change your route.`,
+    routeSuccess: "You found the fastest route.",
+    routeCost: (sum, cost) => `${sum} = ${cost} min`,
+    cities: { Geneve: "Geneva", Berne: "Bern" },
+    quizHeading: "Exercise 5 — Critical analysis",
+    quizIntro: "Choose True or False for each statement, then read the explanation.",
+    yes: "True",
+    no: "False",
+    correct: "Correct.",
+    incorrect: "Incorrect.",
+    quiz: [
+      {
+        statement: "Dijkstra guarantees a shortest path in a graph that has negative weights.",
+        answer: false,
+        explanation: "A negative weight can make a detour cheaper even after a vertex has been settled. Dijkstra’s guarantee requires non-negative weights."
+      },
+      {
+        statement: "When a vertex is settled, its distance is final if all weights are non-negative.",
+        answer: true,
+        explanation: "Any alternative path through an unsettled vertex must first leave the settled vertices. Its cost by then is already at least the distance of the vertex just settled. Later arcs cannot reduce it."
+      },
+      {
+        statement: "On a finite graph with non-negative weights, the algorithm always terminates.",
+        answer: true,
+        explanation: "Every turn settles one new vertex. There are at most as many turns as there are vertices."
+      },
+      {
+        statement: "The number of operations depends only on the number of vertices, never on the weights.",
+        answer: false,
+        explanation: "The number of arcs affects how many comparisons are made. Finding the next minimum is a separate operation. Scanning all remaining vertices each turn can take on the order of n² operations in total for n vertices. The weights can change how many distances are updated."
+      },
+      {
+        statement: "You can stop as soon as you find a first path to the destination.",
+        answer: false,
+        explanation: "In the first example, the first known path to Z costs 10. Going through W lowers the cost to 6. You can stop once Z is settled."
+      }
+    ]
+  }
+};
+
+const graphs = {
+  g0: {
+    nodes: {"S": [110, 250], "V": [310, 120], "W": [430, 250], "U": [310, 390], "Z": [650, 250]},
+    edges: [["S", "U", 5], ["S", "V", 1], ["U", "W", 2], ["V", "W", 1],
+            ["W", "Z", 4], ["V", "Z", 9]],
+    directed: true
+  },
+  g1: {
+    nodes: {"A": [110, 250], "B": [310, 120], "C": [320, 380], "D": [540, 250]},
+    edges: [["A", "B", 4], ["A", "C", 2], ["A", "D", 6], ["B", "D", 3],
+            ["C", "D", 1]],
+    directed: false
+  },
+  g1b: {
+    nodes: {"A": [110, 250], "B": [300, 110], "C": [430, 250], "D": [300, 390], "E": [660, 250]},
+    edges: [["A", "B", 2], ["A", "C", 7], ["B", "C", 3], ["B", "D", 8],
+            ["B", "E", 9], ["C", "D", 1], ["C", "E", 6], ["D", "E", 2]],
+    directed: false
+  },
+  g2: {
+    nodes: {"A": [95, 250], "B": [250, 120], "C": [405, 120], "D": [250, 380], "E": [560, 250], "F": [720, 380]},
+    edges: [["A", "B", 2], ["A", "C", 5], ["A", "D", 8], ["B", "C", 4],
+            ["B", "D", 1], ["B", "E", 9], ["C", "D", 2], ["C", "E", 6],
+            ["D", "E", 3], ["D", "F", 1], ["E", "F", 4]],
+    directed: true
+  },
+  g3: {
+    nodes: {"A": [95, 250], "B": [245, 120], "C": [430, 120], "D": [245, 380], "E": [610, 250], "F": [430, 380], "G": [765, 380]},
+    edges: [["A", "B", 2], ["A", "C", 6], ["B", "C", 4], ["B", "D", 1],
+            ["B", "F", 5], ["C", "E", 2], ["D", "E", 7], ["D", "F", 4],
+            ["E", "G", 1], ["F", "G", 6]],
+    directed: true
+  },
+  g5: {
+    nodes: {"P": [110, 250], "Q": [300, 110], "R": [300, 390], "S": [520, 250], "T": [720, 250]},
+    edges: [["P", "Q", 2], ["P", "R", 6], ["Q", "R", 1], ["Q", "S", 5],
+            ["R", "S", 2], ["Q", "T", 8], ["S", "T", 3]],
+    directed: true
+  },
+  g4: {
+    nodes: {"Lausanne": [90, 270], "Geneve": [95, 90], "Fribourg": [300, 270], "Bulle": [470, 90], "Berne": [540, 270], "Sion": [470, 430], "Zurich": [720, 270]},
+    edges: [["Lausanne", "Geneve", 60], ["Lausanne", "Fribourg", 30], ["Lausanne", "Sion", 90], ["Geneve", "Bulle", 50],
+            ["Fribourg", "Bulle", 45], ["Fribourg", "Berne", 40], ["Fribourg", "Sion", 70], ["Bulle", "Sion", 55],
+            ["Berne", "Zurich", 120], ["Sion", "Zurich", 160]],
+    directed: false
+  },
+};
+
+// Les mêmes données servent au tableau, au graphe et à la validation.
+function connections(graph, vertex) {
+  return graph.edges.flatMap(([a, b, weight], index) => {
+    if (a === vertex) return [{ to: b, weight, index }];
+    if (!graph.directed && b === vertex) return [{ to: a, weight, index }];
+    return [];
+  });
+}
+
+function computeDijkstra(graph, start) {
+  const nodes = Object.keys(graph.nodes);
+  const distances = Object.fromEntries(nodes.map(node => [node, node === start ? 0 : Infinity]));
+  const predecessors = Object.fromEntries(nodes.map(node => [node, null]));
+  const fixed = new Set();
+  const snapshot = () => ({
+    distances: { ...distances },
+    predecessors: { ...predecessors },
+    fixed: new Set(fixed)
+  });
+  const initial = snapshot();
+  const turns = [];
+
+  while (fixed.size < nodes.length) {
+    let vertex = null;
+    for (const node of nodes) {
+      if (fixed.has(node) || !Number.isFinite(distances[node])) continue;
+      if (vertex === null || distances[node] < distances[vertex]) vertex = node;
+    }
+    if (vertex === null) break;
+
+    fixed.add(vertex);
+    const outgoing = connections(graph, vertex);
+    const comparisons = [];
+    for (const arc of outgoing) {
+      if (fixed.has(arc.to)) continue;
+      const previous = distances[arc.to];
+      const candidate = distances[vertex] + arc.weight;
+      const improved = candidate < previous;
+      if (improved) {
+        distances[arc.to] = candidate;
+        predecessors[arc.to] = vertex;
+      }
+      comparisons.push({ ...arc, previous, candidate, improved });
+    }
+    turns.push({ vertex, outgoingCount: outgoing.length, comparisons, after: snapshot() });
+  }
+
+  return { initial, turns, final: turns.length ? turns[turns.length - 1].after : initial };
+}
+
+function tracePath(snapshot, goal) {
+  if (!Number.isFinite(snapshot.distances[goal])) return [];
+  const path = [];
+  for (let vertex = goal; vertex !== null; vertex = snapshot.predecessors[vertex]) {
+    path.unshift(vertex);
+  }
+  return path;
+}
+
+function measurePath(graph, path) {
+  if (!path.length || path.some(vertex => !Object.hasOwn(graph.nodes, vertex))) return null;
+  const arcs = [];
+  for (let i = 1; i < path.length; i++) {
+    const arc = connections(graph, path[i - 1]).find(link => link.to === path[i]);
+    if (!arc) return null;
+    arcs.push(arc);
+  }
+  return { arcs, cost: arcs.reduce((sum, arc) => sum + arc.weight, 0) };
+}
+
+const demos = [
+  { graph: "g0", start: "S", goal: "Z" },
+  { graph: "g5", start: "P", goal: "T" }
+];
+const weighted = [
+  { graph: "g1", start: "A", goal: "D", options: ["ABD", "ACD", "AD"] },
+  { graph: "g1b", start: "A", goal: "E", options: ["ABCDE", "ACDE", "ABE", "ACE"] }
+];
+const guided = { graph: "g2", start: "A", goal: "F" };
+const independent = { graph: "g3", start: "A", goal: "G" };
+const situation = { graph: "g4", start: "Lausanne", goal: "Zurich" };
+for (const exercise of [...demos, ...weighted, guided, independent, situation]) {
+  exercise.trace = computeDijkstra(graphs[exercise.graph], exercise.start);
+}
+
+const $ = id => document.getElementById(id);
+const T = () => I18N[lang];
+const esc = value => String(value).replace(/[&<>"']/g, c => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+})[c]);
+const name = vertex => T().cities[vertex] ?? vertex;
+const formatNumber = value => Number.isFinite(value)
+  ? String(value).replace(/\B(?=(\d{3})+(?!\d))/g, lang === "fr" ? "\u202f" : ",")
+  : "∞";
+const pathText = path => path.map(name).join(" → ");
+const entryText = (snapshot, vertex) =>
+  `${formatNumber(snapshot.distances[vertex])} · ${snapshot.predecessors[vertex] ?? "—"}`;
+
+function readLanguage() {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)fj-lang=(fr|en)(?:;|$)/);
+    if (match) return match[1];
+  } catch {}
+  try {
+    const stored = localStorage.getItem("fj-lang");
+    if (stored === "fr" || stored === "en") return stored;
+  } catch {}
+  return "fr";
+}
+
+let lang = readLanguage();
+const newWeighted = () => ({ question: 0, selected: null, solved: false, feedback: null });
+const newGuided = () => ({ turn: 0, phase: "choose", values: {}, errors: {}, feedback: null });
+const newIndependent = () => ({ order: [], path: [], phase: "order", feedback: null });
+const newSituation = () => ({ path: [], duration: "", solved: false, feedback: null });
+const state = {
+  screen: 0,
+  demo: { example: 0, step: 0 },
+  weighted: newWeighted(),
+  guided: newGuided(),
+  independent: newIndependent(),
+  situation: newSituation(),
+  quiz: I18N.fr.quiz.map(() => null),
+  disclosures: new Set(),
+  fullscreenError: false
+};
+
+function button(label, action, { id, value, className, disabled, pressed } = {}) {
+  return `<button type="button" data-action="${action}"${id ? ` id="${id}"` : ""}${value === undefined ? "" : ` data-value="${esc(value)}"`}${className ? ` class="${className}"` : ""}${disabled ? " disabled" : ""}${pressed === undefined ? "" : ` aria-pressed="${pressed}"`}>${esc(label)}</button>`;
+}
+
+function heading(title, intro) {
+  return `<div class="screen-heading"><div><h2 id="screen-title" tabindex="-1">${esc(title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ""}</div>${state.screen ? button(T().restart, "restart", { className: "secondary", id: "restart" }) : ""}</div>`;
+}
+
+function disclosure(key, label, contents) {
+  return `<details data-disclosure="${key}"${state.disclosures.has(key) ? " open" : ""}><summary>${esc(label)}</summary>${contents}</details>`;
+}
+
+function message({ key, args = [] }) {
+  const translation = T()[key];
+  const translatedArgs = args.map(arg => typeof arg === "string" ? name(arg) : arg);
+  return typeof translation === "function" ? translation(...translatedArgs) : translation;
+}
+
+function feedback(value) {
+  return value ? `<div class="feedback${value.error ? " error" : ""}">${esc(message(value))}</div>` : "";
+}
+
+function status(key, error = false, ...args) {
+  return { key, error, args };
+}
+
+function sequence(values) {
+  if (!values.length) return `<p class="note">${esc(T().empty)}</p>`;
+  return `<ol class="sequence">${values.map(vertex => `<li><span>${esc(name(vertex))}</span></li>`).join("")}</ol>`;
+}
+
+function vertexButtons(vertices, action) {
+  return `<div class="actions" role="group" aria-label="${esc(T().vertices)}">${vertices.map(vertex =>
+    button(name(vertex), action, { value: vertex, className: "vertex-choice", id: "choose-" + vertex })
+  ).join("")}</div>`;
+}
+
+const weightOffsets = {
+  g0: { "S-U": [-10, 8], "U-W": [-14, 14], "V-W": [9, -8], "V-Z": [20, -8] },
+  g1: { "A-B": [-14, 0], "B-D": [18, -15], "C-D": [-14, 8], "A-D": [10, -6] },
+  g1b: { "A-C": [-10, 0], "B-D": [-11, 31], "B-E": [25, -28], "C-D": [12, 8], "C-E": [0, -7], "D-E": [14, 9] },
+  g2: { "A-B": [-16, 0], "A-C": [-40, 16], "B-D": [-5, 23], "B-E": [13, 16], "C-D": [19, 11], "C-E": [8, -17], "E-F": [15, -6] },
+  g3: { "A-B": [-14, 0], "B-D": [-5, 17], "B-F": [19, 8], "C-E": [16, -8], "D-E": [5, 10], "E-G": [16, -4] },
+  g4: { "Bulle-Sion": [-13, -20], "Lausanne-Geneve": [23, 0], "Fribourg-Bulle": [-17, 0], "Lausanne-Sion": [-5, 16], "Fribourg-Sion": [17, 8], "Sion-Zurich": [-18, 1] },
+  g5: { "Q-R": [1, -18], "P-Q": [-12, -14], "Q-T": [20, -11], "Q-S": [6, 8], "R-S": [8, 7] }
+};
+
+function graphLegend({ algorithm, route }) {
+  const keys = [];
+  if (algorithm) keys.push(["current", T().currentVertex], ["fixed", T().fixedVertex], ["examined", T().examinedEdge]);
+  if (algorithm || route === "final") keys.push(["route", T().finalPath]);
+  else if (route === "selected") keys.push(["route", T().selectedPath]);
+  if (!keys.length) return "";
+  return `<ul class="legend">${keys.map(([type, label]) => `<li><span class="key ${type}" aria-hidden="true"></span>${esc(label)}</li>`).join("")}</ul>`;
+}
+
+function graphCard(exercise, {
+  snapshot, fixed = snapshot?.fixed ?? new Set(), current,
+  examined = [], path = [], action, choices = [], algorithm = false, route
+} = {}) {
+  const graph = graphs[exercise.graph];
+  const coordinates = Object.values(graph.nodes);
+  const cities = exercise.graph === "g4";
+  const radius = cities ? 43 : 30;
+  const minX = Math.min(...coordinates.map(p => p[0])) - radius - 14;
+  const maxX = Math.max(...coordinates.map(p => p[0])) + radius + 14;
+  const minY = Math.min(...coordinates.map(p => p[1])) - 61;
+  const maxY = Math.max(...coordinates.map(p => p[1])) + 61;
+  const viewBox = [minX, minY, maxX - minX, maxY - minY].join(" ");
+  const pathIndices = new Set((measurePath(graph, path)?.arcs ?? []).map(arc => arc.index));
+  const activeArcs = new Set(examined.map(arc => arc.index));
+  const available = new Set(choices);
+  const markers = graph.directed ? `<defs>${[
+    ["normal", "--muted"], ["examined", "--accent"], ["route", "--primary"]
+  ].map(([type, color]) => `<marker id="arrow-${type}" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="20" markerHeight="16" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="var(${color})"></path></marker>`).join("")}</defs>` : "";
+  const lines = graph.edges.map(([a, b], index) => {
+    const [x, y] = graph.nodes[a], [endX, endY] = graph.nodes[b];
+    const length = Math.hypot(endX - x, endY - y);
+    const dx = (endX - x) / length, dy = (endY - y) / length;
+    const type = activeArcs.has(index) ? "examined" : pathIndices.has(index) ? "route" : "normal";
+    return `<line class="edge ${type}" x1="${x + radius * dx}" y1="${y + radius * dy}" x2="${endX - radius * dx}" y2="${endY - radius * dy}"${graph.directed ? ` marker-end="url(#arrow-${type})"` : ""}></line>`;
+  }).join("");
+  const weights = graph.edges.map(([a, b, weight]) => {
+    const [x, y] = graph.nodes[a], [endX, endY] = graph.nodes[b];
+    const [dx, dy] = weightOffsets[exercise.graph]?.[a + "-" + b] ?? [0, 0];
+    return `<text class="weight" x="${(x + endX) / 2 + dx}" y="${(y + endY) / 2 - 12 + dy}">${weight}</text>`;
+  }).join("");
+  const vertices = Object.entries(graph.nodes).map(([vertex, [x, y]]) => {
+    const classes = ["vertex"];
+    if (fixed.has(vertex)) classes.push("fixed");
+    if (vertex === current) classes.push("current");
+    if (vertex === exercise.goal) classes.push("goal");
+    if (path.includes(vertex)) classes.push("route-vertex");
+    const distance = snapshot?.distances[vertex];
+    const label = snapshot ? T().nodeLabel(name(vertex), formatNumber(distance),
+      fixed.has(vertex) ? T().fixed : T().provisional) : name(vertex);
+    const trigger = action && available.has(vertex)
+      ? ` tabindex="0" role="button" aria-label="${esc(label)}" data-action="${action}" data-value="${esc(vertex)}"` : "";
+    const distanceY = y < (minY + maxY) / 2 - 50 ? y - radius - 15 : y + radius + 18;
+    return `<g class="${classes.join(" ")}" data-node="${esc(vertex)}"${trigger}>
+      ${trigger ? `<circle class="hit-area" cx="${x}" cy="${y}" r="${radius + 11}"></circle>` : ""}
+      <circle class="node-shape" cx="${x}" cy="${y}" r="${radius}"></circle>
+      <text class="vertex-name" x="${x}" y="${y}">${esc(name(vertex))}</text>
+      ${snapshot ? `<text class="node-distance" x="${x}" y="${distanceY}">${esc(entryText(snapshot, vertex))}</text>` : ""}
+    </g>`;
+  }).join("");
+  const connectionsList = `<ul class="edge-list">${graph.edges.map(([a, b, weight]) =>
+    `<li>${esc(name(a))} ${graph.directed ? "→" : "↔"} ${esc(name(b))} · ${weight}</li>`
+  ).join("")}</ul>`;
+
+  return `<div class="graph-card">
+    <p class="note">${esc(T().graphEndpoints(name(exercise.start), name(exercise.goal)))}</p>
+    <svg viewBox="${viewBox}" class="${cities ? "cities" : "letters"}" role="${action ? "group" : "img"}" aria-label="${esc(T().graph)}">
+      ${markers}${lines}${weights}${vertices}
+    </svg>
+    ${graphLegend({ algorithm, route })}
+    ${disclosure("edges-" + state.screen, T().edgeList, connectionsList)}
+  </div>`;
+}
+
+function history(exercise, completed, draft) {
+  const vertices = Object.keys(graphs[exercise.graph].nodes);
+  const { initial, turns } = exercise.trace;
+  const rows = [{ snapshot: initial }, ...turns.slice(0, completed).map(turn => ({
+    vertex: turn.vertex,
+    snapshot: turn.after,
+    improved: turn.comparisons.filter(arc => arc.improved).map(arc => arc.to)
+  }))];
+  if (draft) rows.push({
+    vertex: draft.vertex,
+    snapshot: { ...rows[rows.length - 1].snapshot, fixed: draft.after.fixed },
+    pending: draft.comparisons.map(arc => arc.to)
+  });
+
+  return `<div>
+    <p class="note" id="table-note">${esc(T().tableLegend)}</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="${esc(T().table)}" data-history>
+      <table aria-describedby="table-note">
+        <thead><tr><th scope="col">${esc(T().turn)}</th>${vertices.map(vertex => `<th scope="col">${esc(name(vertex))}</th>`).join("")}</tr></thead>
+        <tbody>${rows.map(({ vertex, snapshot, improved, pending }, i) => {
+          const rowType = pending ? "draft" : i === completed ? "latest" : "";
+          return `<tr class="${rowType}"><th scope="row">${esc(vertex ?? T().initialRow)}</th>${vertices.map(node => {
+            if (pending?.includes(node)) return '<td class="pending">?</td>';
+            const mark = snapshot.fixed.has(node)
+              ? `<span class="fixed-mark" aria-label="${esc(T().fixed)}" title="${esc(T().fixed)}">✓</span>` : "";
+            return `<td class="${improved?.includes(node) ? "improved" : ""}"><span class="cell-value">${esc(entryText(snapshot, node))}</span>${mark}</td>`;
+          }).join("")}</tr>`;
+        }).join("")}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function comparisons(turn) {
+  const content = turn.comparisons.length ? `<ul class="comparisons">${turn.comparisons.map(arc => {
+    const label = `${turn.vertex} → ${arc.to}`;
+    const sum = `${formatNumber(turn.after.distances[turn.vertex])} + ${arc.weight} = ${formatNumber(arc.candidate)}`;
+    const previous = formatNumber(arc.previous);
+    const result = arc.improved
+      ? T().improve(label, sum, previous, arc.to, formatNumber(arc.candidate), turn.vertex)
+      : T().retain(label, sum, previous, arc.candidate === arc.previous ? "=" : ">", arc.to, entryText(turn.after, arc.to));
+    return `<li class="${arc.improved ? "improved" : ""}">${esc(result)}</li>`;
+  }).join("")}</ul>` : `<p>${esc(turn.outgoingCount ? T().onlyFixed(turn.vertex) : T().noOutgoing(turn.vertex))}</p>`;
+  return `<div class="explanation"><h3>${esc(T().comparisons)}</h3>${content}</div>`;
+}
+
+function resultCard(exercise, snapshot) {
+  const path = tracePath(snapshot, exercise.goal);
+  const cost = formatNumber(snapshot.distances[exercise.goal]);
+  const reverse = path.slice().reverse();
+  return `<div class="result">
+    <p><strong>${esc(T().reached(name(exercise.goal)))}</strong></p>
+    <p>${esc(T().pathCost(pathText(path), cost))}</p>
+    <p>${esc(T().backtrack(pathText(reverse)))}</p>
+  </div>`;
+}
+
+function renderDemo() {
+  const { example, step } = state.demo;
+  const exercise = demos[example];
+  const { initial, turns } = exercise.trace;
+  const turn = turns[step - 1];
+  const snapshot = turn?.after ?? initial;
+  const arrived = snapshot.fixed.has(exercise.goal);
+  const title = turn ? T().process(turn.vertex, formatNumber(snapshot.distances[turn.vertex])) : T().init;
+  const explanation = turn ? T().whyFixed(turn.vertex, formatNumber(snapshot.distances[turn.vertex])) : T().initialise(exercise.start);
+  const last = step === turns.length;
+  return `<section class="screen">
+    ${heading(T().purposeHeading, T().purpose)}
+    <div class="guide-notes">
+      <h3>${esc(T().demoHeading)}</h3>
+      <p>${esc(T().notation)}</p><p>${esc(T().notationExample)}</p>
+      ${disclosure("rules", T().ruleTitle, `<ol>${T().rules.map(rule => `<li>${esc(rule)}</li>`).join("")}</ol><p>${esc(T().tieRule)}</p>`)}
+    </div>
+    <div class="demo-control">
+      <p class="step-indicator">${esc(T().demoStep(example + 1, step + 1, turns.length + 1))}</p>
+      ${button(T().previous, "demo-prev", { id: "demo-prev", disabled: example === 0 && step === 0 })}
+      ${button(last && example === 0 ? T().secondExample : T().next, "demo-next", { id: "demo-next", disabled: last && example === 1, className: "primary" })}
+    </div>
+    <div class="workspace">
+      ${graphCard(exercise, { snapshot, current: turn?.vertex, examined: turn?.comparisons, path: arrived ? tracePath(snapshot, exercise.goal) : [], algorithm: true })}
+      <div class="worksheet">
+        <h3 id="demo-step-title" tabindex="-1">${esc(title)}</h3>
+        <p>${esc(explanation)}</p>
+        ${history(exercise, step)}
+        ${turn ? comparisons(turn) : ""}
+        ${arrived ? resultCard(exercise, snapshot) : ""}
+      </div>
+    </div>
+  </section>`;
+}
+
+function changeDemo(direction) {
+  const view = state.demo;
+  const last = demos[view.example].trace.turns.length;
+  if (direction > 0) {
+    if (view.step < last) view.step++;
+    else if (view.example === 0) { view.example = 1; view.step = 0; }
+  } else if (view.step > 0) {
+    view.step--;
+  } else if (view.example === 1) {
+    view.example = 0;
+    view.step = demos[0].trace.turns.length;
+  }
+  const target = direction > 0 ? "demo-next" : "demo-prev";
+  render(target, true);
+  if ($(target).disabled) $("demo-step-title").focus({ preventScroll: true });
+  announce($("demo-step-title").textContent);
+}
+
+function renderWeighted() {
+  const view = state.weighted;
+  const exercise = weighted[view.question];
+  const graph = graphs[exercise.graph];
+  const best = exercise.trace.final.distances[exercise.goal];
+  const answers = exercise.options.map(option => {
+    const path = [...option];
+    return { path, ...measurePath(graph, path) };
+  });
+  const correct = view.selected !== null && answers[view.selected].cost === best;
+  const route = correct ? answers[view.selected].path : [];
+  const options = answers.map(({ path }, i) => button(pathText(path), "weighted-choice", {
+    id: "weighted-" + i, value: i, disabled: correct,
+    className: view.selected === i ? (correct ? "correct" : "incorrect") : undefined,
+    pressed: view.selected === i
+  })).join("");
+  const correction = correct ? `<ul class="comparisons">${answers.map(({ path, cost, arcs }) =>
+    `<li class="${cost === best ? "improved" : ""}">${esc(T().weightedLine(pathText(path), arcs.length, arcs.map(arc => arc.weight).join(" + "), cost))}</li>`
+  ).join("")}</ul>` : "";
+
+  return `<section class="screen">
+    ${heading(T().weightedHeading, T().weightedPrompt(exercise.start, exercise.goal))}
+    <div class="workspace">
+      ${graphCard(exercise, { path: route, route: correct ? "final" : undefined })}
+      <div class="worksheet">
+        <h3 id="weighted-step" tabindex="-1">${esc(T().weightedPart(view.question + 1))}</h3>
+        ${view.question ? `<p>${esc(T().weightedMore)}</p>` : ""}
+        <div class="actions">${options}</div>
+        ${feedback(view.feedback)}${correction}
+        ${correct && view.question === 0 ? `<div>${button(T().nextQuestion, "weighted-next", { id: "weighted-next", className: "primary" })}</div>` : ""}
+      </div>
+    </div>
+  </section>`;
+}
+
+function chooseWeighted(index) {
+  const view = state.weighted;
+  const exercise = weighted[view.question];
+  const graph = graphs[exercise.graph];
+  const best = exercise.trace.final.distances[exercise.goal];
+  if (view.selected !== null && measurePath(graph, [...exercise.options[view.selected]]).cost === best) return;
+  view.selected = index;
+  const correct = measurePath(graph, [...exercise.options[index]]).cost === best;
+  if (correct && view.question === 1) view.solved = true;
+  view.feedback = status(correct ? "weightedCorrect" : "weightedWrong", !correct);
+  render(correct ? "weighted-step" : "weighted-" + index);
+  announce(message(view.feedback));
+}
+
+function renderGuided() {
+  const view = state.guided;
+  const { initial, turns } = guided.trace;
+  const turn = turns[view.turn];
+  const prior = view.turn > 0 ? turns[view.turn - 1].after : initial;
+  const choosing = view.phase === "choose";
+  const filling = view.phase === "fill";
+  const reviewing = view.phase === "review";
+  const snapshot = reviewing ? turn.after : filling ? { ...prior, fixed: turn.after.fixed } : prior;
+  const reached = snapshot.fixed.has(guided.goal);
+  const final = reviewing && view.turn === turns.length - 1;
+  const choices = Object.keys(graphs[guided.graph].nodes).filter(node => !snapshot.fixed.has(node));
+  const choiceBlock = choosing ? `<h3 id="guide-pick" tabindex="-1">${esc(T().pickVertex)}</h3>
+    <p>${esc(view.turn ? T().guidedPick : T().guidedStart)}</p>
+    ${vertexButtons(choices, "guide-pick")}` : "";
+  const reviewBlock = reviewing ? `<h3 id="guide-review" tabindex="-1">${esc(
+    final ? T().allDistances : T().process(turn.vertex, formatNumber(snapshot.distances[turn.vertex]))
+  )}</h3>
+    ${feedback(view.feedback)}
+    ${comparisons(turn)}
+    ${reached ? resultCard(guided, snapshot) : ""}
+    ${!final && turn.vertex === guided.goal ? `<p>${esc(T().continueNote)}</p>` : ""}
+    ${final ? "" : `<div>${button(turn.vertex === guided.goal ? T().continueAll : T().nextVertex, "guide-next", {
+      id: "guide-next", className: "primary"
+    })}</div>`}` : "";
+
+  return `<section class="screen">
+    ${heading(T().guidedHeading, T().guidedIntro)}
+    <div class="workspace">
+      ${graphCard(guided, {
+        snapshot, current: choosing ? undefined : turn.vertex,
+        examined: choosing ? [] : turn.comparisons,
+        path: reached ? tracePath(snapshot, guided.goal) : [],
+        action: choosing ? "guide-pick" : undefined, choices, algorithm: true
+      })}
+      <div class="worksheet">
+        ${history(guided, view.turn + (reviewing ? 1 : 0), filling ? turn : null)}
+        ${choiceBlock}
+        ${choosing ? feedback(view.feedback) : ""}
+        ${filling ? guidedForm(turn) : ""}
+        ${reached && !reviewing ? resultCard(guided, snapshot) : ""}
+        ${reviewBlock}
+      </div>
+    </div>
+  </section>`;
+}
+
+function guidedForm(turn) {
+  const view = state.guided;
+  const vertices = Object.keys(graphs[guided.graph].nodes);
+  const fields = turn.comparisons.map(({ to }) => {
+    const values = view.values[to] ?? {};
+    const errors = view.errors[to] ?? {};
+    const fieldId = "entry-" + to;
+    return `<div class="entry-row">
+      <strong>${esc(to)}</strong>
+      <label for="${fieldId}-distance">${esc(T().distLabel)}
+        <input id="${fieldId}-distance" type="text" inputmode="numeric" autocomplete="off" maxlength="8" data-entry="${to}" data-field="distance"
+          aria-label="${esc(T().distOf(to))}" value="${esc(values.distance ?? "")}"${errors.distance ? ` aria-invalid="true" aria-describedby="${fieldId}-distance-error"` : ""}>
+        ${errors.distance ? `<span class="field-error" id="${fieldId}-distance-error">${esc(T().badDistance)}</span>` : ""}
+      </label>
+      <label for="${fieldId}-predecessor">${esc(T().predLabel)}
+        <select id="${fieldId}-predecessor" data-entry="${to}" data-field="predecessor" aria-label="${esc(T().predOf(to))}"${errors.predecessor ? ` aria-invalid="true" aria-describedby="${fieldId}-predecessor-error"` : ""}>
+          <option value="">${esc(T().choose)}</option>
+          ${vertices.filter(node => node !== to).map(node => `<option${node === values.predecessor ? " selected" : ""} value="${esc(node)}">${esc(node)}</option>`).join("")}
+        </select>
+        ${errors.predecessor ? `<span class="field-error" id="${fieldId}-predecessor-error">${esc(T().badPredecessor)}</span>` : ""}
+      </label>
+    </div>`;
+  }).join("");
+
+  return `<form class="guide-form" data-form="guided" novalidate>
+    <h3>${esc(T().fillHeading(turn.vertex))}</h3>
+    <p>${esc(T().fillPrompt(turn.vertex))}</p>
+    <div class="guide-fields">${fields}</div>
+    <div><button class="primary" type="submit">${esc(T().validateRow)}</button></div>
+    ${feedback(view.feedback)}
+  </form>`;
+}
+
+function chooseGuided(vertex) {
+  const view = state.guided;
+  if (view.phase !== "choose") return;
+  const turn = guided.trace.turns[view.turn];
+  if (vertex !== turn.vertex) {
+    view.feedback = status("wrongVertex", true);
+    render("choose-" + vertex);
+    announce(message(view.feedback));
+    return;
+  }
+  view.feedback = null;
+  view.phase = turn.comparisons.length ? "fill" : "review";
+  render(turn.comparisons.length ? "entry-" + turn.comparisons[0].to + "-distance" : "guide-review");
+  const distance = formatNumber(turn.after.distances[vertex]);
+  announce(vertex === guided.goal ? T().reached(vertex) : T().process(vertex, distance));
+}
+
+function readWholeNumber(input) {
+  const text = input.trim();
+  if (!/^\d+$/.test(text)) return null;
+  const value = Number(text);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
+function validateGuided(form) {
+  const view = state.guided;
+  if (view.phase !== "fill") return;
+  const turn = guided.trace.turns[view.turn];
+  let firstInvalid;
+  view.errors = {};
+  for (const input of form.querySelectorAll("[data-entry]")) rememberInput(input);
+  for (const { to } of turn.comparisons) {
+    const values = view.values[to];
+    const distance = readWholeNumber(values.distance) !== turn.after.distances[to];
+    const predecessor = values.predecessor !== turn.after.predecessors[to];
+    if (distance || predecessor) {
+      view.errors[to] = { distance, predecessor };
+      firstInvalid ??= "entry-" + to + (distance ? "-distance" : "-predecessor");
+    }
+  }
+
+  if (firstInvalid) {
+    view.feedback = status("lineInvalid", true);
+    render(firstInvalid);
+  } else {
+    form.querySelector("button[type=submit]").disabled = true;
+    view.phase = "review";
+    view.feedback = status("lineValid");
+    render("guide-review");
+  }
+  announce(message(view.feedback));
+}
+
+function nextGuidedTurn() {
+  const view = state.guided;
+  if (view.phase !== "review" || view.turn >= guided.trace.turns.length - 1) return;
+  view.turn++;
+  view.phase = "choose";
+  view.values = {};
+  view.errors = {};
+  view.feedback = null;
+  render("guide-pick");
+}
+
+function renderIndependent() {
+  const view = state.independent;
+  const ordering = view.phase === "order";
+  const complete = view.phase === "done";
+  const fixed = new Set(view.order);
+  const vertices = Object.keys(graphs[independent.graph].nodes);
+  const choices = ordering ? vertices.filter(node => !fixed.has(node)) : vertices;
+  const action = ordering ? "order-pick" : "path-pick";
+  const { turns, final } = independent.trace;
+  const cost = measurePath(graphs[independent.graph], view.path)?.cost;
+  return `<section class="screen">
+    ${heading(T().independentHeading, T().independentIntro)}
+    <div class="workspace">
+      ${graphCard(independent, {
+        fixed, path: view.path, action: complete ? undefined : action, choices,
+        route: complete ? "final" : ordering ? undefined : "selected"
+      })}
+      <div class="worksheet">
+        <h3 id="independent-step" tabindex="-1">${esc(ordering ? T().verifyOrder : T().order)}</h3>
+        ${sequence(view.order)}
+        ${ordering ? vertexButtons(choices, action) : ""}
+        ${ordering ? "" : `<h3 id="path-step" tabindex="-1">${esc(T().buildPath)}</h3>
+          ${complete ? "" : `<p>${esc(T().independentBuild)}</p>`}
+          ${sequence(view.path)}
+          ${complete ? "" : vertexButtons(choices, action)}
+          ${complete ? "" : `<div class="actions">
+            ${button(T().undo, "path-undo", { id: "path-undo", disabled: !view.path.length })}
+            ${button(T().validatePath, "path-check", { id: "path-check", className: "primary" })}
+          </div>`}
+          ${complete ? `<div class="result"><p><strong>${esc(T().pathSuccess)}</strong></p><p>${esc(T().pathCost(pathText(view.path), formatNumber(cost)))}</p></div>
+            ${disclosure("correction", T().correction, history(independent, turns.length) + `<p class="note correction-note">${esc(independentTieNote(final))}</p>`)}` : ""}`}
+        ${feedback(view.feedback)}
+      </div>
+    </div>
+  </section>`;
+}
+
+function independentTieNote(final) {
+  const turn = independent.trace.turns.find(step => step.comparisons.some(arc =>
+    arc.to === "C" && arc.candidate === arc.previous
+  ));
+  if (!turn) return T().tieRule;
+  const tie = turn.comparisons.find(arc => arc.to === "C" && arc.candidate === arc.previous);
+  const graph = graphs[independent.graph];
+  const { cost: direct } = measurePath(graph, [independent.start, tie.to]);
+  const { cost: first } = measurePath(graph, [independent.start, turn.vertex]);
+  return T().tieExplanation(tie.to, final.predecessors[tie.to], turn.vertex, direct, first, tie.weight);
+}
+
+function chooseOrder(vertex) {
+  const view = state.independent;
+  if (view.phase !== "order") return;
+  const { turns } = independent.trace;
+  if (turns[view.order.length].vertex !== vertex) {
+    view.feedback = status("wrongVertex", true);
+    render("choose-" + vertex);
+    announce(message(view.feedback));
+    return;
+  }
+  view.order.push(vertex);
+  if (view.order.length === turns.length) {
+    view.phase = "path";
+    view.feedback = status("orderOk");
+    render("path-step");
+    announce(message(view.feedback));
+  } else {
+    view.feedback = null;
+    render("independent-step");
+  }
+}
+
+function addVertex(exercise, view, vertex) {
+  const last = view.path[view.path.length - 1];
+  const graph = graphs[exercise.graph];
+  if (last === undefined && vertex !== exercise.start) {
+    view.feedback = status("startError", true, exercise.start);
+  } else if (last !== undefined && !connections(graph, last).some(arc => arc.to === vertex)) {
+    view.feedback = status(graph.directed ? "invalidArc" : "invalidRoad", true, last, vertex);
+  } else {
+    view.path.push(vertex);
+    if (view.feedback?.key !== "orderOk") view.feedback = null;
+  }
+  render("choose-" + vertex);
+  if (view.feedback?.error) announce(message(view.feedback));
+}
+
+function checkPath(exercise, path) {
+  if (path[0] !== exercise.start) return { error: status("startError", true, exercise.start) };
+  if (path[path.length - 1] !== exercise.goal) return { error: status("incomplete", true, exercise.goal) };
+  const measurement = measurePath(graphs[exercise.graph], path);
+  return measurement ? { measurement } : { error: status("invalidPath", true) };
+}
+
+function validateIndependent() {
+  const view = state.independent;
+  if (view.phase !== "path") return;
+  const { error, measurement } = checkPath(independent, view.path);
+  const best = independent.trace.final.distances[independent.goal];
+  if (error) view.feedback = error;
+  else if (measurement.cost !== best) view.feedback = status("pathNotOptimal", true, measurement.cost, best);
+  else {
+    view.phase = "done";
+    view.feedback = null;
+  }
+  render(view.phase === "done" ? "path-step" : "path-check");
+  announce(view.feedback ? message(view.feedback) : T().pathSuccess);
+}
+
+function renderSituation() {
+  const view = state.situation;
+  const graph = graphs[situation.graph];
+  const options = Object.keys(graph.nodes);
+  const measure = measurePath(graph, view.path);
+  return `<section class="screen">
+    ${heading(T().realHeading, T().realIntro)}
+    <div class="workspace">
+      ${graphCard(situation, {
+        path: view.path, action: view.solved ? undefined : "route-pick", choices: options,
+        route: view.solved ? "final" : "selected"
+      })}
+      <div class="worksheet">
+        <h3 id="route-step" tabindex="-1">${esc(T().realBuild)}</h3>
+        ${sequence(view.path)}
+        ${view.solved ? `<div class="result"><p><strong>${esc(T().routeSuccess)}</strong></p><p>${esc(T().routeCost(measure.arcs.map(arc => arc.weight).join(" + "), measure.cost))}</p></div>` : `
+          ${vertexButtons(options, "route-pick")}
+          <div>${button(T().undo, "route-undo", { id: "route-undo", disabled: !view.path.length })}</div>
+          <form class="route-form" data-form="situation" novalidate>
+            <label for="duration">${esc(T().duration)}
+              <input id="duration" inputmode="numeric" autocomplete="off" maxlength="8" value="${esc(view.duration)}"${["badDuration", "durationRequired"].includes(view.feedback?.key) ? ' aria-invalid="true"' : ""}>
+            </label>
+            <div><button id="route-check" type="submit" class="primary">${esc(T().validateRoute)}</button></div>
+          </form>
+          ${feedback(view.feedback)}`}
+      </div>
+    </div>
+  </section>`;
+}
+
+function validateSituation(form) {
+  const view = state.situation;
+  if (view.solved) return;
+  view.duration = form.querySelector("#duration").value;
+  const { error, measurement } = checkPath(situation, view.path);
+  const best = situation.trace.final.distances[situation.goal];
+  const input = readWholeNumber(view.duration);
+  if (error) view.feedback = error;
+  else if (input === null) view.feedback = status("durationRequired", true);
+  else if (input !== measurement.cost) view.feedback = status("badDuration", true);
+  else if (input !== best) view.feedback = status("routeNotOptimal", true, measurement.cost, best);
+  else {
+    view.solved = true;
+    view.feedback = null;
+  }
+  const target = view.solved ? "route-step"
+    : ["badDuration", "durationRequired"].includes(view.feedback.key) ? "duration" : "route-check";
+  render(target);
+  announce(view.feedback ? message(view.feedback) : T().routeSuccess);
+}
+
+function undoLast(view, prefix) {
+  if (!view.path.length) return;
+  view.path.pop();
+  view.feedback = null;
+  render(view.path.length ? prefix + "-undo" : "choose-" + (prefix === "route" ? situation.start : independent.start));
+}
+
+function renderQuiz() {
+  return `<section class="screen">
+    ${heading(T().quizHeading, T().quizIntro)}
+    <div class="quiz-grid">
+      ${T().quiz.map(({ statement, answer, explanation }, index) => {
+        const picked = state.quiz[index];
+        const ok = picked === answer;
+        return `<article class="quiz-card" aria-labelledby="quiz-title-${index}">
+          <h3 id="quiz-title-${index}">${index + 1}. ${esc(statement)}</h3>
+          <div class="actions" role="group" aria-labelledby="quiz-title-${index}">
+            ${[true, false].map(option => button(option ? T().yes : T().no, "quiz-answer", {
+              id: `quiz-${index}-${option}`, value: `${index}-${option}`,
+              className: picked === option ? ok ? "correct" : "incorrect" : undefined,
+              pressed: picked === option
+            })).join("")}
+          </div>
+          ${picked === null ? "" : `<div class="feedback${ok ? "" : " error"}"><p><strong>${esc(ok ? T().correct : T().incorrect)}</strong></p><p>${esc(explanation)}</p></div>`}
+        </article>`;
+      }).join("")}
+    </div>
+  </section>`;
+}
+
+function answerQuiz(value) {
+  const [indexText, selection] = value.split("-");
+  const index = Number(indexText);
+  state.quiz[index] = selection === "true";
+  const item = T().quiz[index];
+  render("quiz-" + value);
+  announce((state.quiz[index] === item.answer ? T().correct : T().incorrect) + " " + item.explanation);
+}
+
+function announce(text) {
+  $("announcement").replaceChildren(document.createTextNode(text));
+}
+
+function progress() {
+  const guidedDone = guided.trace.turns.some((turn, index) =>
+    turn.vertex === guided.goal && (index < state.guided.turn ||
+      (index === state.guided.turn && state.guided.phase === "review"))
+  );
+  return [
+    false,
+    state.weighted.solved,
+    guidedDone,
+    state.independent.phase === "done",
+    state.situation.solved,
+    state.quiz.every((answer, index) => answer === T().quiz[index].answer)
+  ];
+}
+
+function renderNavigation() {
+  const complete = progress();
+  $("navigation").setAttribute("aria-label", T().navigation);
+  $("navigation").innerHTML = T().sections.map((section, i) => {
+    const selected = state.screen === i;
+    return `<button type="button" id="nav-${i}" data-action="navigate" data-value="${i}"${selected ? ' aria-current="page" class="active"' : ""}>${esc(section)}${complete[i] ? `<span class="badge">${esc(T().done)}</span>` : ""}</button>`;
+  }).join("");
+}
+
+function render(focusId, keepScroll = false) {
+  const active = document.activeElement;
+  const focus = focusId ?? active?.id;
+  renderNavigation();
+  $("activity").innerHTML = [
+    renderDemo, renderWeighted, renderGuided, renderIndependent, renderSituation, renderQuiz
+  ][state.screen]();
+  if (focus) $(focus)?.focus({ preventScroll: keepScroll });
+}
+
+function restart() {
+  switch (state.screen) {
+    case 1: state.weighted = newWeighted(); break;
+    case 2: state.guided = newGuided(); break;
+    case 3:
+      state.independent = newIndependent();
+      state.disclosures.delete("correction");
+      break;
+    case 4: state.situation = newSituation(); break;
+    case 5: state.quiz.fill(null); break;
+    default: return;
+  }
+  state.disclosures.delete("edges-" + state.screen);
+  render("screen-title");
+  announce($("screen-title").textContent);
+}
+
+function nextWeightedQuestion() {
+  const view = state.weighted;
+  if (view.question !== 0 || view.selected === null) return;
+  const exercise = weighted[0];
+  if (measurePath(graphs[exercise.graph], [...exercise.options[view.selected]]).cost !==
+      exercise.trace.final.distances[exercise.goal]) return;
+  state.weighted = { ...newWeighted(), question: 1 };
+  render("weighted-step");
+}
+
+function rememberInput(input) {
+  if (input.id === "duration") state.situation.duration = input.value;
+  if (!input.dataset.entry) return;
+  const { entry, field } = input.dataset;
+  state.guided.values[entry] ??= { distance: "", predecessor: "" };
+  state.guided.values[entry][field] = input.value;
+}
+
+const actions = {
+  navigate(value) {
+    state.screen = Number(value);
+    announce("");
+    render("nav-" + value, true);
+  },
+  restart,
+  "demo-next": () => changeDemo(1),
+  "demo-prev": () => changeDemo(-1),
+  "weighted-choice": value => chooseWeighted(Number(value)),
+  "weighted-next": nextWeightedQuestion,
+  "guide-pick": chooseGuided,
+  "guide-next": nextGuidedTurn,
+  "order-pick": chooseOrder,
+  "path-pick": vertex => addVertex(independent, state.independent, vertex),
+  "path-undo": () => undoLast(state.independent, "path"),
+  "path-check": validateIndependent,
+  "route-pick": vertex => addVertex(situation, state.situation, vertex),
+  "route-undo": () => undoLast(state.situation, "route"),
+  "quiz-answer": answerQuiz
+};
+
+function activate(control) {
+  if (control && !control.disabled) actions[control.dataset.action]?.(control.dataset.value);
+}
+
+const formValidators = { guided: validateGuided, situation: validateSituation };
+
+$("navigation").addEventListener("click", event => activate(event.target.closest("[data-action]")));
+$("activity").addEventListener("click", event => {
+  // Certains aperçus autorisent les clics mais bloquent l’envoi des formulaires.
+  const submit = event.target.closest('form[data-form] button[type="submit"]');
+  if (submit) {
+    event.preventDefault();
+    if (!submit.disabled) formValidators[submit.form.dataset.form](submit.form);
+    return;
+  }
+  const control = event.target.closest("[data-action]");
+  // Le second clic peut arriver sur le bouton suivant après le réaffichage.
+  if (event.detail > 1 && control?.dataset.action === "guide-next") return;
+  activate(control);
+});
+$("activity").addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const vertex = event.target.closest("g[role=button][data-action]");
+  if (!vertex) return;
+  event.preventDefault();
+  if (!event.repeat) activate(vertex);
+});
+$("activity").addEventListener("submit", event => {
+  const form = event.target;
+  const validate = formValidators[form.dataset.form];
+  if (!validate) return;
+  event.preventDefault();
+  validate(form);
+});
+$("activity").addEventListener("input", event => rememberInput(event.target));
+$("activity").addEventListener("change", event => rememberInput(event.target));
+$("activity").addEventListener("toggle", event => {
+  const details = event.target;
+  if (!details.dataset.disclosure || !details.isConnected) return;
+  if (details.open) state.disclosures.add(details.dataset.disclosure);
+  else state.disclosures.delete(details.dataset.disclosure);
+}, true);
+
+function isFullscreen() {
+  return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function syncFullscreen() {
+  $("fullscreen").textContent = isFullscreen() ? T().exitFullscreen : T().fullscreen;
+  $("fullscreen").setAttribute("aria-pressed", String(isFullscreen()));
+  $("fullscreen-message").hidden = !state.fullscreenError;
+  $("fullscreen-message").textContent = state.fullscreenError ? T().fullscreenUnavailable : "";
+}
+
+function fullscreenFailed() {
+  state.fullscreenError = true;
+  syncFullscreen();
+}
+
+$("fullscreen").onclick = async () => {
+  const element = document.documentElement;
+  const leaving = isFullscreen();
+  const operation = leaving
+    ? document.exitFullscreen || document.webkitExitFullscreen
+    : element.requestFullscreen || element.webkitRequestFullscreen;
+  state.fullscreenError = false;
+  syncFullscreen();
+  if (!operation) {
+    fullscreenFailed();
+    return;
+  }
+  try {
+    await operation.call(leaving ? document : element);
+    syncFullscreen();
+  } catch {
+    fullscreenFailed();
+  }
+};
+
+for (const event of ["fullscreenchange", "webkitfullscreenchange"]) {
+  document.addEventListener(event, () => {
+    state.fullscreenError = false;
+    syncFullscreen();
+  });
+}
+for (const event of ["fullscreenerror", "webkitfullscreenerror"]) {
+  document.addEventListener(event, fullscreenFailed);
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  $("kicker").textContent = T().kicker;
+  $("title").textContent = T().title;
+  $("instruction").textContent = T().instruction;
+  $("backLink").textContent = T().backList;
+  $("language").textContent = lang === "fr" ? "English" : "Français";
+  $("language").lang = lang === "fr" ? "en" : "fr";
+  document.title = T().title + " · Gymnase — Frédéric Jaccard";
+  document.querySelector('meta[name="description"]').content = T().description;
+  syncFullscreen();
+  announce("");
+  render(undefined, true);
+}
+
+$("language").onclick = () => {
+  lang = lang === "fr" ? "en" : "fr";
+  try { localStorage.setItem("fj-lang", lang); } catch {}
+  try { document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax"; } catch {}
+  applyLang();
+};
+
+applyLang();
+</script>
+</body>
+</html>
