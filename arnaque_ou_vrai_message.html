@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Repérez les indices d'une arnaque par SMS et choisissez la bonne réaction, en quatre étapes guidées.">
+<title>Arnaque ou vrai message ? · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F;
+  --muted:#6E726B; --error:#C84B31;
+}
+* { box-sizing:border-box }
+[hidden], .hidden { display:none !important }
+body { background:var(--bg); color:var(--ink); margin:0; font:16px/1.55 'Quattrocento Sans',sans-serif }
+main { max-width:1050px; margin:auto; padding:28px 20px 40px }
+header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap }
+.kicker { color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; margin:0 }
+h1 { font-size:clamp(26px,4.5vw,38px); line-height:1.1; margin:4px 0 14px; color:var(--primary) }
+h2 { color:var(--primary); font-size:22px; margin:0 0 12px }
+p { margin:8px 0 14px }
+.hdrBtns { display:flex; gap:8px; flex-shrink:0 }
+.hdrBtns button { min-height:38px; padding:6px 12px; color:var(--primary); border:1px solid var(--line); border-radius:10px; background:var(--card); font:inherit; font-weight:700; font-size:13px; cursor:pointer }
+.hdrBtns button:hover { border-color:var(--primary) }
+.instruction { color:var(--primary); background:var(--primaryLight); border-radius:10px; padding:12px 15px; margin:0 0 18px }
+:focus-visible { outline:3px solid var(--accent); outline-offset:2px }
+.small { font-size:13px; color:var(--muted) }
+.top { display:flex; align-items:center; justify-content:space-between; gap:12px }
+.progress { height:7px; background:var(--line); border-radius:20px; margin:18px 0 24px; overflow:hidden }
+.progress span { display:block; height:100%; width:25%; background:var(--accent); transition:width .25s }
+.layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; align-items:start }
+.panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px }
+.phone { max-width:380px; margin:auto; background:var(--bg); border:6px solid var(--ink); border-radius:32px; padding:14px 12px 20px }
+.status { display:flex; justify-content:space-between; font-weight:700; font-size:12px; padding:0 9px 12px }
+.avatar { width:56px; height:56px; border-radius:50%; background:var(--primaryLight); color:var(--primary); display:grid; place-items:center; margin:6px auto 7px; font-size:28px }
+.sender { text-align:center; font-size:12px; color:var(--muted); background:var(--card); border:1px solid var(--line); border-radius:20px; padding:7px 4px; overflow-wrap:anywhere }
+.time { text-align:center; font-size:12px; color:var(--muted); margin:18px 0 12px }
+.bubble { background:#FFFFFF; border:1px solid var(--line); color:var(--ink); border-radius:18px; padding:16px; font-size:14.5px; white-space:pre-line; line-height:1.5 }
+.fake { color:var(--muted); font-size:11.5px; text-align:center; margin:12px 0 0 }
+.tag { display:inline-block; background:var(--primaryLight); color:var(--primary); border-radius:30px; padding:3px 11px; font-size:12.5px; font-weight:700; margin-bottom:14px }
+.question { font-weight:700 }
+.choices { display:grid; gap:10px }
+.choice { width:100%; min-height:44px; text-align:left; background:var(--bg); border:1px solid var(--primary); border-radius:10px; color:var(--primary); padding:12px 14px; font:inherit; cursor:pointer }
+.choice:hover { background:var(--primaryLight) }
+.choice.selected { background:var(--primary); color:#FFFFFF }
+.button { min-height:44px; background:var(--accent); color:#FFFFFF; border:0; border-radius:10px; font:700 15px 'Quattrocento Sans',sans-serif; padding:11px 18px; cursor:pointer }
+.button:disabled { opacity:.4; cursor:not-allowed }
+.button.secondary { background:var(--card); color:var(--primary); border:1px solid var(--primary) }
+.actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px }
+.feedback { border-left:3px solid var(--accent); padding:11px 14px; background:var(--accentLight); border-radius:0 9px 9px 0; margin-top:16px }
+.feedback.good { border-color:var(--primary); background:var(--primaryLight) }
+.feedback.bad { border-color:var(--error) }
+.clue { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer }
+.clue input { width:20px; height:20px; accent-color:var(--accent); margin-top:3px; flex-shrink:0 }
+.clue strong { display:block }
+.clue span { color:var(--muted); font-size:14px }
+.result { font-size:32px; font-weight:700; color:var(--accent) }
+.reveal { margin:14px 0; padding:14px; background:var(--bg); border:1px solid var(--line); border-radius:12px }
+.reveal b { color:var(--primary) }
+a { color:var(--primary) }
+footer { margin-top:26px; text-align:center; font-size:13px; color:var(--muted) }
+footer a { color:var(--muted); font-weight:400; text-decoration:none }
+footer a:hover { text-decoration:underline }
+@media (max-width:740px) {
+  .layout { grid-template-columns:1fr }
+  .panel { padding:16px }
+  main { padding:20px 12px 32px }
+}
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; scroll-behavior:auto !important } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <p class="kicker" id="kicker"></p>
+    <h1 id="title"></h1>
+  </div>
+  <div class="hdrBtns">
+    <button id="langBtn" type="button">English</button>
+    <button id="fsBtn" type="button"><span id="fsLabel"></span></button>
+  </div>
+</header>
+<div class="instruction" id="instruction"></div>
+<div class="top"><span class="tag" id="caseTag"></span><span class="small" id="stepLabel"></span></div>
+<div class="progress" aria-label="Progression"><span id="bar"></span></div>
+
+<div class="layout">
+<section class="panel">
+  <div class="phone">
+    <div class="status"><span>16:46</span><span>●●●&nbsp; Wi-Fi&nbsp; ▰</span></div>
+    <div class="avatar" aria-hidden="true">●</div>
+    <div class="sender">j••••••••••@icloud.com</div>
+    <div class="time" id="smsTime"></div>
+    <div class="bubble" id="smsBody"></div>
+    <div class="fake" id="maskedNote"></div>
+  </div>
+</section>
+
+<section class="panel" aria-live="polite">
+  <div id="s1">
+    <h2 id="h1step"></h2>
+    <p id="q1"></p>
+    <div class="choices" id="first">
+      <button class="choice" data-val="real" id="cReal"></button>
+      <button class="choice" data-val="unsure" id="cUnsure"></button>
+      <button class="choice" data-val="scam" id="cScam"></button>
+    </div>
+    <div class="actions"><button class="button" id="next1" disabled></button></div>
+  </div>
+
+  <div id="s2" class="hidden">
+    <h2 id="h2step"></h2>
+    <p id="q2"></p>
+    <div id="clues"></div>
+    <div class="actions"><button class="button" id="checkClues"></button></div>
+    <div id="clueFeedback" class="feedback hidden"></div>
+    <div class="actions"><button class="button hidden" id="next2"></button></div>
+  </div>
+
+  <div id="s3" class="hidden">
+    <h2 id="h3step"></h2>
+    <p id="q3"></p>
+    <div class="choices" id="actionsChoices">
+      <button class="choice" data-val="call" id="cCall"></button>
+      <button class="choice" data-val="reply" id="cReply"></button>
+      <button class="choice" data-val="verify" id="cVerify"></button>
+      <button class="choice" data-val="ignore" id="cIgnore"></button>
+    </div>
+    <div id="actionFeedback" class="feedback hidden"></div>
+    <div class="actions"><button class="button" id="next3" disabled></button></div>
+  </div>
+
+  <div id="s4" class="hidden">
+    <h2 id="h4step"></h2>
+    <div class="result" id="score"></div>
+    <p id="scoreText"></p>
+    <div class="reveal"><b id="r1t"></b><p id="r1"></p></div>
+    <div class="reveal"><b id="r2t"></b><p id="r2"></p></div>
+    <div class="reveal"><b id="r3t"></b><p id="r3"></p></div>
+    <div class="reveal"><b id="r4t"></b><p id="r4"></p></div>
+    <p><strong id="discT"></strong> <span id="disc"></span></p>
+    <p class="small"><span id="further"></span> <a id="ubsLink" href="https://ubs.com/ch/fr/services/digital-banking/security.html"></a></p>
+    <div class="actions"><button class="button secondary" id="restart"></button></div>
+  </div>
+</section>
+</div>
+
+<p class="small" id="privacyNote" style="margin-top:22px"></p>
+<footer><a href="enjeux_sociaux.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+
+const I18N = {
+ fr: {
+  kicker: "ENJEUX SOCIAUX",
+  title: "Arnaque ou vrai message ?",
+  instruction: "Vous recevez un message qui semble venir d'une banque. Saurez-vous reconnaître les indices d'une tentative de fraude et choisir la bonne réaction ?",
+  fs: "Plein écran", fsExit: "Quitter",
+  backList: "← Toutes les applications",
+  caseTag: "Document de départ · cas réel anonymisé",
+  step: n => "Étape " + n + " sur 4",
+  smsTime: "iMessage · Aujourd'hui 15:18",
+  sms: "UBS : Paiement en attente\n\nUne transaction de 1781 CHF en faveur de BOOKING[.]COM est en cours de validation.\n\nDétails du paiement :\nCommerçant : BOOKING\nDate : 18.11.2026\nMontant : 1781 CHF\nRéférence : 1781-BKG7712BE\n\nSi ce paiement n'a pas été effectué par vos soins, prenez contact immédiatement avec notre service d'assistance au 071 ••• •• ••.",
+  maskedNote: "Expéditeur et numéro masqués pour cette activité.",
+  h1: "1. Première impression",
+  q1: "Sans chercher sur Internet, quelle est votre impression ?",
+  cReal: "Ce message est probablement authentique.",
+  cUnsure: "Je ne sais pas encore.",
+  cScam: "Ce message est probablement une arnaque.",
+  next: "Continuer",
+  h2: "2. Menez l'enquête",
+  q2: "Sélectionnez tous les éléments qui peuvent vous mettre la puce à l'oreille.",
+  check: "Vérifier mes choix",
+  clues: [
+   ["Adresse iCloud personnelle", "Une banque ne devrait pas envoyer une alerte bancaire depuis une adresse personnelle.", true],
+   ["Montant précis de 1 781 CHF", "Un montant exact peut donner une impression de crédibilité, sans prouver l'authenticité.", true],
+   ["Demande d'appeler immédiatement", "L'urgence pousse à agir avant de vérifier.", true],
+   ["Numéro d'assistance indiqué dans le message", "Le numéro peut mener à un imposteur : il faut le vérifier indépendamment.", true],
+   ["Date et référence de transaction", "Ces détails peuvent être inventés facilement.", true],
+   ["Le texte est en français", "La langue française n'est pas, en soi, un indice de fraude.", false]
+  ],
+  clueFeedback: hits => hits + " bonnes décisions sur 6. Les cinq premiers éléments sont des indices à examiner ; le français n'est pas suspect en lui-même.",
+  h3: "3. Que feriez-vous ?",
+  q3: "Vous n'avez effectué aucun achat de 1 781 CHF. Quelle est la meilleure réaction ?",
+  cCall: "Appeler immédiatement le numéro indiqué.",
+  cReply: "Répondre pour demander des explications.",
+  cVerify: "Ouvrir l'application bancaire officielle et contacter la banque par ses canaux habituels si nécessaire.",
+  cIgnore: "Supprimer le message sans vérifier quoi que ce soit.",
+  fbGood: "Exactement ! Vérifiez toujours par un canal indépendant du message.",
+  fbIgnore: "Supprimer le message évite le piège, mais si vous avez un doute sur un paiement réel, vérifiez directement dans votre application bancaire.",
+  fbBad: "Attention : ne contactez jamais une banque à partir des coordonnées fournies dans un message suspect.",
+  debrief: "Voir le bilan",
+  h4: "4. Le débriefing",
+  scoreText: s => s >= 7 ? "Excellent travail : vous avez repéré presque tous les signaux." : s >= 5 ? "Bien joué : vous avez identifié plusieurs indices importants." : "Cette enquête montre pourquoi il faut prendre le temps de vérifier.",
+  r1t: "Le signal le plus fort",
+  r1: "L'expéditeur utilise une adresse iCloud personnelle, et non un canal officiel de la banque. C'est un indice majeur d'usurpation.",
+  r2t: "Le piège",
+  r2: "Le montant précis, la référence de paiement et l'urgence rendent le message crédible. Le but probable est de vous faire appeler un faux service d'assistance.",
+  r3t: "Les bons réflexes",
+  r3: "Ne pas appeler, ne pas répondre, ne transmettre aucun identifiant ni code. Vérifier indépendamment dans l'application officielle de la banque, puis signaler et bloquer l'expéditeur.",
+  r4t: "À retenir",
+  r4: "Recevoir ce message ne prouve pas qu'un compte a été piraté. Même une personne qui n'est pas cliente de la banque peut recevoir cette arnaque.",
+  discT: "Question de discussion :",
+  disc: "Pourquoi un escroc préfère-t-il parfois vous faire appeler un numéro plutôt que d'ajouter un lien frauduleux ?",
+  further: "Pour aller plus loin :",
+  ubsText: "Sécurité bancaire — UBS (site officiel)",
+  ubsHref: "https://ubs.com/ch/fr/services/digital-banking/security.html",
+  restart: "Recommencer",
+  privacyNote: "Activité pédagogique · Exemple authentique anonymisé · Les indices permettent d'évaluer le risque, pas de certifier à eux seuls l'identité de l'expéditeur. Aucune donnée n'est envoyée ou enregistrée."
+ },
+ en: {
+  kicker: "SOCIAL ISSUES",
+  title: "Scam or genuine message?",
+  instruction: "You receive a message that seems to come from a bank. Can you spot the signs of fraud and choose the right response?",
+  fs: "Fullscreen", fsExit: "Exit",
+  backList: "← All applications",
+  caseTag: "Starting document · anonymised real case",
+  step: n => "Step " + n + " of 4",
+  smsTime: "iMessage · Today 15:18",
+  sms: "UBS: Payment pending\n\nA transaction of CHF 1,781 to BOOKING[.]COM is being validated.\n\nPayment details:\nMerchant: BOOKING\nDate: 11/18/2026\nAmount: CHF 1,781\nReference: 1781-BKG7712BE\n\nIf you did not make this payment, contact our support service immediately on 071 ••• •• ••.",
+  maskedNote: "Sender and number hidden for this activity.",
+  h1: "1. First impression",
+  q1: "Without searching the Internet, what is your impression?",
+  cReal: "This message is probably genuine.",
+  cUnsure: "I'm not sure yet.",
+  cScam: "This message is probably a scam.",
+  next: "Continue",
+  h2: "2. Investigate",
+  q2: "Select all the elements that could make you suspicious.",
+  check: "Check my choices",
+  clues: [
+   ["Personal iCloud address", "A bank should not send a banking alert from a personal address.", true],
+   ["Precise amount of CHF 1,781", "An exact amount can make the message feel credible without proving it is genuine.", true],
+   ["Urges you to call immediately", "Urgency pushes you to act before verifying.", true],
+   ["Support number given in the message", "The number may lead to an impostor: verify it independently.", true],
+   ["Transaction date and reference", "These details are easy to invent.", true],
+   ["The text is in English", "The language itself is not a sign of fraud.", false]
+  ],
+  clueFeedback: hits => hits + " good decisions out of 6. The first five elements are clues worth examining; English is not suspicious in itself.",
+  h3: "3. What would you do?",
+  q3: "You have not made any purchase of CHF 1,781. What is the best response?",
+  cCall: "Call the number given immediately.",
+  cReply: "Reply to ask for an explanation.",
+  cVerify: "Open the official banking app and contact the bank through its usual channels if necessary.",
+  cIgnore: "Delete the message without checking anything.",
+  fbGood: "Exactly! Always verify through a channel independent of the message.",
+  fbIgnore: "Deleting the message avoids the trap, but if you are unsure about a real payment, check directly in your banking app.",
+  fbBad: "Careful: never contact a bank using details provided in a suspicious message.",
+  debrief: "See the debrief",
+  h4: "4. The debrief",
+  scoreText: s => s >= 7 ? "Excellent work: you spotted almost every sign." : s >= 5 ? "Well done: you identified several important clues." : "This investigation shows why it is worth taking the time to verify.",
+  r1t: "The strongest sign",
+  r1: "The sender uses a personal iCloud address rather than an official bank channel. That is a major sign of impersonation.",
+  r2t: "The trap",
+  r2: "The precise amount, the payment reference and the urgency make the message credible. The likely goal is to get you to call a fake support service.",
+  r3t: "The right habits",
+  r3: "Do not call, do not reply, never share credentials or codes. Verify independently in the bank's official app, then report and block the sender.",
+  r4t: "Remember",
+  r4: "Receiving this message does not prove an account has been hacked. Even people who are not customers of the bank can receive this scam.",
+  discT: "Discussion question:",
+  disc: "Why would a scammer sometimes rather get you to call a number than add a fraudulent link?",
+  further: "To go further:",
+  ubsText: "Banking security — UBS (official site)",
+  ubsHref: "https://ubs.com/ch/en/services/digital-banking/security.html",
+  restart: "Start again",
+  privacyNote: "Teaching activity · Anonymised genuine example · The clues help assess the risk; they cannot by themselves certify the sender's identity. No data is sent or stored."
+ }
+};
+
+let lang = (function () {
+  try {
+    var c = document.cookie.match(/(?:^|;\s*)fj-lang=([a-z]{2})/);
+    if (c && (c[1] === "fr" || c[1] === "en")) return c[1];
+  } catch (e) {}
+  try {
+    var s = localStorage.getItem("fj-lang");
+    if (s === "fr" || s === "en") return s;
+  } catch (e) {}
+  return "fr";
+})();
+
+const T = () => I18N[lang];
+let first = null, action = null, clueScore = 0, stage = 1;
+
+function buildClues() {
+  const states = T().clues.map((_, i) => {
+    const box = $("clue" + i);
+    return box ? { checked: box.checked, disabled: box.disabled,
+                   shown: !$("explain" + i).classList.contains("hidden") } : null;
+  });
+  $("clues").innerHTML = T().clues.map((x, i) =>
+    `<label class="clue"><input type="checkbox" id="clue${i}"><div><strong>${x[0]}</strong><span class="hidden" id="explain${i}">${x[1]}</span></div></label>`
+  ).join("");
+  states.forEach((st, i) => {
+    if (!st) return;
+    $("clue" + i).checked = st.checked;
+    $("clue" + i).disabled = st.disabled;
+    if (st.shown) $("explain" + i).classList.remove("hidden");
+  });
+}
+
+function applyLang() {
+  try {
+    localStorage.setItem("fj-lang", lang);
+    document.cookie = "fj-lang=" + lang + ";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (e) {}
+  const t = T();
+  document.documentElement.lang = lang;
+  document.title = t.title + " — " + t.kicker;
+  $("kicker").textContent = t.kicker;
+  $("title").textContent = t.title;
+  $("instruction").textContent = t.instruction;
+  $("langBtn").textContent = lang === "fr" ? "English" : "Français";
+  $("fsLabel").textContent = isFs() ? t.fsExit : t.fs;
+  document.getElementById("backLink").textContent = t.backList;
+  $("caseTag").textContent = t.caseTag;
+  $("stepLabel").textContent = t.step(stage);
+  $("smsTime").textContent = t.smsTime;
+  $("smsBody").textContent = t.sms;
+  $("maskedNote").textContent = t.maskedNote;
+  $("h1step").textContent = t.h1;
+  $("q1").textContent = t.q1;
+  $("cReal").textContent = t.cReal;
+  $("cUnsure").textContent = t.cUnsure;
+  $("cScam").textContent = t.cScam;
+  $("next1").textContent = t.next;
+  $("next2").textContent = t.next;
+  $("h2step").textContent = t.h2;
+  $("q2").textContent = t.q2;
+  $("checkClues").textContent = t.check;
+  $("h3step").textContent = t.h3;
+  $("q3").textContent = t.q3;
+  $("cCall").textContent = t.cCall;
+  $("cReply").textContent = t.cReply;
+  $("cVerify").textContent = t.cVerify;
+  $("cIgnore").textContent = t.cIgnore;
+  $("next3").textContent = t.debrief;
+  $("h4step").textContent = t.h4;
+  $("r1t").textContent = t.r1t; $("r1").textContent = t.r1;
+  $("r2t").textContent = t.r2t; $("r2").textContent = t.r2;
+  $("r3t").textContent = t.r3t; $("r3").textContent = t.r3;
+  $("r4t").textContent = t.r4t; $("r4").textContent = t.r4;
+  $("discT").textContent = t.discT;
+  $("disc").textContent = t.disc;
+  $("further").textContent = t.further;
+  $("ubsLink").textContent = t.ubsText;
+  $("ubsLink").href = t.ubsHref;
+  $("restart").textContent = t.restart;
+  $("privacyNote").textContent = t.privacyNote;
+  buildClues();
+  if (clueChecked) showClueResult();
+  if (action) showActionFeedback(action);
+  if (stage === 4) showScore();
+}
+
+$("langBtn").onclick = () => { lang = lang === "fr" ? "en" : "fr"; applyLang(); };
+
+function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+$("fsBtn").onclick = () => {
+  const el = document.documentElement;
+  if (isFs()) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const r = req.call(el); if (r && r.catch) r.catch(() => {}); }
+  }
+};
+function syncFsLabel() { $("fsLabel").textContent = isFs() ? T().fsExit : T().fs; }
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("webkitfullscreenchange", syncFsLabel);
+
+let clueChecked = false;
+
+function show(n) {
+  stage = n;
+  for (let i = 1; i <= 4; i++) $("s" + i).classList.toggle("hidden", i !== n);
+  $("bar").style.width = (n * 25) + "%";
+  $("stepLabel").textContent = T().step(n);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function choices(container, cb) {
+  $(container).querySelectorAll(".choice").forEach(btn => btn.addEventListener("click", () => {
+    $(container).querySelectorAll(".choice").forEach(x => x.classList.remove("selected"));
+    btn.classList.add("selected");
+    cb(btn.dataset.val);
+  }));
+}
+
+choices("first", v => { first = v; $("next1").disabled = false; });
+$("next1").onclick = () => show(2);
+
+function showClueResult() {
+  let hits = 0;
+  T().clues.forEach((x, i) => {
+    if ($("clue" + i).checked === x[2]) hits++;
+    $("explain" + i).classList.remove("hidden");
+    $("clue" + i).disabled = true;
+  });
+  clueScore = hits;
+  $("clueFeedback").classList.remove("hidden");
+  $("clueFeedback").textContent = T().clueFeedback(hits);
+  $("checkClues").disabled = true;
+  $("next2").classList.remove("hidden");
+}
+
+$("checkClues").onclick = () => { clueChecked = true; showClueResult(); };
+$("next2").onclick = () => show(3);
+
+function showActionFeedback(v) {
+  const good = v === "verify";
+  $("actionFeedback").className = "feedback " + (good ? "good" : "bad");
+  $("actionFeedback").textContent = good ? T().fbGood : v === "ignore" ? T().fbIgnore : T().fbBad;
+}
+
+choices("actionsChoices", v => { action = v; showActionFeedback(v); $("next3").disabled = false; });
+
+function showScore() {
+  const score = clueScore + (first === "scam" ? 1 : 0) + (action === "verify" ? 1 : 0);
+  $("score").textContent = score + " / 8";
+  $("scoreText").textContent = T().scoreText(score);
+}
+
+$("next3").onclick = () => { showScore(); show(4); };
+
+$("restart").onclick = () => {
+  first = null; action = null; clueScore = 0; clueChecked = false;
+  $("first").querySelectorAll(".choice").forEach(x => x.classList.remove("selected"));
+  $("actionsChoices").querySelectorAll(".choice").forEach(x => x.classList.remove("selected"));
+  $("next1").disabled = true;
+  $("next3").disabled = true;
+  $("actionFeedback").classList.add("hidden");
+  $("clueFeedback").classList.add("hidden");
+  $("checkClues").disabled = false;
+  $("next2").classList.add("hidden");
+  T().clues.forEach((_, i) => {
+    $("clue" + i).checked = false;
+    $("clue" + i).disabled = false;
+    $("explain" + i).classList.add("hidden");
+  });
+  show(1);
+};
+
+applyLang();
+show(1);
+</script>
+</body>
+</html>
