@@ -100,7 +100,7 @@ footer a:hover{text-decoration:underline}
         <input id="speed" type="range" min="1" max="20" value="8">
       </span>
     </div>
-    <div class="panel" style="margin-top:12px;padding:10px 14px">
+    <div class="panel" id="graphPanel" style="margin-top:12px;padding:10px 14px">
       <h2 id="graphTitle" style="font-size:14px;color:var(--primary);margin-bottom:6px"></h2>
       <canvas id="graph" width="900" height="130" style="width:100%;height:90px;display:block"></canvas>
     </div>
@@ -192,7 +192,7 @@ const I18N = {
 <h3>Pourquoi est-ce célèbre ?</h3>
 <p>Le jeu de la vie est l'exemple le plus connu d'<b>émergence</b> : des règles locales très simples, appliquées partout en même temps, font apparaître des structures complexes que personne n'avait programmées — des vaisseaux, des usines, des calculatrices. C'est une idée centrale en science : la complexité du monde (fourmis, neurones, écosystèmes, villes) peut naître de règles locales simples.</p>
 <h3>D'autres règles, d'autres mondes</h3>
-<p>Les règles de Conway ne sont qu'une possibilité parmi des milliers : chaque combinaison de conditions de naissance (B) et de survie (S) définit un « univers » différent. On en a catalogué énormément ; la plupart sont ennuyeuses (tout meurt, ou tout explose), mais quelques-unes sont célèbres. Quatre sont proposées dans l'application :</p>
+<p>Les règles de Conway ne sont qu'une possibilité parmi des milliers : chaque combinaison de conditions de naissance (B) et de survie (S) définit un « univers » différent. On en a catalogué énormément ; la plupart sont ennuyeuses (tout meurt, ou tout explose), mais quelques-unes sont célèbres. Voici celles proposées dans l'application :</p>
 <ul>
 <li><b>Conway (B3/S23)</b> — la règle originale : équilibre remarquable entre mort et croissance, oscillateurs, vaisseaux, canons. C'est la plus étudiée de toutes.</li>
 <li><b>HighLife (B36/S23)</b> — identique à Conway, plus une naissance possible avec 6 voisins. Ce petit ajout change tout pour certains motifs : il existe en HighLife un « réplicateur », un motif qui produit des copies de lui-même — introuvable sous les règles de Conway.</li>
@@ -214,7 +214,7 @@ const I18N = {
       conway:"Les règles originales de Conway (1970) : naissance avec 3 voisins, survie avec 2 ou 3. Un équilibre parfait entre mort et expansion.",
       highlife:"Comme Conway, mais une cellule naît aussi avec 6 voisins : des structures en expansion lente apparaissent.",
       daynight:"Naissance avec 3, 6, 7 ou 8 voisins, survie avec 3, 4, 6, 7 ou 8 : les grandes zones vides se remplissent, créant des continents de cellules.",
-      laby:"Naissance avec 3 voisins, survie toujours : les cellules ne meurent jamais et dessinent des couloirs de labyrinthe."
+      laby:"Naissance avec 3 voisins, survie avec 1 à 5 voisins : les motifs dessinent des couloirs de labyrinthe."
     }
   },
   en:{
@@ -270,7 +270,7 @@ const I18N = {
 <h3>Why is it famous?</h3>
 <p>The Game of Life is the best-known example of <b>emergence</b>: very simple local rules, applied everywhere at once, give rise to complex structures nobody programmed — spaceships, factories, calculators. This is a central idea in science: the complexity of the world (ants, neurons, ecosystems, cities) can arise from simple local rules.</p>
 <h3>Other rules, other worlds</h3>
-<p>Conway's rules are just one possibility among thousands: every combination of birth (B) and survival (S) conditions defines a different "universe". A great many have been catalogued; most are boring (everything dies, or everything explodes), but a few are famous. Four are available in the app:</p>
+<p>Conway's rules are just one possibility among thousands: every combination of birth (B) and survival (S) conditions defines a different "universe". A great many have been catalogued; most are boring (everything dies, or everything explodes), but a few are famous. The app includes the following rule sets:</p>
 <ul>
 <li><b>Conway (B3/S23)</b> — the original rule: a remarkable balance between death and growth, with oscillators, spaceships and guns. It is the most studied rule of all.</li>
 <li><b>HighLife (B36/S23)</b> — identical to Conway, plus a birth possible with 6 neighbours. This small addition changes everything for some patterns: HighLife has a "replicator", a pattern that produces copies of itself — no such pattern is known under Conway's rules.</li>
@@ -292,7 +292,7 @@ const I18N = {
       conway:"Conway's original rules (1970): birth with 3 neighbours, survival with 2 or 3. A perfect balance between death and expansion.",
       highlife:"Like Conway, but a cell is also born with 6 neighbours: slowly expanding structures appear.",
       daynight:"Birth with 3, 6, 7 or 8 neighbours, survival with 3, 4, 6, 7 or 8: large empty areas fill up, creating continents of cells.",
-      laby:"Birth with 3 neighbours, survival always: cells never die and draw maze corridors."
+      laby:"Birth with 3 neighbours, survival with 1 to 5 neighbours: patterns draw maze-like corridors."
     }
   }
 };
@@ -310,7 +310,9 @@ let gen = 0, playing = false, timer = null, speed = 8;
 let surv = new Set([2,3]), birth = new Set([3]);
 let neighMode = false, selected = null;
 let chifMode = false;
+let currentPattern = null, currentPreset = null;
 let histo = [];
+let zeroAvant = false;   // B0 était-il actif au dernier changement de règle ?
 let ncounts = new Map();   // nombre de voisins vivants par cellule (génération courante)
 
 const key = (c,r) => c+","+r;
@@ -335,9 +337,17 @@ function etape(){
   for(const [kk,n] of counts){
     if(live.has(kk) ? surv.has(n) : birth.has(n)) ng.add(kk);
   }
+  // cellules à 0 voisin vivant : absentes de counts, à traiter séparément
+  if(surv.has(0))
+    for(const k of live) if(!counts.has(k)) ng.add(k);
+  if(birth.has(0))
+    for(let r=OY;r<OY+ROWS;r++) for(let c=OX;c<OX+COLS;c++){
+      const kk=key(c,r);
+      if(!live.has(kk) && !counts.has(kk)) ng.add(kk);
+    }
   ncounts = counts;
   live = ng; gen++;
-  histo.push(vivantes());
+  if(!birth.has(0)) histo.push(vivantes());   // sous B0, la population n'a pas de sens : on n'enregistre pas
   if(selected) showInspect(selected.c,selected.r);
   render(); stats(); drawGraph();
 }
@@ -488,6 +498,7 @@ function buildPatterns(){
     const b=document.createElement("button");
     b.type="button"; b.textContent=T().patterns[k];
     b.onclick=()=>{
+      currentPattern=k;
       placer(k);
       const el=$("patInfo");
       el.textContent=T().patInfo[k];
@@ -510,6 +521,19 @@ function syncPresets(){
 function rulesChanged(){
   ruleLabel();
   syncPresets();
+  // B0 change la nature du monde (population infinie) : repartir d'une grille vide dans les deux sens.
+  const zero = birth.has(0);
+  if(zero !== zeroAvant){
+    setPlaying(false);
+    live=new Set(); gen=0; selected=null; ncounts=new Map();
+    $("inspect").style.display="none";
+    histo=zero ? [] : [0];
+    render(); stats();
+  }
+  zeroAvant = zero;
+  $("stAlive").style.display = zero ? "none" : "";
+  $("graphPanel").style.display = zero ? "none" : "";
+  drawGraph();
   if(isConway()) $("patWarn").style.display="none";
   if(selected) showInspect(selected.c,selected.r);
 }
@@ -535,6 +559,7 @@ function buildPresets(){
     const sep=nom.indexOf(" B");
     b.innerHTML = sep<0 ? nom : nom.slice(0,sep)+' <span style="font-weight:400">'+nom.slice(sep+1)+"</span>";
     b.onclick=()=>{
+      currentPreset=k;
       birth=new Set(PRESETS[k][0]); surv=new Set(PRESETS[k][1]);
       buildChips($("birthChips"),birth,rulesChanged);
       buildChips($("survChips"),surv,rulesChanged);
@@ -608,6 +633,9 @@ function applyLang(){
   $("infoTitle").textContent=T().infoBtn;
   $("infoBody").innerHTML=T().infoHtml;
   buildPatterns(); buildPresets();
+  if(currentPattern) $("patInfo").textContent=T().patInfo[currentPattern];
+  if(currentPreset) $("presetInfo").textContent=T().presetInfo[currentPreset];
+  if($("patWarn").style.display==="block") $("patWarn").textContent=T().patWarn;
   $("graphTitle").textContent=T().graphTitle;
   if(neighMode){
     if(selected) showInspect(selected.c,selected.r);
