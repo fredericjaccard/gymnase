@@ -163,6 +163,20 @@ tr.draft>* { background:var(--accentLight) }
 .quiz-card { padding:15px; background:var(--bg) }
 .quiz-card h3 { font-size:20px; max-width:80ch }
 .quiz-card .actions,.quiz-card .feedback { margin-top:10px }
+.wp-introduction { display:grid; gap:10px; margin-top:16px }
+.wp-introduction .rules { max-width:90ch }
+.wp-choices button { flex:1 1 125px }
+.wp-degree-table,.wp-comparison { table-layout:fixed }
+.wp-degree-table th,.wp-degree-table td,.wp-comparison th,.wp-comparison td { overflow-wrap:anywhere }
+.wp-ordered>* { background:var(--primaryLight) }
+.wp-comparison th:first-child { width:30% }
+.wp-comparison th:last-child { width:22% }
+.wp-limit { margin-top:22px; padding-top:8px; border-top:1px solid var(--line) }
+.wp-example-title { margin-top:22px }
+.wp-tree { margin-top:26px; padding-top:20px; border-top:1px solid var(--line) }
+.wp-tree>.workspace { margin-top:14px }
+.wp-color-groups { display:grid; gap:8px; margin:12px 0; padding-left:0; list-style:none }
+.wp-color-groups li { display:flex; align-items:center; gap:8px }
 footer { margin-top:20px; text-align:center; color:var(--muted); font-size:13px }
 footer a { color:var(--muted); font-weight:400; text-decoration:none }
 footer a:hover { text-decoration:underline }
@@ -229,7 +243,7 @@ const I18N = {
     description: "Comprenez les contraintes de coloration, appliquez un algorithme glouton et organisez des examens sans conflit.",
     instruction: "Deux sommets reliés par une arête doivent avoir des couleurs différentes. Suivez les démonstrations ou choisissez un exercice.",
     navigation: "Démonstrations et exercices",
-    sections: ["Information", "Respecter les contraintes", "Glouton guidé", "L’ordre des sommets", "Les examens", "Analyse critique"],
+    sections: ["Information", "Respecter les contraintes", "Glouton guidé", "L’ordre des sommets", "Les examens", "Analyse critique", "Welsh–Powell"],
     done: "Terminé",
     backList: "← Toutes les applications",
     fullscreen: "Plein écran",
@@ -442,6 +456,54 @@ const I18N = {
     slotsSuccess: n => "Tous les examens sont placés sans conflit dans " + n + " créneaux. Le minimum est atteint.",
     scheduleProof: "Fred suit Algorithmique, Bureautique et Cybersécurité : leurs sommets A, B et C forment un triangle. Il faut au moins trois créneaux. Votre horaire valide en trois créneaux atteint ce minimum.",
     scheduleSolution: "Voir un horaire minimal",
+    wpHead: "Section 6 — Welsh–Powell",
+    wpMainTitle: "Exemple 1 — Classer puis colorier",
+    wpIntro: "Welsh–Powell prépare l’ordre du glouton : il commence par les sommets qui ont le plus de voisins. L’idée est de traiter d’abord ceux qui ont le plus de contraintes.",
+    wpDegreeHead: "Le degré d’un sommet :",
+    wpDegreeDefinition: "C’est le nombre de ses voisins. Ici, E et F ont chacun trois voisins ; A, B, C et D n’en ont qu’un.",
+    wpRules: [
+      "Comptez les voisins de chaque sommet pour trouver son degré.",
+      "Classez les sommets par degré décroissant et gardez cet ordre.",
+      "Suivez cet ordre et appliquez le glouton : choisissez la première couleur disponible, C1, C2, C3…"
+    ],
+    wpTies: "En cas d’égalité, l’ordre alphabétique servira de règle dans cet exercice. Gardez les degrés du graphe initial : ils ne diminuent pas quand vous classez ou coloriez un sommet.",
+    wpOrderStage: "Étape 1 sur 2 — Construire l’ordre",
+    wpColorStage: "Étape 2 sur 2 — Appliquer le glouton",
+    wpBuildHead: "Quel sommet vient ensuite ?",
+    wpChoose: "Choisissez le sommet non encore classé de plus grand degré. À degré égal, choisissez le premier dans l’ordre alphabétique.",
+    wpDegreeHeaders: ["Sommet","Degré","Rang"],
+    wpDegree: n => "degré " + n,
+    wpExamined: "Sommet examiné",
+    wpNeighbors: "Voisin du sommet examiné",
+    wpOrderProgress: (n,total) => n + (n === 1 ? " sommet classé sur " : " sommets classés sur ") + total,
+    wpPicked: (v,d) => v + " est ajouté à l’ordre. Son degré est " + d + ".",
+    wpWrongDegree: (v,d,next,max) => v + " a un degré de " + d + ". Il reste des sommets de degré " + max + " : " + next + " doit être placé avant " + v + ".",
+    wpWrongTie: (v,next,d) => v + " et " + next + " ont le même degré (" + d + "). Ici, départagez par ordre alphabétique : " + next + " vient avant " + v + ".",
+    wpOrderReady: "L’ordre est complet. Les sommets de degré 3 précèdent ceux de degré 1, et les égalités suivent l’ordre alphabétique.",
+    wpBegin: "Passer à la coloration",
+    wpReviewDegrees: "Revoir les degrés et les rangs",
+    wpSuccess: n => "Vous avez appliqué Welsh–Powell et obtenu une coloration valide en " + n + " couleurs.",
+    wpCompareHead: "Comparer les deux ordres",
+    wpCompareHeaders: ["Méthode","Ordre","Couleurs"],
+    wpCompareNames: ["Glouton alphabétique","Welsh–Powell"],
+    wpCompareLesson: "Sur ce graphe, l’ordre alphabétique donne trois couleurs et le tri par degré en donne deux. Ce meilleur résultat sur cet exemple n’est pas une garantie pour tous les graphes.",
+    wpTreeTitle: "Exemple 3 — Un échec même en changeant les égalités",
+    wpTreeIntro: "A et D ont trois voisins ; B et C en ont deux ; E, F, G et H n’en ont qu’un. Le tri par degré place donc A et D avant B et C. Suivez la coloration, puis inversez le départage des égalités : Welsh–Powell utilise encore trois couleurs, alors que deux suffisent.",
+    wpTreeOrdersLabel: "Deux ordres respectant le tri par degré",
+    wpTreeOrders: ["Ordre A, D, B, C, E, F, G, H","Ordre D, A, C, B, H, G, F, E"],
+    wpTreeFailure: "A et D, non adjacents, reçoivent forcément C1 avant B et C. Le premier de B et C reçoit alors C2 ; le second touche un sommet en C1 et l’autre en C2, ce qui impose C3. Inverser les sommets de même degré ne peut pas éviter cette troisième couleur.",
+    wpTreeResult: "Welsh–Powell donne une coloration valide en trois couleurs. Deux couleurs suffisent pourtant, mais Welsh–Powell en utilise trois quel que soit le départage des égalités : le résultat est non optimal.",
+    wpTreeOptimalTitle: "Une coloration optimale en deux couleurs",
+    wpTreeOptimalExplanation: "Ici, A et D reçoivent des couleurs différentes, même s’ils ne sont pas voisins. Cela permet d’alterner deux couleurs sur A–B–C–D et de colorier toutes les branches sans conflit. Cette solution ne suit pas l’exécution de Welsh–Powell : elle montre qu’une meilleure répartition existe.",
+    wpTreeShowOptimal: "Voir la coloration optimale en deux couleurs",
+    wpTreeBack: "Revoir le résultat de Welsh–Powell",
+    wpTreeFinish: "Terminez les huit étapes pour comparer avec une coloration optimale.",
+    wpLimitHead: "Pourquoi le minimum n’est-il pas garanti ?",
+    wpCounterTitle: "Exemple 2 — Le rôle du départage des égalités",
+    wpCounterIntro: "Reprenons le graphe aux deux triangles du glouton guidé. Ses six sommets ont tous le degré 3 : les deux ordres ci-dessous respectent donc le tri par degré décroissant. Seul le départage des égalités change.",
+    wpCounterOrders: ["Ordre A, B, C, D, E, F","Ordre A, B, C, D, F, E"],
+    wpCounterBad: "A, B et C forment un triangle : trois couleurs sont nécessaires. Le deuxième ordre donne une coloration en trois couleurs. Cette exécution en quatre couleurs est donc valide, mais non optimale.",
+    wpLimitLesson: "Welsh–Powell est une heuristique : il choisit un ordre à partir des degrés, mais ne garantit pas une coloration optimale. Dans cet exemple, changer le départage des égalités aide. Dans l’exemple suivant, aucun départage ne suffit à atteindre le minimum.",
     quizHead: "Exercice 5 — Analyse critique",
     quizIntro: "Choisissez Vrai ou Faux, puis lisez la justification. Vous pouvez modifier vos réponses.",
     yes: "Vrai",
@@ -461,7 +523,7 @@ const I18N = {
     description: "Understand colouring constraints, apply a greedy algorithm and schedule exams without conflicts.",
     instruction: "Vertices joined by an edge must have different colours. Follow the demonstrations or choose an exercise.",
     navigation: "Demonstrations and exercises",
-    sections: ["Information", "Respecting constraints", "Guided greedy colouring", "Vertex order", "Exam scheduling", "Critical thinking"],
+    sections: ["Information", "Respecting constraints", "Guided greedy colouring", "Vertex order", "Exam scheduling", "Critical thinking", "Welsh–Powell"],
     done: "Complete",
     backList: "← All applications",
     fullscreen: "Fullscreen",
@@ -674,6 +736,54 @@ const I18N = {
     slotsSuccess: n => "All exams fit into " + n + " time slots without conflicts. This is the minimum.",
     scheduleProof: "Fred takes Algorithms, Office applications and Cybersecurity: A, B and C form a triangle. At least three time slots are needed. Your valid three-slot schedule reaches this minimum.",
     scheduleSolution: "View a minimum schedule",
+    wpHead: "Section 6 — Welsh–Powell",
+    wpMainTitle: "Example 1 — Sort, then colour",
+    wpIntro: "Welsh–Powell prepares the greedy processing order: it starts with vertices that have the most neighbours. The idea is to handle the vertices with the most constraints first.",
+    wpDegreeHead: "The degree of a vertex:",
+    wpDegreeDefinition: "This is its number of neighbours. Here, E and F each have three neighbours; A, B, C and D each have just one.",
+    wpRules: [
+      "Count each vertex’s neighbours to find its degree.",
+      "Sort the vertices by decreasing degree and keep that order.",
+      "Follow this order and apply the greedy rule: choose the first available colour, C1, C2, C3…"
+    ],
+    wpTies: "In this exercise, use alphabetical order to break ties. Keep the degrees from the original graph: they do not decrease when you place or colour a vertex.",
+    wpOrderStage: "Step 1 of 2 — Build the order",
+    wpColorStage: "Step 2 of 2 — Apply the greedy rule",
+    wpBuildHead: "Which vertex comes next?",
+    wpChoose: "Choose the highest-degree vertex that is not yet in the order. If degrees are equal, choose the first in alphabetical order.",
+    wpDegreeHeaders: ["Vertex","Degree","Rank"],
+    wpDegree: n => "degree " + n,
+    wpExamined: "Vertex being examined",
+    wpNeighbors: "Neighbour of the examined vertex",
+    wpOrderProgress: (n,total) => n + " of " + total + " vertices placed",
+    wpPicked: (v,d) => v + " is added to the order. Its degree is " + d + ".",
+    wpWrongDegree: (v,d,next,max) => v + " has degree " + d + ". Vertices of degree " + max + " remain: " + next + " must come before " + v + ".",
+    wpWrongTie: (v,next,d) => v + " and " + next + " have the same degree (" + d + "). Break ties alphabetically here: " + next + " comes before " + v + ".",
+    wpOrderReady: "The order is complete. Degree-3 vertices precede degree-1 vertices, and ties follow alphabetical order.",
+    wpBegin: "Start colouring",
+    wpReviewDegrees: "Review degrees and ranks",
+    wpSuccess: n => "You applied Welsh–Powell and obtained a valid colouring with " + n + " colours.",
+    wpCompareHead: "Compare the two orders",
+    wpCompareHeaders: ["Method","Order","Colours"],
+    wpCompareNames: ["Alphabetical greedy","Welsh–Powell"],
+    wpCompareLesson: "On this graph, alphabetical order uses three colours, while sorting by degree uses two. This improvement on one example is not a guarantee for every graph.",
+    wpTreeTitle: "Example 3 — Failure even with different tie-breaking",
+    wpTreeIntro: "A and D have three neighbours; B and C have two; E, F, G and H each have one. Sorting by degree therefore puts A and D before B and C. Follow the colouring, then reverse the way ties are broken: Welsh–Powell still uses three colours, even though two suffice.",
+    wpTreeOrdersLabel: "Two orders that respect decreasing degree",
+    wpTreeOrders: ["Order A, D, B, C, E, F, G, H","Order D, A, C, B, H, G, F, E"],
+    wpTreeFailure: "A and D are not adjacent, so both necessarily receive C1 before B and C. Whichever of B and C comes first receives C2; the second touches one vertex in C1 and another in C2, forcing C3. Swapping vertices of equal degree cannot avoid this third colour.",
+    wpTreeResult: "Welsh–Powell gives a valid three-colour result. It is not optimal: two colours suffice, while Welsh–Powell uses three regardless of how ties are broken.",
+    wpTreeOptimalTitle: "An optimal two-colour assignment",
+    wpTreeOptimalExplanation: "Here, A and D receive different colours even though they are not adjacent. This allows two colours to alternate along A–B–C–D and all the leaves to be coloured without conflicts. This assignment is not the Welsh–Powell execution: it shows that a better allocation exists.",
+    wpTreeShowOptimal: "View an optimal two-colour assignment",
+    wpTreeBack: "Review the Welsh–Powell result",
+    wpTreeFinish: "Finish all eight steps to compare with an optimal colouring.",
+    wpLimitHead: "Why is the minimum not guaranteed?",
+    wpCounterTitle: "Example 2 — The role of tie-breaking",
+    wpCounterIntro: "Revisit the graph with two triangles from the guided greedy exercise. All six vertices have degree 3, so both orders below respect decreasing degree. Only the way ties are broken changes.",
+    wpCounterOrders: ["Order A, B, C, D, E, F","Order A, B, C, D, F, E"],
+    wpCounterBad: "A, B and C form a triangle, so at least three colours are needed. The second order gives a three-colour assignment. This four-colour result is therefore valid but not optimal.",
+    wpLimitLesson: "Welsh–Powell is a heuristic: it chooses an order from vertex degrees, but does not guarantee an optimal colouring. Here, changing the tie-breaking helps. In the next example, no tie-breaking can reach the minimum.",
     quizHead: "Exercise 5 — Critical thinking",
     quizIntro: "Choose True or False and read the explanation. You may change your answers.",
     yes: "True",
@@ -772,6 +882,18 @@ const GRAPHS = {
     edges: [["A", "D"], ["D", "E"], ["E", "H"], ["H", "A"], ["F", "G"], ["G", "B"], ["B", "C"], ["C", "F"], ["A", "F"], ["D", "G"], ["E", "B"], ["H", "C"]],
     height: 480, bound: ["A", "D"], paletteSize: 4
   },
+  welsh: {
+    nodes: ["A","B","C","D","E","F"],
+    positions: { A:[90,80], B:[90,380], C:[510,80], D:[510,380], E:[210,230], F:[390,230] },
+    edges: [["A","E"],["B","E"],["E","F"],["F","C"],["F","D"]],
+    height:460, bound:["E","F"], paletteSize:3
+  },
+  welshTree: {
+    nodes: ["A","B","C","D","E","F","G","H"],
+    positions: { A:[130,225], B:[245,225], C:[355,225], D:[470,225], E:[65,65], F:[65,385], G:[535,65], H:[535,385] },
+    edges: [["A","B"],["B","C"],["C","D"],["A","E"],["A","F"],["D","G"],["D","H"]],
+    height:450, bound:["A","B"], paletteSize:3
+  },
   exams: {
     nodes: ["A", "B", "C", "D", "F"],
     positions: { A: [300, 75], B: [510, 250], C: [300, 250], D: [300, 430], F: [90, 250] },
@@ -831,6 +953,11 @@ function minimumColoring(graph) {
 }
 
 const MINIMUM = Object.fromEntries(Object.entries(GRAPHS).map(([key, graph]) => [key, minimumColoring(graph)]));
+function degreeOrder(graph) {
+  return [...graph.nodes].sort((a,b)=>neighbors(graph,b).length-neighbors(graph,a).length || a.localeCompare(b));
+}
+const WELSH_ORDER = degreeOrder(GRAPHS.welsh);
+const WELSH_TREE_ORDERS = [degreeOrder(GRAPHS.welshTree),["D","A","C","B","H","G","F","E"]];
 const NATURAL_ORDER = ["A", "B", "C", "D"];
 const TRAP_ORDER = ["A", "D", "B", "C"];
 const GUIDE_ORDER = ["A", "B", "C", "D", "F", "E"];
@@ -991,6 +1118,202 @@ function handlePlanning(action,value,target) {
   return true;
 }
 
+function initialWelsh() {
+  return {stage:"order",order:[],run:initialRun([]),feedback:null,counterBetter:false,
+    tree:{step:0,orderIndex:0,optimal:false}};
+}
+function welshDegreeTable() {
+  const w=state.welsh, graph=GRAPHS.welsh;
+  return "<div class='table-wrap'><table class='wp-degree-table'><thead><tr>" +
+    t().wpDegreeHeaders.map(label=>"<th scope='col'>"+esc(label)+"</th>").join("") +
+    "</tr></thead><tbody>" + graph.nodes.map(v=>{
+      const rank=w.order.indexOf(v)+1;
+      return "<tr"+(rank ? " class='wp-ordered'" : "")+"><th scope='row'>"+v+"</th><td>"+
+        neighbors(graph,v).length+"</td><td>"+(rank || "—")+"</td></tr>";
+    }).join("")+"</tbody></table></div>";
+}
+function welshOrderFeedback() {
+  const w=state.welsh, f=w.feedback;
+  if(w.order.length===WELSH_ORDER.length) return notice(t().wpOrderReady);
+  if(!f) return "<p class='note' id='feedback'>"+esc(t().wpChoose)+"</p>";
+  if(f.type==="degree") return notice(t().wpWrongDegree(f.vertex,f.degree,f.expected,f.maximum),true);
+  if(f.type==="tie") return notice(t().wpWrongTie(f.vertex,f.expected,f.degree),true);
+  return notice(t().wpPicked(f.vertex,f.degree));
+}
+function welshComparison() {
+  const graph=GRAPHS.welsh, orders=[graph.nodes,WELSH_ORDER];
+  return "<h3>"+esc(t().wpCompareHead)+"</h3><div class='table-wrap'><table class='wp-comparison'><thead><tr>"+
+    t().wpCompareHeaders.map(label=>"<th scope='col'>"+esc(label)+"</th>").join("")+
+    "</tr></thead><tbody>"+orders.map((order,i)=>"<tr><th scope='row'>"+esc(t().wpCompareNames[i])+
+      "</th><td>"+esc(order.join(", "))+"</td><td>"+usedColors(greedy(graph,order).at(-1).colors).length+
+      "</td></tr>").join("")+"</tbody></table></div><p>"+esc(t().wpCompareLesson)+"</p>";
+}
+function welshLimitBlock() {
+  const w=state.welsh, graph=GRAPHS.prism, order=w.counterBetter ? GUIDE_ORDER : graph.nodes;
+  const colors=greedy(graph,order).at(-1).colors, count=usedColors(colors).length;
+  return "<h3>"+esc(t().wpCounterTitle)+"</h3><p>"+esc(t().wpCounterIntro)+"</p><div class='actions extra-label'>"+
+    button(t().wpCounterOrders[0],"wp-counter",{value:0,pressed:!w.counterBetter})+
+    button(t().wpCounterOrders[1],"wp-counter",{value:1,pressed:w.counterBetter})+
+    "</div><div class='workspace'>"+graphCard(graph,colors,{id:"wp-limit-graph"})+
+    "<section class='worksheet'><p class='eyebrow'>"+esc(t().order)+"</p>"+sequence(order)+
+    notice(t().demoSuccess(count),false,"wp-limit-result")+"<p class='proof'>"+
+    esc(w.counterBetter ? t().triangleProof(...graph.bound,MINIMUM.prism.count) : t().wpCounterBad)+
+    "</p><p>"+esc(t().wpLimitLesson)+"</p></section></div>";
+}
+function welshTreeBlock() {
+  const demo=state.welsh.tree, graph=GRAPHS.welshTree, order=WELSH_TREE_ORDERS[demo.orderIndex];
+  const trace=greedy(graph,order), step=demo.step ? trace[demo.step-1] : null;
+  const complete=demo.step===order.length, optimal=demo.optimal;
+  const colors=optimal ? MINIMUM.welshTree.colors : step ? step.colors : {};
+  const explanation=optimal ? t().wpTreeOptimalExplanation : step ? stepExplanation(trace,demo.step-1) : t().initialDemo;
+  let worksheet="<section class='worksheet'>";
+  if(!optimal) worksheet+="<p class='eyebrow'>"+esc(t().order)+"</p>"+sequence(order,step && step.vertex)+
+    "<div class='actions'>"+button(t().previous,"wp-tree-prev",{disabled:!demo.step,class:"secondary"})+
+    "<span class='step-indicator'>"+esc(t().step(demo.step,order.length))+"</span>"+
+    button(t().nextStep,"wp-tree-next",{disabled:complete,class:"primary"})+"</div>";
+  worksheet+="<div class='explanation' id='wp-tree-explanation' tabindex='-1'><h3>"+
+    esc(optimal ? t().wpTreeOptimalTitle : step ? t().coloredDemo(step.vertex,step.color) : t().start)+
+    "</h3><p>"+esc(explanation)+"</p></div>";
+  if(!optimal && demo.step>=4) worksheet+="<p class='proof'>"+esc(t().wpTreeFailure)+"</p>";
+  if(complete) {
+    worksheet+=notice(optimal ? t().demoSuccess(MINIMUM.welshTree.count) : t().wpTreeResult,false,"wp-tree-result");
+    if(optimal) worksheet+="<ul class='wp-color-groups'>"+usedColors(colors).map(c=>"<li>"+chip(c)+" "+
+      graph.nodes.filter(v=>colors[v]===c).join(", ")+"</li>").join("")+"</ul><p class='proof'>"+
+      esc(t().edgeProof(...graph.bound))+"</p>";
+  }
+  worksheet+="<div class='actions'>"+button(optimal ? t().wpTreeBack : t().wpTreeShowOptimal,"wp-tree-solution",{
+    disabled:!complete,pressed:optimal,class:"secondary"
+  })+"</div>"+(!complete ? "<p class='note'>"+esc(t().wpTreeFinish)+"</p>" : "")+"</section>";
+  return "<section class='wp-tree' aria-labelledby='wp-tree-title'><h3 id='wp-tree-title'>"+esc(t().wpTreeTitle)+
+    "</h3><p>"+esc(t().wpTreeIntro)+"</p><div class='actions extra-label' role='group' aria-label='"+
+    esc(t().wpTreeOrdersLabel)+"'>"+t().wpTreeOrders.map((label,i)=>button(label,"wp-tree-order",{
+      value:i,pressed:demo.orderIndex===i
+    })).join("")+"</div><div class='workspace'>"+graphCard(graph,colors,{
+      id:"wp-tree-graph",current:!optimal && step ? step.vertex : null,adjacent:!optimal && step ? step.adjacent : []
+    })+worksheet+"</div></section>";
+}
+function welshScreen() {
+  const w=state.welsh, graph=GRAPHS.welsh;
+  let body=heading(t().wpHead,t().wpIntro)+
+    "<div class='wp-introduction'><p><strong>"+esc(t().wpDegreeHead)+"</strong> "+esc(t().wpDegreeDefinition)+
+    "</p><ol class='rules'>"+t().wpRules.map(rule=>"<li>"+esc(rule)+"</li>").join("")+
+    "</ol><p class='note'>"+esc(t().wpTies)+"</p></div><h3 class='wp-example-title'>"+esc(t().wpMainTitle)+"</h3>";
+  if(w.stage==="order") {
+    const complete=w.order.length===graph.nodes.length;
+    const current=w.feedback && w.feedback.vertex || w.order.at(-1);
+    body+="<p class='stage-label'>"+esc(t().wpOrderStage)+"</p><div class='workspace'>"+
+      graphCard(graph,{},{
+        id:"wp-main-graph",current,adjacent:current ? neighbors(graph,current) : [],
+        action:"wp-pick",disabledNodes:w.order,legendCurrent:t().wpExamined,legendRelated:t().wpNeighbors
+      })+"<section class='worksheet'><h3 id='wp-order-heading' tabindex='-1'>"+esc(t().wpBuildHead)+"</h3>"+
+      "<p>"+esc(t().wpChoose)+"</p>"+welshDegreeTable()+"<div class='actions wp-choices'>"+
+      graph.nodes.map(v=>button(v+" · "+t().wpDegree(neighbors(graph,v).length),"wp-pick",{
+        value:v,id:"wp-pick-"+v,disabled:w.order.includes(v),class:"vertex-choice"
+      })).join("")+"</div><p class='eyebrow'>"+esc(t().wpOrderProgress(w.order.length,graph.nodes.length))+
+      "</p>"+sequence(w.order,current)+welshOrderFeedback()+"<div class='actions'>"+
+      button(t().undo,"wp-order-undo",{disabled:!w.order.length,class:"secondary"})+
+      (complete ? button(t().wpBegin,"wp-begin",{class:"primary"}) : "")+"</div></section></div>";
+  } else {
+    const run=w.run, trace=greedy(graph,run.order), complete=run.completed===run.order.length;
+    const review=run.phase==="review", index=review ? run.completed-1 : run.completed, step=trace[index];
+    const colors=run.completed ? trace[run.completed-1].colors : {};
+    const preview=!review && run.choice ? {...colors,[step.vertex]:run.choice} : colors;
+    const bad=run.feedback && run.feedback.type==="conflict" ? [[step.vertex,run.feedback.neighbor]] : [];
+    body+="<p class='stage-label'>"+esc(t().wpColorStage)+"</p><div class='workspace'>"+
+      graphCard(graph,preview,{id:"wp-main-graph",current:step.vertex,adjacent:step.adjacent,conflicts:bad})+
+      "<section class='worksheet'><p class='eyebrow'>"+esc(t().order)+"</p>"+sequence(run.order,step.vertex)+
+      "<p class='step-indicator'>"+esc(t().step(run.completed,run.order.length))+"</p>";
+    if(review) {
+      body+="<div class='explanation'><h3>"+esc(t().coloredDemo(step.vertex,step.color))+"</h3><p>"+
+        esc(stepExplanation(trace,index))+"</p></div>";
+      if(!complete) body+="<p>"+esc(t().review(step.vertex))+"</p><div class='actions'>"+
+        button(t().nextVertex,"wp-next",{id:"run-next",class:"primary"})+"</div>";
+    } else {
+      body+="<h3 id='turn-heading' tabindex='-1'>"+esc(t().turn(step.vertex))+"</h3><div class='hint-grid'>"+
+        "<div><p class='eyebrow'>"+esc(t().neighborHeading)+"</p><p>"+
+        (step.adjacent.length ? step.adjacent.map(v=>v+" "+chip(colors[v])).join(", ") : esc(t().noNeighbor))+
+        "</p></div><div><p class='eyebrow'>"+esc(t().forbiddenHeading)+"</p><p>"+colorList(step.forbidden)+
+        "</p></div></div><p class='note'>"+esc(t().automaticColor)+"</p>"+
+        palette(graph.paletteSize,run.choice,"wp-color")+
+        (run.choice ? "<p class='note'>"+esc(t().attemptColor(step.vertex,run.choice))+"</p>" : "")+
+        runFeedback(run,trace,graph);
+    }
+    if(complete) body+=notice(t().wpSuccess(usedColors(colors).length))+
+      "<p class='proof'>"+esc(t().edgeProof(...graph.bound))+"</p>"+welshComparison();
+    body+="<div class='actions'>"+button(t().undo,"wp-undo",{disabled:!run.completed,class:"secondary"})+
+      "</div>"+disclosure("wp-degrees",t().wpReviewDegrees,welshDegreeTable())+
+      history(graph,trace,run.completed,!review,true)+"</section></div>";
+  }
+  return body+"<div class='wp-limit'>"+disclosure("wp-limit",t().wpLimitHead,welshLimitBlock()+welshTreeBlock())+"</div>";
+}
+function handleWelsh(action,value,target) {
+  if(!action.startsWith("wp-")) return false;
+  if(state.screen!==6) return true;
+  const w=state.welsh, graph=GRAPHS.welsh;
+  if(action.startsWith("wp-tree-")) {
+    const demo=w.tree, size=GRAPHS.welshTree.nodes.length;
+    if(action==="wp-tree-order" && (value==="0" || value==="1")) {
+      if(demo.orderIndex!==Number(value)) {demo.orderIndex=Number(value);demo.step=0;demo.optimal=false;}
+      render(target.id);
+    }
+    if(action==="wp-tree-next" && !demo.optimal && demo.step<size) {
+      demo.step++;render(demo.step===size ? "wp-tree-result" : target.id);
+      announce($("wp-tree-explanation").textContent);
+    }
+    if(action==="wp-tree-prev" && !demo.optimal && demo.step>0) {
+      demo.step--;render(demo.step ? target.id : "wp-tree-next");
+      announce($("wp-tree-explanation").textContent);
+    }
+    if(action==="wp-tree-solution" && demo.step===size) {
+      demo.optimal=!demo.optimal;render("wp-tree-result");announce($("wp-tree-result").textContent);
+    }
+    return true;
+  }
+  if(action==="wp-counter") {
+    if(value==="0" || value==="1") w.counterBetter=value==="1";
+    render(target.id);return true;
+  }
+  if(action==="wp-pick") {
+    if(w.stage!=="order" || !graph.nodes.includes(value) || w.order.includes(value)) return true;
+    const expected=WELSH_ORDER[w.order.length], degree=neighbors(graph,value).length;
+    const maximum=neighbors(graph,expected).length;
+    if(value!==expected) {
+      w.feedback={type:degree!==maximum ? "degree" : "tie",vertex:value,degree,expected,maximum};
+      render("feedback");announce($("feedback").textContent);return true;
+    }
+    w.order.push(value);w.feedback={type:"accepted",vertex:value,degree};
+    const next=graph.nodes.find(v=>!w.order.includes(v));
+    render(next ? "wp-pick-"+next : "wp-begin");announce(t().wpPicked(value,degree));return true;
+  }
+  if(action==="wp-order-undo") {
+    if(w.stage==="order" && w.order.length) {
+      const removed=w.order.pop();w.feedback=null;render("wp-pick-"+removed);
+    }
+    return true;
+  }
+  if(action==="wp-begin") {
+    if(w.stage==="order" && w.order.length===graph.nodes.length && w.order.every((v,i)=>v===WELSH_ORDER[i])) {
+      w.stage="color";w.run=initialRun(w.order);w.feedback=null;render("turn-heading");
+    }
+    return true;
+  }
+  if(w.stage!=="color") return true;
+  const run=w.run;
+  if(action==="wp-color" && run.phase==="color") {
+    const color=Number(value);
+    if(Number.isInteger(color) && color>=1 && color<=graph.paletteSize) {
+      run.choice=color;run.feedback=null;validateRun(run,graph,false);
+    }
+  }
+  if(action==="wp-next" && run.phase==="review" && run.completed<run.order.length) {
+    run.phase="color";run.choice=null;run.feedback=null;render("turn-heading");
+  }
+  if(action==="wp-undo" && run.completed) {
+    run.completed--;run.phase="color";run.choice=null;run.feedback=null;render("turn-heading");
+  }
+  return true;
+}
+
 function initialPainter(selected) {
   return { colors: {}, selected, undo: [], checked: false, feedback: null };
 }
@@ -1009,6 +1332,7 @@ const state = {
   autonomous: { ...initialRun(CHALLENGE_ORDER), constructing: false, draftOrder: [], attempts: [] },
   exams: initialPlanning(),
   quiz: [null, null, null, null],
+  welsh: initialWelsh(),
   disclosures: new Set(),
   fullscreenError: false
 };
@@ -1369,14 +1693,15 @@ function achievements() {
     state.guide.completed === GRAPHS.prism.nodes.length && houseImproved(),
     !a.constructing && a.completed === GRAPHS.cube.nodes.length && usedColors(last).length === MINIMUM.cube.count,
     state.exams.phase==="color" && planningComplete() && valid(state.exams,GRAPHS.exams) && usedColors(state.exams.colors).length === MINIMUM.exams.count,
-    state.quiz.every((answer,i)=>answer === t().quiz[i].answer)];
+    state.quiz.every((answer,i)=>answer === t().quiz[i].answer),
+    state.welsh.stage === "color" && state.welsh.run.completed === GRAPHS.welsh.nodes.length];
 }
 function render(focusId) {
   const done = achievements();
   $("navigation").innerHTML = t().sections.map((label,i)=>
     "<button type='button' data-act='nav' data-value='"+i+"'"+(state.screen === i ? " aria-current='page' class='active'" : "")+">"+
     (i ? i+". " : "")+esc(label)+(done[i] ? "<span class='badge'>✓ "+esc(t().done)+"</span>" : "")+"</button>").join("");
-  const screens = [infoScreen,()=>painterScreen(false),()=>runScreen(false),()=>runScreen(true),()=>painterScreen(true),quizScreen];
+  const screens = [infoScreen,()=>painterScreen(false),()=>runScreen(false),()=>runScreen(true),()=>painterScreen(true),quizScreen,welshScreen];
   $("activity").innerHTML = "<section class='screen'>"+screens[state.screen]()+"</section>";
   if (focusId && $(focusId)) $(focusId).focus({preventScroll:true});
 }
@@ -1404,9 +1729,10 @@ function applyLang(focusId) {
   render(focusId);
 }
 function saveLanguage() {
+  try { localStorage.setItem("fj-lang",lang); } catch (_) {}
   try {
-    localStorage.setItem("fj-lang",lang);
-    document.cookie = "fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+    const domain = location.hostname === "fredericjaccard.com" || location.hostname.endsWith(".fredericjaccard.com") ? ";domain=.fredericjaccard.com" : "";
+    document.cookie = "fj-lang="+lang+";path=/;max-age=31536000;SameSite=Lax"+domain;
   } catch (_) {}
 }
 async function toggleFullscreen() {
@@ -1488,6 +1814,7 @@ function handleAction(action, value, target) {
   if (action === "nav") { state.screen = Number(value); $("announcement").textContent=""; render("screen-title"); return; }
   if (handlePlanning(action,value,target)) return;
   if (handleHouseImprovement(action,value,target)) return;
+  if (handleWelsh(action,value,target)) return;
   if (action === "guide-exercise") {
     if (![0,1].includes(Number(value))) return;
     state.guideExercise = Number(value); $("announcement").textContent=""; render("screen-title"); return;
@@ -1523,6 +1850,7 @@ function handleAction(action, value, target) {
     if (state.screen === 3) state.autonomous = {...initialRun(CHALLENGE_ORDER),constructing:false,draftOrder:[],attempts:[]};
     if (state.screen === 4) state.exams = initialPlanning();
     if (state.screen === 5) state.quiz = [null,null,null,null];
+    if (state.screen === 6) state.welsh = initialWelsh();
     render("screen-title"); return;
   }
   if (action.startsWith("demo-")) {
