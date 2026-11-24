@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Comprenez les contraintes de coloration, appliquez un algorithme glouton et organisez des examens sans conflit.">
+<title>Coloration de graphes · Gymnase — Frédéric Jaccard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320241F'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='bold' fill='%23FFFFFF' text-anchor='middle'%3EFJ%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#FBFAF6; --card:#F7F6F2; --primary:#155E4C; --primaryLight:#E3F0EA;
+  --accent:#D96A08; --accentLight:#FDEBD8; --line:#D8D5CB; --ink:#20241F;
+  --muted:#6E726B; --error:#C84B31;
+}
+*,*::before,*::after { box-sizing:border-box }
+[hidden] { display:none !important }
+body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.45 "Quattrocento Sans",sans-serif }
+.page { max-width:1340px; margin:auto; padding:28px 24px 20px }
+h1,h2,h3,p { margin:0 }
+h1,h2,h3 { color:var(--primary); line-height:1.2 }
+h1 { font-size:clamp(28px,4vw,40px) }
+h2 { font-size:clamp(23px,2.7vw,30px) }
+h3 { font-size:20px }
+p { max-width:76ch }
+.masthead,.header-actions,.actions,#navigation,.legend { display:flex; align-items:center; flex-wrap:wrap; gap:8px }
+.masthead { justify-content:space-between; gap:12px; margin-bottom:18px }
+.header-actions { margin-left:auto }
+.kicker { margin-bottom:5px; color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase }
+button { min-height:44px; min-width:44px; border:1px solid var(--primary); border-radius:9px; padding:7px 12px; background:var(--card); color:var(--primary); font:700 1em/1.25 "Quattrocento Sans",sans-serif; cursor:pointer; touch-action:manipulation; overflow-wrap:anywhere }
+button:hover:not(:disabled) { background:var(--primaryLight) }
+button:disabled { cursor:default; color:var(--muted); border-color:var(--line) }
+button.active { background:var(--primary); color:var(--bg) }
+button.active:hover { background:var(--primary) }
+button.primary:not(:disabled) { background:var(--accentLight); color:var(--ink); border-color:var(--accent) }
+button.primary:hover:not(:disabled) { border-color:var(--ink) }
+button.secondary { border-color:var(--line) }
+button[aria-pressed="true"] { background:var(--primaryLight); border-color:var(--primary); box-shadow:inset 0 0 0 1px var(--primary) }
+:focus-visible { outline:3px solid var(--accent); outline-offset:3px }
+.instruction { max-width:none; padding:11px 15px; margin-bottom:14px; border-radius:10px; color:var(--primary); background:var(--primaryLight) }
+#navigation { margin-bottom:15px }
+#navigation button { font-size:15px }
+.badge { display:inline-block; margin-left:7px; padding:1px 6px; border-radius:4px; background:var(--primaryLight); color:var(--primary); font-size:13px }
+.screen,.graph-card,.quiz-card { min-width:0; border:1px solid var(--line); border-radius:13px; background:var(--card) }
+.screen { padding:clamp(13px,2.2vw,24px) }
+.screen-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:10px }
+.screen-heading > div { flex:1 1 300px; min-width:0 }
+.screen-heading p { margin-top:7px }
+.screen-heading button { flex-shrink:0 }
+.workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(12px,2.1vw,24px); align-items:start; margin-top:16px }
+.worksheet { display:grid; gap:12px; min-width:0; align-content:start }
+.graph-card { background:var(--bg); padding:12px }
+.graph-card h3 { font-size:18px }
+.graph-card svg { width:100%; height:auto; display:block; overflow:visible }
+.edge { stroke:var(--muted); stroke-width:1.8px; vector-effect:non-scaling-stroke }
+.conflict-edge { stroke:var(--error); stroke-width:3px; stroke-dasharray:7 4 }
+.node-shape { stroke:var(--muted); stroke-width:1.7px; vector-effect:non-scaling-stroke }
+.node-halo { fill:none; stroke:var(--accent); stroke-width:3px; vector-effect:non-scaling-stroke }
+.related .node-halo { stroke:var(--primary); stroke-width:2px; stroke-dasharray:3 3 }
+.current .node-halo { stroke:var(--accent); stroke-width:3px; stroke-dasharray:none }
+.vertex-name,.vertex-color { fill:var(--ink); text-anchor:middle; dominant-baseline:middle; pointer-events:none; font-weight:700 }
+.vertex-name { font-size:24px }
+.vertex-color { font-size:18px }
+.c0 .node-shape { fill:var(--card) }
+.c1,.c1 .node-shape { background:var(--primary); fill:var(--primary); color:var(--bg) }
+.c2,.c2 .node-shape { background:var(--accent); fill:var(--accent); color:var(--ink) }
+.c3,.c3 .node-shape { background:var(--ink); fill:var(--ink); color:var(--bg) }
+.c4,.c4 .node-shape { background:var(--muted); fill:var(--muted); color:var(--bg) }
+.c5,.c5 .node-shape { background:var(--primaryLight); fill:var(--primaryLight); color:var(--ink) }
+.c6,.c6 .node-shape { background:var(--line); fill:var(--line); color:var(--ink) }
+:is(.c1,.c3,.c4) :is(.vertex-name,.vertex-color) { fill:var(--bg) }
+.hit-area { fill:transparent; stroke:none }
+.vertex[role="button"] { cursor:pointer; touch-action:manipulation }
+.vertex.disabled-vertex { opacity:.55; cursor:default }
+.vertex[role="button"]:hover .node-shape,.vertex[role="button"]:focus-visible .node-shape { stroke:var(--ink); stroke-width:3px }
+.vertex[role="button"]:focus-visible { outline:none }
+.vertex[role="button"]:focus-visible .hit-area { stroke:var(--accent); stroke-width:3px; stroke-dasharray:4 3; vector-effect:non-scaling-stroke }
+.legend { padding:8px 0 4px; margin:0; list-style:none; font-size:14px; gap:7px 12px }
+.legend li { display:flex; align-items:center; gap:6px }
+.key { display:inline-block; width:15px; height:15px; flex:none }
+.key.selected { border:2px solid var(--accent); border-radius:50% }
+.key.related { border:2px dashed var(--primary); border-radius:50% }
+.key.conflict-key { height:0; border-top:3px dashed var(--error) }
+details { min-width:0 }
+summary { color:var(--primary); cursor:pointer; min-height:44px; padding:10px 0; font-weight:700 }
+.definitions { display:grid; gap:5px; margin:15px 0 5px; padding-left:23px; max-width:85ch }
+.use-cases { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0 12px }
+.use-case { min-width:0; padding:13px 15px; border:1px solid var(--line); border-radius:10px; background:var(--bg) }
+.use-case h3 { font-size:19px; margin-bottom:6px }
+.use-case:last-child:nth-child(odd) { grid-column:1/-1 }
+.concept-controls { margin:8px 0 }
+.concept-workspace { margin-top:12px }
+.info-extra { margin-top:22px; border-top:1px solid var(--line); padding-top:8px }
+.info-extra>details+details { margin-top:8px }
+.other-algorithms { margin-top:16px; padding-top:16px; border-top:1px solid var(--line) }
+.algorithm-names { display:flex; flex-wrap:wrap; gap:6px 30px; padding-left:22px; margin:12px 0 }
+.algorithm-names li { max-width:100%; overflow-wrap:anywhere }
+.extra-label { margin-top:12px; margin-bottom:8px }
+.extra-result { margin:12px 0 }
+.stage-label { display:inline-block; margin:15px 0 10px; padding:7px 11px; border-radius:8px; background:var(--primaryLight); color:var(--primary); font-weight:700 }
+.enrollments { table-layout:fixed; font-size:15px }
+.enrollments th:first-child { width:29% }
+.enrollments th,.enrollments td { vertical-align:middle }
+.enrollments button { min-width:0; width:100%; padding:7px 6px }
+.subject-list { display:flex; flex-wrap:wrap; gap:5px 12px }
+.subject-list span { display:inline-block }
+.selected-person>* { background:var(--primaryLight) }
+.hint-grid.person-hint { display:block }
+.rules { margin:0 0 8px; padding-left:23px }
+.rules li+li { margin-top:5px }
+.demo-heading { border-top:1px solid var(--line); padding-top:20px; margin-top:18px; display:grid; gap:12px }
+.demo-heading h2 { font-size:24px }
+.demo-heading > .actions button { flex:1 1 240px }
+.demo-intro { margin-top:12px }
+.demo-orders { margin-top:10px }
+.meetings { table-layout:fixed }
+.meetings th:first-child { width:20% }
+.meetings th:nth-child(2) { width:47% }
+.meeting-room { display:inline-flex; align-items:center; flex-wrap:wrap; gap:3px }
+.guide-exercises { margin-top:16px }
+.guide-exercises button { flex:0 1 auto }
+.demo-control { display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap }
+.step-indicator,.note { color:var(--muted); font-size:15px }
+.step-indicator { font-variant-numeric:tabular-nums }
+.explanation,.hint-grid,.proof { padding:12px; border-left:3px solid var(--primary); border-radius:0 8px 8px 0; background:var(--bg) }
+.explanation p,.proof p { margin-top:7px }
+.hint-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px }
+.eyebrow { color:var(--primary); font-size:15px; font-weight:700 }
+.feedback { padding:10px 12px; border:1px solid var(--primary); border-radius:9px; background:var(--primaryLight); color:var(--primary); overflow-wrap:anywhere }
+.feedback.error { border-color:var(--error); background:var(--accentLight); color:var(--ink) }
+#fullscreen-message { margin-bottom:10px }
+.table-wrap { max-width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:9px }
+table { width:100%; border-collapse:collapse; background:var(--bg); font-size:15px }
+th,td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; font-variant-numeric:tabular-nums }
+tr:last-child>* { border-bottom:0 }
+tr>:last-child { border-right:0 }
+thead th { background:var(--primary); color:var(--bg); font-weight:700 }
+tbody th { color:var(--primary); font-weight:700 }
+.history { min-width:390px }
+.history th:first-child { width:13% }
+.history th:last-child { width:18% }
+.history td:last-child { text-align:center }
+tr.latest>th { background:var(--primaryLight) }
+tr.draft>* { background:var(--accentLight) }
+.schedule th:first-child { width:34% }
+.schedule td { overflow-wrap:anywhere }
+.attempts th:first-child { width:65% }
+.color-chip { display:inline-flex; min-width:28px; align-items:center; justify-content:center; padding:1px 5px; border:1px solid var(--muted); border-radius:5px; font-size:14px; font-weight:700; white-space:nowrap; line-height:1.5; margin:1px 0 }
+.sequence { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none }
+.sequence li { display:flex; align-items:center; gap:6px }
+.sequence li:not(:last-child)::after { content:"→"; color:var(--muted) }
+.sequence li span { padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--primary); font-weight:700 }
+.sequence li span.current { background:var(--accentLight); border-color:var(--accent) }
+.vertex-choices { display:flex; flex-wrap:wrap; gap:7px }
+.vertex-choice { min-width:44px }
+.palette { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px }
+.color-button { min-height:52px; display:flex; align-items:center; justify-content:flex-start; gap:8px; padding:7px 8px; font-size:16px }
+.swatch { display:inline-flex; flex:none; width:29px; height:29px; align-items:center; justify-content:center; border:1px solid var(--muted); border-radius:50%; font-size:13px }
+.color-button.chosen { background:var(--primaryLight); box-shadow:inset 0 0 0 1px var(--primary) }
+.conflicting-subject { text-decoration:underline; text-decoration-style:wavy; text-decoration-color:var(--error) }
+.minimum-assignment { display:flex; flex-wrap:wrap; gap:10px }
+.quiz-grid { display:grid; gap:12px; margin-top:16px }
+.quiz-card { padding:15px; background:var(--bg) }
+.quiz-card h3 { font-size:20px; max-width:80ch }
+.quiz-card .actions,.quiz-card .feedback { margin-top:10px }
+footer { margin-top:20px; text-align:center; color:var(--muted); font-size:13px }
+footer a { color:var(--muted); font-weight:400; text-decoration:none }
+footer a:hover { text-decoration:underline }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0 }
+@media(max-width:800px) {
+  .workspace { grid-template-columns:minmax(0,1fr) }
+  .graph-card { width:100% }
+}
+@media(max-width:640px) {
+  body { font-size:16px }
+  .page { padding:14px 10px 18px }
+  .screen { padding:11px }
+  .graph-card { padding:7px }
+  .vertex-name { font-size:29px }
+  .vertex-color { font-size:23px }
+  .palette { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .color-button { font-size:15px }
+  .quiz-card { padding:11px }
+  .quiz-card h3 { font-size:19px }
+  th,td { padding:7px 6px }
+  .schedule { font-size:14px }
+  .meetings { font-size:14px }
+  .header-actions { gap:6px }
+  .use-cases { grid-template-columns:minmax(0,1fr); gap:8px }
+  .enrollments { font-size:14px }
+  .enrollments th:first-child { width:30% }
+  .subject-list { gap:4px }
+  .history { min-width:0; table-layout:fixed; font-size:13px }
+  .history th,.history td { padding:7px 4px; overflow-wrap:anywhere }
+  .history th:first-child { width:20% }
+  .history th:last-child { width:18% }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto !important }
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div>
+      <p class="kicker" id="kicker"></p>
+      <h1 id="title"></h1>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="language" lang="en">English</button>
+      <button type="button" id="fullscreen"></button>
+    </div>
+  </header>
+  <p class="feedback error" id="fullscreen-message" role="status" hidden></p>
+  <p class="instruction" id="instruction"></p>
+  <nav id="navigation"></nav>
+  <main id="activity"></main>
+  <p class="sr-only" id="announcement" role="status" aria-atomic="true"></p>
+  <footer><a href="algorithmique.html" id="backLink"></a> · <a href="https://fredericjaccard.com">Frédéric Jaccard</a></footer>
+</div>
+<script>
+"use strict";
+const I18N = {
+  fr: {
+    kicker: "Algorithmique",
+    title: "Coloration de graphes",
+    description: "Comprenez les contraintes de coloration, appliquez un algorithme glouton et organisez des examens sans conflit.",
+    instruction: "Deux sommets reliés par une arête doivent avoir des couleurs différentes. Suivez les démonstrations ou choisissez un exercice.",
+    navigation: "Démonstrations et exercices",
+    sections: ["Information", "Respecter les contraintes", "Glouton guidé", "L’ordre des sommets", "Les examens", "Analyse critique"],
+    done: "Terminé",
+    backList: "← Toutes les applications",
+    fullscreen: "Plein écran",
+    exitFullscreen: "Quitter le plein écran",
+    fullscreenUnavailable: "Le plein écran n’est pas disponible dans ce navigateur.",
+    restart: "Recommencer",
+    undo: "Annuler le dernier choix",
+    erase: "Effacer la couleur",
+    previous: "Précédent",
+    nextStep: "Étape suivante",
+    nextVertex: "Sommet suivant",
+    automaticColor: "Choisissez une couleur : votre choix est vérifié immédiatement.",
+    automaticPainting: "Chaque changement de couleur est vérifié automatiquement. Vous pouvez modifier vos choix à tout moment.",
+    color: n => "Couleur " + n,
+    colorShort: n => "C" + n,
+    noColor: "Sans couleur",
+    noNeighbor: "Aucun",
+    vertices: "Choix des sommets",
+    graph: "Graphe des contraintes",
+    graphNote: "Chaque arête impose deux couleurs différentes.",
+    current: "Sommet traité",
+    related: "Voisin déjà colorié",
+    conflict: "Conflit",
+    selected: "Sommet sélectionné",
+    vertexLabel: (v, c) => v + ", " + c,
+    start: "Initialisation",
+    demoHead: "Démonstrations pas à pas de l’algorithme glouton",
+    demo1: "Un triangle impose trois couleurs",
+    demo2: "Un ordre peut ajouter une couleur",
+    demoChain: "Une chaîne : les salles de réunion",
+    demoStar: "Une étoile : cinq voisins, deux couleurs",
+    chainFirstOrder: "Ordre A, D, B, C",
+    chainSecondOrder: "Ordre A, B, C, D",
+    chainIntro: "Quatre réunions doivent être réparties entre des salles identiques. Un sommet représente une réunion ; une arête relie deux réunions dont les horaires se chevauchent. Une couleur représente une salle.",
+    meetingTitle: "Les quatre réunions",
+    meetingHeaders: ["Réunion","Horaire","Salle"],
+    room: n => "Salle " + n,
+    meetingBoundary: "Une salle est disponible dès la fin d’une réunion : A et C peuvent donc partager une salle, tout comme B et D. C1 désigne la salle 1, C2 la salle 2, etc.",
+    roomResult: n => "Le glouton attribue " + n + " salles aux quatre réunions.",
+    chainLesson: "Avec A, D, B, C, le glouton utilise trois couleurs. Avec A, B, C, D, il n’en utilise que deux. Les réunions et leurs horaires restent identiques : seul leur ordre de traitement change.",
+    chainLowerProof: "A et B se chevauchent : il faut au moins deux salles. Comparez les deux ordres pour voir qu’il est possible d’utiliser seulement deux salles.",
+    starIntro: "Les cinq sommets A, B, C, D et E sont reliés au centre F, mais pas entre eux. Suivez le glouton sur les cinq branches, puis sur le centre.",
+    starLesson: "F a cinq voisins déjà coloriés, mais ils portent tous C1. Une seule couleur est donc interdite à F : C1. Le centre reçoit C2, et deux couleurs suffisent pour tout le graphe.",
+    step: (n, total) => "Étape " + n + " sur " + total,
+    order: "Ordre de traitement",
+    firstOrder: "Ordre A, B, C, D, E, F, G",
+    secondOrder: "Ordre A, B, C, D, G, F, E",
+    introHead: "À quoi ça sert ?",
+    intro: "La coloration sert à répartir des éléments incompatibles entre plusieurs groupes, en cherchant à utiliser le moins de groupes possible. Une arête représente une incompatibilité ; une couleur représente un groupe ou une ressource. Les éléments reliés doivent donc recevoir des couleurs différentes.",
+    useCases: [
+      { title: "Horaires et examens", text: "Deux examens qui ont des élèves en commun doivent avoir lieu à des moments différents. Chaque couleur représente un créneau. Cela aide à organiser les examens sans conflit." },
+      { title: "Salles de réunion", text: "Deux réunions dont les horaires se chevauchent doivent utiliser des salles différentes. Chaque sommet représente une réunion et chaque couleur une salle. On cherche le nombre minimal de salles nécessaires. La démonstration de la chaîne ci-dessous en donne un exemple." },
+      { title: "Cartes géographiques", text: "Deux régions ayant une frontière commune reçoivent des couleurs différentes pour rendre la carte lisible. Une région devient un sommet et une frontière commune devient une arête." },
+      { title: "Registres du processeur", text: "Un compilateur peut utiliser la coloration pour attribuer les registres, de petites mémoires très rapides. Des valeurs à conserver simultanément nécessitent des registres différents. Chaque couleur représente un registre." }
+    ],
+    conceptsTitle: "Coloration, coloration propre et coloration optimale",
+    conceptModes: ["Coloration incorrecte", "Propre, avec trop de couleurs", "Coloration optimale"],
+    conceptDescriptions: [
+      "Chaque sommet a reçu une couleur : c’est une coloration. Elle n’est pas propre, car des sommets voisins partagent C1. Les arêtes en conflit sont signalées.",
+      "Les cinq sommets ont des couleurs différentes. La coloration est propre, donc valide, mais elle utilise cinq couleurs alors que trois suffisent.",
+      "La coloration est propre et utilise trois couleurs. Le triangle A–B–C en exige au moins trois : cette coloration est donc optimale."
+    ],
+    factorialTitle: "Pourquoi ne pas essayer tous les ordres ?",
+    factorialIntro: "Avec n sommets, il y a n choix pour le premier, n − 1 pour le suivant, puis n − 2… Le nombre total d’ordres est n × (n − 1) × … × 1, noté n!.",
+    factorialLabel: "Nombre de sommets",
+    factorialResult: (n,total) => n + " sommets : " + n + "! = " + total + " ordres possibles.",
+    factorialNote: "Les petits graphes restent traitables, mais le nombre d’ordres grandit très vite. Le glouton traite rapidement un ordre choisi, sans garantir le minimum.",
+    bonusTitle: "Bonus — Le glouton peut-il utiliser beaucoup de couleurs en plus ?",
+    bonusIntro: "Comparez deux ordres sur ce graphe à dix sommets. Une même couleur regroupe des sommets qui peuvent la partager sans conflit.",
+    bonusBad: "Ordre 1, 2, 3…",
+    bonusGood: "Impairs, puis pairs",
+    bonusSummary: n => "Cette coloration est propre et utilise " + n + " couleurs.",
+    bonusProof: "Les sommets impairs ne sont pas reliés entre eux, ni les sommets pairs. Deux couleurs suffisent donc. L’arête 1–4 exige au moins deux couleurs : le minimum est atteint.",
+    otherAlgorithmsTitle: "D’autres méthodes de coloration",
+    otherAlgorithms: ["Welsh–Powell","DSATUR","RLF","Recherche avec retour arrière (backtracking)"],
+    exactAlgorithmsNote: "Des méthodes exactes garantissent une coloration optimale, mais leur calcul peut devenir très long. On ne connaît pas d’algorithme qui garantisse le minimum de couleurs tout en restant rapide pour tous les graphes, même lorsqu’ils deviennent grands.",
+    sevenLowerProof: "Le triangle E–F–G exige au moins trois couleurs. Cette exécution en utilise quatre. Comparez avec le deuxième ordre pour en utiliser trois.",
+    freeProof: "Ce cycle comporte cinq sommets. En alternant deux couleurs le long de A–B–C–D–E, E reçoit la même couleur que A alors qu’une arête les relie. Deux couleurs ne suffisent donc pas. L’exemple ci-dessous montre que trois suffisent.",
+    stageBuild: "Étape 1 sur 2 — Construire les contraintes",
+    stageColor: "Étape 2 sur 2 — Organiser les examens",
+    planningExplain: "Chaque sommet représente un sujet d’examen. Reliez deux sujets si au moins un élève suit les deux : leurs examens ne peuvent pas avoir lieu au même moment.",
+    studentsHeading: "Les inscriptions",
+    enrollmentHeaders: ["Élève", "Sujets suivis"],
+    choosePerson: "Choisissez un élève pour examiner ses inscriptions.",
+    personHint: (person,subjects) => person + " suit " + subjects + ". Reliez ces sujets deux à deux pour représenter ses contraintes.",
+    sharedSubjects: "Sujets suivis par l’élève",
+    selectedSubjects: "Sujets sélectionnés",
+    pairPrompt: "Touchez deux sommets, ou les boutons correspondants, puis ajoutez leur arête.",
+    pairLabel: subjects => "Sélection : " + (subjects || "aucun sujet"),
+    addEdge: "Ajouter l’arête",
+    checkEdges: "Vérifier les contraintes et continuer",
+    edgeProgress: (n,total) => n + " arête" + (n === 1 ? "" : "s") + " construite" + (n === 1 ? "" : "s") + " sur " + total,
+    edgeNeedPair: "Sélectionnez deux sujets différents avant d’ajouter une arête.",
+    edgeWrong: (a,b) => a + " et " + b + " n’ont aucun élève en commun dans les inscriptions. Aucune arête ne les relie.",
+    edgeDuplicate: (a,b,people) => "L’arête " + a + "–" + b + " existe déjà. Élèves concernés : " + people + ". Une seule arête suffit pour une même paire de sujets.",
+    edgeAdded: (a,b,people) => "Arête " + a + "–" + b + " ajoutée. Élèves concernés : " + people + ". Ces deux examens doivent avoir lieu à des moments différents.",
+    missingEdges: n => "Il manque encore " + n + " contrainte" + (n === 1 ? "" : "s") + ". Reprenez les inscriptions et vérifiez chaque paire de sujets.",
+    edgeUndo: "Annuler la dernière arête",
+    backConstraints: "Revenir aux contraintes",
+    reviewEnrollments: "Revoir les inscriptions",
+    definitions: [
+      "Deux sommets sont adjacents quand une arête les relie.",
+      "Une coloration attribue une couleur à chaque sommet.",
+      "Une coloration est propre, ou valide, quand les sommets adjacents ont des couleurs différentes.",
+      "Une coloration optimale utilise le moins de couleurs possible parmi toutes les colorations propres du graphe."
+    ],
+    rulesHead: "La règle gloutonne",
+    rules: [
+      "Choisissez un ordre de traitement des sommets et gardez-le pendant l’exécution.",
+      "Prenez le prochain sommet de cet ordre.",
+      "Repérez les couleurs de ses voisins déjà coloriés.",
+      "Attribuez-lui la première couleur disponible dans la palette numérotée C1, C2, C3…",
+      "Continuez jusqu’à avoir colorié tous les sommets."
+    ],
+    rulesNote: "Le glouton garde ses choix précédents. L’ordre des sommets peut changer le nombre de couleurs utilisé.",
+    initialDemo: "Aucun sommet n’a encore de couleur. Le premier sommet recevra C1.",
+    coloredDemo: (v, c) => v + " reçoit C" + c + ".",
+    explainNone: "Aucun voisin n’est encore colorié. C1 est donc la première couleur disponible.",
+    explainStep: (adjacent, forbidden, c) => "Les voisins déjà coloriés sont " + adjacent + ". Couleurs interdites : " + forbidden + ". C" + c + " est la première couleur disponible.",
+    historyTitle: "Historique des choix",
+    historyHeaders: ["Sommet", "Voisins (sommet + couleur)", "Couleurs interdites (sans doublon)", "Couleur"],
+    historyNote: "Les voisins indiquent d’où viennent les contraintes ; les couleurs interdites les résument sans répétition.",
+    historyHelpTitle: "Pourquoi ces deux colonnes ?",
+    historyHelp: "La colonne des voisins indique quels sommets déjà coloriés sont reliés au sommet traité, avec leur couleur. La suivante ne garde qu’une fois chaque couleur interdite. Exemple : trois voisins portant C2, C2 et C1 n’interdisent que C1 et C2.",
+    initialHistory: "Aucune couleur attribuée.",
+    waiting: "À choisir",
+    minimumHead: "Pourquoi ce nombre est minimal",
+    triangleProof: (a, b, c, n) => a + ", " + b + " et " + c + " forment un triangle. Chacun est voisin des deux autres, donc il faut au moins trois couleurs. Une coloration valide en " + n + " couleurs atteint ce minimum.",
+    edgeProof: (a, b) => "L’arête " + a + "–" + b + " exige au moins deux couleurs. La coloration en deux couleurs montre qu’elles suffisent.",
+    demoSuccess: n => "Coloration valide en " + n + " couleurs.",
+    orderLesson: "Le même graphe utilise quatre couleurs avec l’ordre A, B, C, D, E, F, G et trois avec A, B, C, D, G, F, E. Les arêtes restent identiques : seul l’ordre de traitement change.",
+    freeHead: "Exercice 1 — Respecter les contraintes",
+    freeIntro: "Ce cycle à cinq sommets est différent des graphes des démonstrations. Coloriez-le dans l’ordre que vous voulez. Vous pouvez changer une couleur à tout moment.",
+    pick: "Sélectionnez un sommet, puis une couleur. Le résultat est vérifié automatiquement.",
+    coloring: v => "Couleur de " + v,
+    progress: (n, total) => n + (n === 1 ? " sommet colorié sur " : " sommets coloriés sur ") + total,
+    countColors: n => n + " couleur" + (n === 1 ? "" : "s") + " utilisée" + (n === 1 ? "" : "s"),
+    conflictDetail: (a, b, c) => a + " et " + b + " sont voisins et portent tous les deux C" + c + ". Modifiez l’une des deux couleurs.",
+    conflictList: "Les arêtes en conflit sont surlignées dans le graphe.",
+    noConflict: "Aucun conflit entre les sommets déjà coloriés.",
+    incomplete: "Coloriez tous les sommets pour terminer.",
+    valid: "Coloration valide.",
+    optimal: n => "Vous utilisez " + n + " couleurs. Le minimum est atteint.",
+    validMore: (n, min) => "Vous utilisez " + n + " couleurs. Le minimum pour ce graphe est " + min + ". Vous pouvez chercher une autre coloration.",
+    freeGoal: "L’exercice est réussi dès que votre coloration est valide.",
+    guideHead: "Exercice 2 — Coloration gloutonne guidée",
+    guideIntro: "Ce nouveau graphe comporte six sommets et deux triangles reliés. Suivez l’ordre A, B, C, D, F, E et choisissez à chaque tour la première couleur autorisée.",
+    guideExerciseLabel: "Choix de l’exercice guidé",
+    guideExercises: ["1 — Deux triangles", "2 — La petite maison"],
+    guideNextExercise: "Passer à la petite maison",
+    houseIntro: "Cette petite maison avec son jardin comporte six sommets. Suivez l’ordre A, B, C, D, E, F et choisissez la première couleur disponible. Vous chercherez ensuite à améliorer le résultat.",
+    houseGreedyStage: "Étape 1 sur 2 — Suivre le glouton",
+    houseImproveStage: "Étape 2 sur 2 — Faire mieux",
+    houseImproveIntro: "Le glouton a utilisé quatre couleurs. Reprenez le même graphe pour chercher une coloration utilisant moins de couleurs.",
+    houseImproveHead: "À vous d’améliorer la coloration",
+    houseObservation: "La coloration obtenue est propre et utilise quatre couleurs. Pourtant, trois suffisent ! Le glouton garde ses choix précédents : il n’a pas trouvé le minimum avec cet ordre.",
+    houseStart: "Chercher une meilleure coloration",
+    houseTask: "Pouvez-vous colorier cette maison avec seulement trois couleurs ? Modifiez les couleurs obtenues par le glouton, en respectant chaque arête.",
+    houseFreedom: "Vous pouvez maintenant recolorier plusieurs sommets, dans l’ordre que vous voulez. La règle de la première couleur disponible ne s’applique plus à cette recherche.",
+    houseComparison: (initial,current) => "Résultat du glouton : " + initial + " couleurs · Votre essai : " + current + " couleur" + (current === 1 ? "" : "s"),
+    houseHintTitle: "Un indice pour commencer",
+    houseHint: "Examinez F et les couleurs de ses trois voisins. Dans le résultat du glouton, changer uniquement F ne suffit pas : vous pouvez aussi modifier ses voisins. Une couleur disparaît seulement si plus aucun sommet ne l’utilise.",
+    houseMore: n => "Votre coloration est valide, mais utilise encore " + n + " couleurs. Cherchez à n’en utiliser que trois pour améliorer le résultat du glouton.",
+    houseImproved: (initial,current) => "Vous avez amélioré le résultat : " + current + " couleurs au lieu des " + initial + " du glouton. Votre coloration est valide et optimale !",
+    houseLesson: "Une coloration valide n’est pas forcément optimale. Le glouton choisit la première couleur disponible à chaque tour ; il ne revient pas sur ses décisions pour économiser une couleur.",
+    houseReset: "Rétablir les couleurs du glouton",
+    houseHistory: "Revoir le parcours du glouton",
+    turn: v => "Quelle couleur faut-il attribuer à " + v + " ?",
+    neighborHeading: "Voisins déjà coloriés",
+    forbiddenHeading: "Couleurs interdites",
+    choiceMissing: "Choisissez une couleur.",
+    attemptColor: (v,c) => "Essai pour " + v + " : C" + c + ". Ce choix n’est pas enregistré dans l’historique.",
+    edgeLowerBound: (a,b) => "L’arête " + a + "–" + b + " exige au moins deux couleurs.",
+    examProgress: (n,total) => n + (n === 1 ? " examen placé sur " : " examens placés sur ") + total,
+    countSlots: n => n + " créneau" + (n === 1 ? "" : "x") + " utilisé" + (n === 1 ? "" : "s"),
+    scheduleLowerBound: "Fred suit A, B et C. Ces trois sujets sont incompatibles deux à deux : il faut donc au moins trois créneaux.",
+    notFirst: (n, c) => "C" + n + " respecte les voisins. Pour suivre le glouton, choisissez la première couleur disponible, C" + c + ".",
+    validated: "Choix validé.",
+    review: v => v + " est colorié. Vérifiez l’explication avant de continuer.",
+    guideSuccess: (total,n) => "Les " + total + " sommets sont coloriés avec " + n + " couleurs. Vous avez suivi la règle gloutonne à chaque tour.",
+    orderHead: "Exercice 3 — L’ordre des sommets",
+    orderIntro: "Ce nouveau graphe comporte huit sommets et douze arêtes. Appliquez le glouton sans aide à l’ordre A, B, C, D, E, F, G, H. Construisez ensuite un autre ordre pour utiliser moins de couleurs.",
+    independent: "Utilisez la première couleur disponible en regardant les voisins dans le graphe.",
+    tryAnother: "Choisir un autre ordre",
+    buildOrder: "Construisez votre nouvel ordre",
+    orderHint: "Touchez les sommets dans l’ordre souhaité. Annuler permet de retirer le dernier.",
+    applyOrder: "Appliquer cet ordre",
+    orderMissing: "Choisissez chacun des huit sommets une seule fois.",
+    fewer: n => "Avec cet ordre, le glouton utilise " + n + " couleurs. Votre coloration est valide. Cherchez maintenant un autre ordre pour obtenir deux couleurs.",
+    orderSuccess: "Vous avez trouvé un ordre qui utilise deux couleurs, le minimum pour ce graphe.",
+    attempts: "Comparaison de vos exécutions",
+    attemptsHeaders: ["Ordre", "Couleurs utilisées"],
+    noAttempts: "Aucune exécution terminée.",
+    slotsHead: "Exercice 4 — Organiser les examens",
+    slotsIntro: "Fred, Greg, Lionel, Nicolas et Julian suivent les sujets indiqués ci-dessous. À partir de ces inscriptions fictives, construisez le graphe des contraintes, puis un horaire sans conflit.",
+    slotsColorIntro: "Le graphe des contraintes est complet. Deux sujets reliés doivent être placés dans des créneaux différents. Organisez les cinq examens avec le moins de créneaux possible.",
+    slotsGoal: "Construisez un horaire valide en utilisant le moins de créneaux possible.",
+    slot: n => "Créneau " + n,
+    slotColor: n => "C" + n + " = créneau " + n,
+    assignSlot: v => "Créneau : " + v,
+    subjects: { A: "Algorithmique", B: "Bureautique", C: "Cybersécurité", D: "Développement", F: "Fonctions" },
+    scheduleHead: "Votre horaire",
+    scheduleHeaders: ["Créneau", "Examens"],
+    noSchedule: "Choisissez un examen et attribuez-lui un créneau.",
+    noSlot: "À placer",
+    slotConflict: (a, b, n) => a + " et " + b + " ont des élèves en commun. Ils partagent le créneau " + n + ". Déplacez l’un des deux examens.",
+    slotsIncomplete: "Attribuez un créneau à chacun des cinq examens.",
+    scheduleValid: "Horaire valide.",
+    slotsMore: (n, min) => "Vous utilisez " + n + " créneaux. Essayez de les ramener à " + min + ".",
+    slotsSuccess: n => "Tous les examens sont placés sans conflit dans " + n + " créneaux. Le minimum est atteint.",
+    scheduleProof: "Fred suit Algorithmique, Bureautique et Cybersécurité : leurs sommets A, B et C forment un triangle. Il faut au moins trois créneaux. Votre horaire valide en trois créneaux atteint ce minimum.",
+    scheduleSolution: "Voir un horaire minimal",
+    quizHead: "Exercice 5 — Analyse critique",
+    quizIntro: "Choisissez Vrai ou Faux, puis lisez la justification. Vous pouvez modifier vos réponses.",
+    yes: "Vrai",
+    no: "Faux",
+    correct: "Réponse correcte.",
+    incorrect: "Réponse incorrecte.",
+    quiz: [
+      { statement: "Deux sommets non adjacents peuvent avoir la même couleur.", answer: true, explanation: "Une contrainte de couleurs différentes s’applique seulement aux sommets reliés par une arête." },
+      { statement: "Une coloration valide utilise forcément le minimum de couleurs.", answer: false, explanation: "Sur le cycle de l’exercice 1, cinq couleurs différentes respectent toutes les arêtes. Trois couleurs suffisent pourtant." },
+      { statement: "Changer l’ordre de traitement peut changer le nombre de couleurs utilisé par le glouton.", answer: true, explanation: "Dans la deuxième démonstration, l’ordre A, B, C, D, E, F, G donne quatre couleurs et l’ordre A, B, C, D, G, F, E en donne trois." },
+      { statement: "L’algorithme glouton garantit toujours une coloration optimale.", answer: false, explanation: "Il garde ses décisions précédentes. Dans l’exercice 3, le premier ordre utilise quatre couleurs alors que deux suffisent." }
+    ]
+  },
+  en: {
+    kicker: "Algorithms",
+    title: "Graph colouring",
+    description: "Understand colouring constraints, apply a greedy algorithm and schedule exams without conflicts.",
+    instruction: "Vertices joined by an edge must have different colours. Follow the demonstrations or choose an exercise.",
+    navigation: "Demonstrations and exercises",
+    sections: ["Information", "Respecting constraints", "Guided greedy colouring", "Vertex order", "Exam scheduling", "Critical thinking"],
+    done: "Complete",
+    backList: "← All applications",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit fullscreen",
+    fullscreenUnavailable: "Fullscreen is unavailable in this browser.",
+    restart: "Start again",
+    undo: "Undo the last choice",
+    erase: "Remove the colour",
+    previous: "Previous",
+    nextStep: "Next step",
+    nextVertex: "Next vertex",
+    automaticColor: "Choose a colour: your choice is checked immediately.",
+    automaticPainting: "Each colour change is checked automatically. You may change your choices at any time.",
+    color: n => "Colour " + n,
+    colorShort: n => "C" + n,
+    noColor: "No colour",
+    noNeighbor: "None",
+    vertices: "Choose a vertex",
+    graph: "Constraint graph",
+    graphNote: "Each edge requires two different colours.",
+    current: "Current vertex",
+    related: "Already coloured neighbour",
+    conflict: "Conflict",
+    selected: "Selected vertex",
+    vertexLabel: (v, c) => v + ", " + c,
+    start: "Initialisation",
+    demoHead: "Step-by-step demonstrations of the greedy algorithm",
+    demo1: "A triangle requires three colours",
+    demo2: "An order can add a colour",
+    demoChain: "A chain: meeting rooms",
+    demoStar: "A star: five neighbours, two colours",
+    chainFirstOrder: "Order A, D, B, C",
+    chainSecondOrder: "Order A, B, C, D",
+    chainIntro: "Four meetings need identical rooms. A vertex represents a meeting; an edge joins two meetings whose times overlap. A colour represents a room.",
+    meetingTitle: "The four meetings",
+    meetingHeaders: ["Meeting","Time","Room"],
+    room: n => "Room " + n,
+    meetingBoundary: "A room becomes available as soon as a meeting ends: A and C may share a room, as may B and D. C1 means room 1, C2 means room 2, and so on.",
+    roomResult: n => "The greedy algorithm assigns " + n + " rooms to the four meetings.",
+    chainLesson: "With A, D, B, C, the greedy algorithm uses three colours. With A, B, C, D, it uses just two. The meetings and their times stay the same: only their processing order changes.",
+    chainLowerProof: "A and B overlap, so at least two rooms are needed. Compare the two orders to see that just two rooms are enough.",
+    starIntro: "The five vertices A, B, C, D and E are joined to the centre F, but not to each other. Follow the greedy algorithm on the five branches, then on the centre.",
+    starLesson: "F has five already coloured neighbours, but they all use C1. Only one colour is therefore forbidden for F: C1. The centre receives C2, and two colours suffice for the whole graph.",
+    step: (n, total) => "Step " + n + " of " + total,
+    order: "Processing order",
+    firstOrder: "Order A, B, C, D, E, F, G",
+    secondOrder: "Order A, B, C, D, G, F, E",
+    introHead: "What is it used for?",
+    intro: "Graph colouring assigns incompatible items to different groups while trying to use as few groups as possible. An edge represents an incompatibility; a colour represents a group or resource. Joined vertices must therefore receive different colours.",
+    useCases: [
+      { title: "Timetables and exams", text: "Two exams that share students need different time slots. Each colour represents a slot. This helps create an exam schedule without conflicts." },
+      { title: "Meeting rooms", text: "Meetings whose times overlap need different rooms. Each vertex represents a meeting and each colour a room. The goal is to find the minimum number of rooms needed. The chain demonstration below gives an example." },
+      { title: "Geographical maps", text: "Two regions sharing a border receive different colours to make a map readable. A region becomes a vertex and a shared border becomes an edge." },
+      { title: "Processor registers", text: "A compiler may use colouring to assign registers, which are small, very fast memory locations. Values that must be kept simultaneously need different registers. Each colour represents a register." }
+    ],
+    conceptsTitle: "Colouring, proper colouring and optimal colouring",
+    conceptModes: ["Incorrect colouring", "Proper, with extra colours", "Optimal colouring"],
+    conceptDescriptions: [
+      "Every vertex has a colour: this is a colouring. It is not proper because adjacent vertices share C1. Conflicting edges are highlighted.",
+      "All five vertices have different colours. The colouring is proper, so it is valid, but it uses five colours when three suffice.",
+      "This proper colouring uses three colours. The triangle A–B–C requires at least three, so the colouring is optimal."
+    ],
+    factorialTitle: "Why not try every vertex order?",
+    factorialIntro: "With n vertices, there are n choices for the first, n − 1 for the next, then n − 2… The total number of orders is n × (n − 1) × … × 1, written n!.",
+    factorialLabel: "Number of vertices",
+    factorialResult: (n,total) => n + " vertices: " + n + "! = " + total + " possible orders.",
+    factorialNote: "Small graphs remain manageable, but the number of orders grows very quickly. The greedy algorithm processes one chosen order quickly without guaranteeing the minimum.",
+    bonusTitle: "Bonus — Can greedy colouring use many extra colours?",
+    bonusIntro: "Compare two orders on this ten-vertex graph. A colour groups vertices that can share it without a conflict.",
+    bonusBad: "Order 1, 2, 3…",
+    bonusGood: "Odd numbers, then even numbers",
+    bonusSummary: n => "This proper colouring uses " + n + " colours.",
+    bonusProof: "Odd-numbered vertices are not joined to each other; neither are even-numbered vertices. Two colours suffice. The edge 1–4 requires at least two, so this is the minimum.",
+    otherAlgorithmsTitle: "Other graph colouring methods",
+    otherAlgorithms: ["Welsh–Powell","DSATUR","RLF","Backtracking search"],
+    exactAlgorithmsNote: "Exact methods guarantee an optimal colouring, but their computation can take a very long time. No known algorithm guarantees the minimum number of colours while remaining fast for every graph, even as graphs become large.",
+    sevenLowerProof: "The triangle E–F–G requires at least three colours. This run uses four. Compare it with the second order to use three.",
+    freeProof: "This cycle has five vertices. Alternating two colours along A–B–C–D–E gives E the same colour as A, although an edge joins them. Two colours cannot suffice. The example below shows that three suffice.",
+    stageBuild: "Step 1 of 2 — Build the constraints",
+    stageColor: "Step 2 of 2 — Schedule the exams",
+    planningExplain: "Each vertex represents an exam subject. Join two subjects if at least one student takes both: their exams cannot take place at the same time.",
+    studentsHeading: "Enrolments",
+    enrollmentHeaders: ["Student", "Subjects taken"],
+    choosePerson: "Choose a student to examine their enrolments.",
+    personHint: (person,subjects) => person + " takes " + subjects + ". Join every pair of these subjects to represent their constraints.",
+    sharedSubjects: "Subjects taken by the student",
+    selectedSubjects: "Selected subjects",
+    pairPrompt: "Tap two vertices, or their corresponding buttons, then add their edge.",
+    pairLabel: subjects => "Selected: " + (subjects || "no subject"),
+    addEdge: "Add the edge",
+    checkEdges: "Check the constraints and continue",
+    edgeProgress: (n,total) => n + " of " + total + " edges built",
+    edgeNeedPair: "Select two different subjects before adding an edge.",
+    edgeWrong: (a,b) => a + " and " + b + " share no student in these enrolments. No edge joins them.",
+    edgeDuplicate: (a,b,people) => "The edge " + a + "–" + b + " already exists. Students concerned: " + people + ". One edge is enough for each pair of subjects.",
+    edgeAdded: (a,b,people) => "Added edge " + a + "–" + b + ". Students concerned: " + people + ". These exams need different time slots.",
+    missingEdges: n => n + " constraint" + (n === 1 ? " is" : "s are") + " still missing. Check the enrolments and each pair of subjects.",
+    edgeUndo: "Undo the last edge",
+    backConstraints: "Return to the constraints",
+    reviewEnrollments: "Review the enrolments",
+    definitions: [
+      "Two vertices are adjacent when an edge joins them.",
+      "A colouring assigns a colour to every vertex.",
+      "A colouring is proper, or valid, when adjacent vertices have different colours.",
+      "An optimal colouring uses the fewest colours possible among all proper colourings of the graph."
+    ],
+    rulesHead: "The greedy rule",
+    rules: [
+      "Choose a vertex order and keep it throughout the run.",
+      "Take the next vertex in that order.",
+      "Find the colours of its already coloured neighbours.",
+      "Assign the first available colour in the numbered palette C1, C2, C3…",
+      "Continue until all vertices have a colour."
+    ],
+    rulesNote: "The greedy algorithm keeps its earlier choices. The vertex order can change how many colours it uses.",
+    initialDemo: "No vertex has a colour yet. The first vertex will receive C1.",
+    coloredDemo: (v, c) => v + " receives C" + c + ".",
+    explainNone: "No neighbour has a colour yet. C1 is therefore the first available colour.",
+    explainStep: (adjacent, forbidden, c) => "The already coloured neighbours are " + adjacent + ". Forbidden colours: " + forbidden + ". C" + c + " is the first available colour.",
+    historyTitle: "Choice history",
+    historyHeaders: ["Vertex", "Neighbours (vertex + colour)", "Forbidden colours (no duplicates)", "Colour"],
+    historyNote: "The neighbours show where the constraints come from; the forbidden colours summarise them without repetition.",
+    historyHelpTitle: "Why are there two columns?",
+    historyHelp: "The neighbours column lists the already coloured vertices joined to the current vertex, with their colours. The next column lists each forbidden colour only once. For example, three neighbours with C2, C2 and C1 forbid only C1 and C2.",
+    initialHistory: "No colour assigned yet.",
+    waiting: "Choose",
+    minimumHead: "Why this is the minimum",
+    triangleProof: (a, b, c, n) => a + ", " + b + " and " + c + " form a triangle. Each is adjacent to the other two, so at least three colours are needed. A valid colouring with " + n + " colours reaches this minimum.",
+    edgeProof: (a, b) => "The edge " + a + "–" + b + " requires at least two colours. A valid two-colour assignment shows that two suffice.",
+    demoSuccess: n => "Valid colouring with " + n + " colours.",
+    orderLesson: "The same graph uses four colours with the order A, B, C, D, E, F, G and three with A, B, C, D, G, F, E. Its edges stay the same: only the processing order changes.",
+    freeHead: "Exercise 1 — Respecting constraints",
+    freeIntro: "This five-vertex cycle differs from the demonstration graphs. Colour it in any order. You may change a colour at any time.",
+    pick: "Select a vertex, then a colour. The result is checked automatically.",
+    coloring: v => "Colour of " + v,
+    progress: (n, total) => n + " of " + total + " vertices coloured",
+    countColors: n => n + " colour" + (n === 1 ? "" : "s") + " used",
+    conflictDetail: (a, b, c) => a + " and " + b + " are adjacent and both have C" + c + ". Change one of these colours.",
+    conflictList: "Conflicting edges are highlighted in the graph.",
+    noConflict: "No conflict between the vertices already coloured.",
+    incomplete: "Colour every vertex to finish.",
+    valid: "Valid colouring.",
+    optimal: n => "You use " + n + " colours. This is the minimum.",
+    validMore: (n, min) => "You use " + n + " colours. The minimum for this graph is " + min + ". You can try another colouring.",
+    freeGoal: "This exercise is complete as soon as your colouring is valid.",
+    guideHead: "Exercise 2 — Guided greedy colouring",
+    guideIntro: "This new graph has six vertices and two connected triangles. Follow the order A, B, C, D, F, E and choose the first available colour at each turn.",
+    guideExerciseLabel: "Choose a guided exercise",
+    guideExercises: ["1 — Two triangles", "2 — The little house"],
+    guideNextExercise: "Continue to the little house",
+    houseIntro: "This little house with a garden has six vertices. Follow the order A, B, C, D, E, F and choose the first available colour. You will then try to improve the result.",
+    houseGreedyStage: "Step 1 of 2 — Follow the greedy rule",
+    houseImproveStage: "Step 2 of 2 — Improve the result",
+    houseImproveIntro: "The greedy algorithm used four colours. Revisit the same graph and look for a colouring that uses fewer colours.",
+    houseImproveHead: "Your turn to improve the colouring",
+    houseObservation: "The resulting colouring is proper and uses four colours. Yet three are enough! The greedy algorithm keeps its earlier choices: it did not find the minimum with this order.",
+    houseStart: "Find a better colouring",
+    houseTask: "Can you colour this house using just three colours? Change the colours assigned by the greedy algorithm while respecting every edge.",
+    houseFreedom: "You may now recolour several vertices in any order. The first-available-colour rule no longer applies to this search.",
+    houseComparison: (initial,current) => "Greedy result: " + initial + " colours · Your attempt: " + current + " colour" + (current === 1 ? "" : "s"),
+    houseHintTitle: "A hint to get started",
+    houseHint: "Examine F and the colours of its three neighbours. In the greedy result, changing F alone is not enough: you can also change its neighbours. A colour disappears only when no vertex uses it.",
+    houseMore: n => "Your colouring is valid, but still uses " + n + " colours. Try to use just three to improve on the greedy result.",
+    houseImproved: (initial,current) => "You improved the result: " + current + " colours instead of the greedy algorithm’s " + initial + ". Your colouring is valid and optimal!",
+    houseLesson: "A valid colouring is not necessarily optimal. The greedy algorithm chooses the first available colour at each turn; it does not revisit its choices to save a colour.",
+    houseReset: "Restore the greedy colours",
+    houseHistory: "Review the greedy run",
+    turn: v => "Which colour should " + v + " receive?",
+    neighborHeading: "Already coloured neighbours",
+    forbiddenHeading: "Forbidden colours",
+    choiceMissing: "Choose a colour.",
+    attemptColor: (v,c) => "Attempt for " + v + ": C" + c + ". This choice is not recorded in the history.",
+    edgeLowerBound: (a,b) => "The edge " + a + "–" + b + " requires at least two colours.",
+    examProgress: (n,total) => n + " of " + total + " exams scheduled",
+    countSlots: n => n + " slot" + (n === 1 ? "" : "s") + " used",
+    scheduleLowerBound: "Fred takes A, B and C. These subjects are pairwise incompatible, so at least three time slots are needed.",
+    notFirst: (n, c) => "C" + n + " is allowed by the neighbours. To follow the greedy rule, choose the first available colour, C" + c + ".",
+    validated: "Choice confirmed.",
+    review: v => v + " has a colour. Check the explanation before continuing.",
+    guideSuccess: (total,n) => "All " + total + " vertices have colours, using " + n + " colours in total. You followed the greedy rule at every turn.",
+    orderHead: "Exercise 3 — Vertex order",
+    orderIntro: "This new graph has eight vertices and twelve edges. Apply the greedy algorithm without hints to the order A, B, C, D, E, F, G, H. Then build another order that uses fewer colours.",
+    independent: "Look at the neighbours in the graph and use the first available colour.",
+    tryAnother: "Choose another order",
+    buildOrder: "Build a new order",
+    orderHint: "Tap each vertex in your chosen order. Undo removes the last one.",
+    applyOrder: "Apply this order",
+    orderMissing: "Choose each of the eight vertices exactly once.",
+    fewer: n => "With this order, the greedy algorithm uses " + n + " colours. Your colouring is valid. Find another order to use two colours.",
+    orderSuccess: "You found an order that uses two colours, the minimum for this graph.",
+    attempts: "Compare your runs",
+    attemptsHeaders: ["Order", "Colours used"],
+    noAttempts: "No completed run yet.",
+    slotsHead: "Exercise 4 — Exam scheduling",
+    slotsIntro: "Fred, Greg, Lionel, Nicolas and Julian take the subjects shown below. Use these fictional enrolments to build the constraint graph, then create a schedule without conflicts.",
+    slotsColorIntro: "The constraint graph is complete. Subjects joined by an edge need different time slots. Schedule the five exams using as few slots as possible.",
+    slotsGoal: "Build a valid schedule using as few time slots as possible.",
+    slot: n => "Slot " + n,
+    slotColor: n => "C" + n + " = slot " + n,
+    assignSlot: v => "Slot for " + v,
+    subjects: { A: "Algorithms", B: "Office applications", C: "Cybersecurity", D: "Development", F: "Functions" },
+    scheduleHead: "Your schedule",
+    scheduleHeaders: ["Slot", "Exams"],
+    noSchedule: "Select an exam and give it a time slot.",
+    noSlot: "Not assigned",
+    slotConflict: (a, b, n) => a + " and " + b + " share students and are both in slot " + n + ". Move one of the exams.",
+    slotsIncomplete: "Assign a time slot to each of the five exams.",
+    scheduleValid: "Valid schedule.",
+    slotsMore: (n, min) => "You use " + n + " slots. Try to reduce this to " + min + ".",
+    slotsSuccess: n => "All exams fit into " + n + " time slots without conflicts. This is the minimum.",
+    scheduleProof: "Fred takes Algorithms, Office applications and Cybersecurity: A, B and C form a triangle. At least three time slots are needed. Your valid three-slot schedule reaches this minimum.",
+    scheduleSolution: "View a minimum schedule",
+    quizHead: "Exercise 5 — Critical thinking",
+    quizIntro: "Choose True or False and read the explanation. You may change your answers.",
+    yes: "True",
+    no: "False",
+    correct: "Correct.",
+    incorrect: "Incorrect.",
+    quiz: [
+      { statement: "Two non-adjacent vertices may have the same colour.", answer: true, explanation: "The requirement for different colours applies only to vertices joined by an edge." },
+      { statement: "A valid colouring always uses the minimum number of colours.", answer: false, explanation: "On the cycle in Exercise 1, five different colours respect every edge. However, three colours suffice." },
+      { statement: "Changing the vertex order can change how many colours the greedy algorithm uses.", answer: true, explanation: "In the second demonstration, A, B, C, D, E, F, G uses four colours, while A, B, C, D, G, F, E uses three." },
+      { statement: "The greedy algorithm always guarantees an optimal colouring.", answer: false, explanation: "It keeps its earlier decisions. In Exercise 3, the first order uses four colours when two suffice." }
+    ]
+  }
+};
+
+const ENROLLMENTS = [
+  { name: "Fred", subjects: ["A", "B", "C"] },
+  { name: "Greg", subjects: ["A", "C"] },
+  { name: "Lionel", subjects: ["B", "C", "D"] },
+  { name: "Nicolas", subjects: ["D", "F"] },
+  { name: "Julian", subjects: ["C", "F"] }
+];
+function edgeKey(pair) { return [...pair].sort().join("-"); }
+function enrollmentEdges() {
+  const edges = new Map();
+  for (const person of ENROLLMENTS) for (let i=0;i<person.subjects.length;i++) {
+    for (let j=i+1;j<person.subjects.length;j++) {
+      const pair = [person.subjects[i],person.subjects[j]].sort();
+      edges.set(edgeKey(pair),pair);
+    }
+  }
+  return [...edges.values()];
+}
+const MEETINGS = [
+  {vertex:"A",start:600,end:660},
+  {vertex:"B",start:630,end:690},
+  {vertex:"C",start:660,end:720},
+  {vertex:"D",start:690,end:750}
+];
+function meetingEdges() {
+  return MEETINGS.flatMap((a,i)=>MEETINGS.slice(i+1)
+    .filter(b=>a.start < b.end && b.start < a.end).map(b=>[a.vertex,b.vertex]));
+}
+const GRAPHS = {
+  triangle: {
+    nodes: ["A", "B", "C", "D", "E"],
+    positions: { A: [100, 285], B: [100, 80], C: [285, 185], D: [460, 80], E: [500, 290] },
+    edges: [["A", "B"], ["A", "C"], ["B", "C"], ["B", "D"], ["C", "D"], ["D", "E"]],
+    height: 400, bound: ["A", "B", "C"]
+  },
+  path: {
+    nodes: ["A", "B", "C", "D"],
+    positions: { A: [75, 135], B: [225, 135], C: [375, 135], D: [525, 135] },
+    edges: meetingEdges(),
+    height: 270, bound: ["A", "B"]
+  },
+  star: {
+    nodes: ["A", "B", "C", "D", "E", "F"],
+    positions: { A:[300,65], B:[510,195], C:[425,430], D:[175,430], E:[90,195], F:[300,255] },
+    edges: [["A","F"],["B","F"],["C","F"],["D","F"],["E","F"]],
+    height: 500, bound: ["A","F"]
+  },
+  cycle: {
+    nodes: ["A", "B", "C", "D", "E"],
+    positions: { A: [300, 65], B: [520, 220], C: [435, 445], D: [165, 445], E: [80, 220] },
+    edges: [["A", "B"], ["B", "C"], ["C", "D"], ["D", "E"], ["E", "A"]],
+    height: 510
+  },
+  seven: {
+    nodes: ["A", "B", "C", "D", "E", "F", "G"],
+    positions: { A: [300, 65], B: [130, 245], C: [300, 170], D: [470, 245], F: [130, 395], G: [470, 395], E: [300, 535] },
+    edges: [["A", "B"], ["A", "D"], ["B", "C"], ["C", "D"], ["B", "F"], ["F", "G"], ["F", "E"], ["D", "G"], ["E", "G"]],
+    height: 600, bound: ["E", "F", "G"]
+  },
+  crown: {
+    nodes: Array.from({length:10},(_,i)=>String(i+1)),
+    positions: Object.fromEntries(Array.from({length:10},(_,i)=>[String(i+1),[i%2 ? 440 : 160,70+Math.floor(i/2)*110]])),
+    edges: Array.from({length:5},(_,i)=>Array.from({length:5},(_,j)=>i===j ? null : [String(2*i+1),String(2*j+2)])).flat().filter(Boolean),
+    height: 580, bound: ["1", "4"]
+  },
+  prism: {
+    nodes: ["A", "B", "C", "D", "E", "F"],
+    positions: { A: [300, 65], B: [65, 410], C: [535, 410], D: [300, 190], E: [190, 330], F: [410, 330] },
+    edges: [["A", "B"], ["B", "C"], ["C", "A"], ["D", "E"], ["E", "F"], ["F", "D"], ["A", "D"], ["B", "E"], ["C", "F"]],
+    height: 480, bound: ["A", "B", "C"], paletteSize: 4
+  },
+  house: {
+    nodes: ["A", "B", "C", "D", "E", "F"],
+    positions: { A: [500, 210], B: [500, 430], C: [340, 65], D: [180, 210], E: [65, 430], F: [180, 430] },
+    edges: [["A", "B"], ["A", "C"], ["A", "D"], ["B", "F"], ["C", "D"], ["D", "F"], ["E", "F"]],
+    height: 500, bound: ["A", "C", "D"], paletteSize: 4
+  },
+  cube: {
+    nodes: ["A", "B", "C", "D", "E", "F", "G", "H"],
+    positions: { A: [80, 70], D: [520, 70], E: [520, 410], H: [80, 410], F: [205, 175], G: [395, 175], B: [395, 305], C: [205, 305] },
+    edges: [["A", "D"], ["D", "E"], ["E", "H"], ["H", "A"], ["F", "G"], ["G", "B"], ["B", "C"], ["C", "F"], ["A", "F"], ["D", "G"], ["E", "B"], ["H", "C"]],
+    height: 480, bound: ["A", "D"], paletteSize: 4
+  },
+  exams: {
+    nodes: ["A", "B", "C", "D", "F"],
+    positions: { A: [300, 75], B: [510, 250], C: [300, 250], D: [300, 430], F: [90, 250] },
+    edges: enrollmentEdges(),
+    height: 500, bound: ["A", "B", "C"]
+  }
+};
+
+function neighbors(graph, vertex) {
+  return graph.edges.flatMap(([a, b]) => a === vertex ? [b] : b === vertex ? [a] : []);
+}
+
+function usedColors(colors) {
+  return [...new Set(Object.values(colors).filter(Boolean))].sort((a, b) => a - b);
+}
+
+function conflicts(graph, colors) {
+  return graph.edges.filter(([a, b]) => colors[a] && colors[a] === colors[b]);
+}
+
+function isComplete(graph, colors) {
+  return graph.nodes.every(vertex => Number.isInteger(colors[vertex]) && colors[vertex] > 0);
+}
+
+function greedy(graph, order) {
+  const colors = {};
+  return order.map(vertex => {
+    const adjacent = neighbors(graph, vertex).filter(v => colors[v]);
+    const forbidden = usedColors(Object.fromEntries(adjacent.map(v => [v, colors[v]])));
+    let color = 1;
+    while (forbidden.includes(color)) color++;
+    colors[vertex] = color;
+    return { vertex, adjacent, forbidden, color, colors: { ...colors } };
+  });
+}
+
+function minimumColoring(graph) {
+  const order = [...graph.nodes].sort((a, b) => neighbors(graph, b).length - neighbors(graph, a).length);
+  for (let limit = 1; limit <= graph.nodes.length; limit++) {
+    const colors = {};
+    function assign(index) {
+      if (index === order.length) return { ...colors };
+      const vertex = order[index];
+      const unavailable = new Set(neighbors(graph, vertex).map(v => colors[v]));
+      for (let color = 1; color <= limit; color++) {
+        if (unavailable.has(color)) continue;
+        colors[vertex] = color;
+        const result = assign(index + 1);
+        if (result) return result;
+      }
+      delete colors[vertex];
+      return null;
+    }
+    const solution = assign(0);
+    if (solution) return { count: limit, colors: solution };
+  }
+}
+
+const MINIMUM = Object.fromEntries(Object.entries(GRAPHS).map(([key, graph]) => [key, minimumColoring(graph)]));
+const NATURAL_ORDER = ["A", "B", "C", "D"];
+const TRAP_ORDER = ["A", "D", "B", "C"];
+const GUIDE_ORDER = ["A", "B", "C", "D", "F", "E"];
+const HOUSE_ORDER = [...GRAPHS.house.nodes];
+const CHALLENGE_ORDER = [...GRAPHS.cube.nodes];
+const DEMO_ORDER = [...GRAPHS.seven.nodes];
+const BETTER_DEMO_ORDER = ["A", "B", "C", "D", "G", "F", "E"];
+const BONUS_ORDER = [...GRAPHS.crown.nodes];
+const BETTER_BONUS_ORDER = ["1", "3", "5", "7", "9", "2", "4", "6", "8", "10"];
+const DEMONSTRATIONS = [
+  {graph:"triangle",title:"demo1",orders:[GRAPHS.triangle.nodes]},
+  {graph:"seven",title:"demo2",orders:[DEMO_ORDER,BETTER_DEMO_ORDER],orderLabels:["firstOrder","secondOrder"]},
+  {graph:"path",title:"demoChain",orders:[TRAP_ORDER,NATURAL_ORDER],orderLabels:["chainFirstOrder","chainSecondOrder"]},
+  {graph:"star",title:"demoStar",orders:[GRAPHS.star.nodes]}
+];
+
+const FACTORIAL_SIZES = [2,3,4,5,6,7,8,9,10,11,12];
+function initialPlanning() {
+  return { ...initialPainter("A"), phase:"build", edges:[], pair:[], person:0, buildFeedback:null };
+}
+function planningComplete(p = state.exams) {
+  const keys = new Set(p.edges.map(edgeKey));
+  return keys.size === GRAPHS.exams.edges.length && GRAPHS.exams.edges.every(pair=>keys.has(edgeKey(pair)));
+}
+function edgeWitnesses(a,b) {
+  return ENROLLMENTS.filter(person=>person.subjects.includes(a) && person.subjects.includes(b)).map(person=>person.name);
+}
+function conceptBlock() {
+  const mode = state.info.concept, graph = GRAPHS.triangle;
+  const colors = mode === 0 ? Object.fromEntries(graph.nodes.map(v=>[v,1])) :
+    mode === 1 ? Object.fromEntries(graph.nodes.map((v,i)=>[v,i+1])) : MINIMUM.triangle.colors;
+  return "<div class='actions concept-controls' role='group' aria-label='"+esc(t().conceptsTitle)+"'>" +
+    t().conceptModes.map((label,i)=>button(label,"concept",{value:i,pressed:mode===i})).join("") +
+    "</div><div class='workspace concept-workspace'>" + graphCard(graph,colors,{id:"concept-graph-title"}) +
+    "<section class='worksheet'>" + notice(t().conceptDescriptions[mode],mode===0,"concept-feedback") + "</section></div>";
+}
+function meetingTable(colors) {
+  const time = minutes=>String(Math.floor(minutes/60)).padStart(2,"0")+":"+String(minutes%60).padStart(2,"0");
+  return "<h3>" + esc(t().meetingTitle) + "</h3><div class='table-wrap'><table class='meetings'><thead><tr>" +
+    t().meetingHeaders.map(label=>"<th scope='col'>" + esc(label) + "</th>").join("") +
+    "</tr></thead><tbody>" + MEETINGS.map(meeting=>"<tr><th scope='row'>" + meeting.vertex + "</th><td>" +
+      time(meeting.start) + "–" + time(meeting.end) + "</td><td>" + (colors[meeting.vertex] ?
+      "<span class='meeting-room'>" + chip(colors[meeting.vertex]) + " " + esc(t().room(colors[meeting.vertex])) + "</span>" : "—") +
+      "</td></tr>").join("") + "</tbody></table></div><p class='note'>" + esc(t().meetingBoundary) + "</p>";
+}
+function factorial(n) {
+  let result=1;
+  for(let i=2;i<=n;i++) result*=i;
+  return result;
+}
+function infoExtras() {
+  const n = state.info.factorialSize, total = new Intl.NumberFormat(lang==="fr" ? "fr-FR" : "en-GB").format(factorial(n));
+  const factorialBody = "<p>"+esc(t().factorialIntro)+"</p><p class='eyebrow extra-label'>"+esc(t().factorialLabel)+"</p>" +
+    "<div class='actions' role='group' aria-label='"+esc(t().factorialLabel)+"'>" +
+    FACTORIAL_SIZES.map(size=>button(String(size),"factorial",{value:size,pressed:n===size})).join("") +
+    "</div><p class='feedback extra-result'>"+esc(t().factorialResult(n,total))+"</p><p class='note'>"+esc(t().factorialNote)+"</p>";
+  const order = state.info.bonusBetter ? BETTER_BONUS_ORDER : BONUS_ORDER;
+  const colors = greedy(GRAPHS.crown,order).at(-1).colors;
+  const bonusBody = "<p>"+esc(t().bonusIntro)+"</p><div class='actions extra-label'>" +
+    button(t().bonusBad,"bonus",{value:0,pressed:!state.info.bonusBetter}) +
+    button(t().bonusGood,"bonus",{value:1,pressed:state.info.bonusBetter}) +
+    "</div><div class='workspace'>" + graphCard(GRAPHS.crown,colors,{id:"bonus-graph-title"}) +
+    "<section class='worksheet'><p class='eyebrow'>"+esc(t().order)+"</p>"+sequence(order) +
+    notice(t().bonusSummary(usedColors(colors).length),false,"bonus-feedback") +
+    (state.info.bonusBetter ? "<p class='proof'>"+esc(t().bonusProof)+"</p>" : "") + "</section></div>";
+  const algorithms = "<section class='other-algorithms' aria-labelledby='other-algorithms-title'><h3 id='other-algorithms-title'>" +
+    esc(t().otherAlgorithmsTitle) + "</h3><ul class='algorithm-names'>" +
+    t().otherAlgorithms.map(label=>"<li>"+esc(label)+"</li>").join("") + "</ul><p>" + esc(t().exactAlgorithmsNote) + "</p></section>";
+  return "<div class='info-extra'>"+disclosure("factorial",t().factorialTitle,factorialBody) +
+    disclosure("bonus",t().bonusTitle,bonusBody)+algorithms+"</div>";
+}
+function enrollmentTable(interactive) {
+  const p = state.exams;
+  return "<div class='table-wrap enrollment-wrap'><table class='enrollments'><thead><tr>" +
+    t().enrollmentHeaders.map(label=>"<th scope='col'>"+esc(label)+"</th>").join("") +
+    "</tr></thead><tbody>" + ENROLLMENTS.map((person,i)=>"<tr"+(p.person===i ? " class='selected-person'" : "")+"><th scope='row'>" +
+      (interactive ? button(person.name,"planning-person",{value:i,id:"student-"+i,pressed:p.person===i}) : esc(person.name)) +
+      "</th><td><div class='subject-list'>"+person.subjects.map(v=>"<span>"+esc(v+" · "+t().subjects[v])+"</span>").join("") +
+      "</div></td></tr>").join("") + "</tbody></table></div>";
+}
+function planningFeedback() {
+  const f = state.exams.buildFeedback;
+  if (!f) return "";
+  let message = "", error=false;
+  if (f.type==="pair") {message=t().edgeNeedPair;error=true;}
+  if (f.type==="wrong") {message=t().edgeWrong(f.a,f.b);error=true;}
+  if (f.type==="added") message=t().edgeAdded(f.a,f.b,f.people.join(", "));
+  if (f.type==="duplicate") message=t().edgeDuplicate(f.a,f.b,f.people.join(", "));
+  if (f.type==="missing") {message=t().missingEdges(f.count);error=true;}
+  return notice(message,error);
+}
+function planningScreen() {
+  const p=state.exams, graph={...GRAPHS.exams,edges:p.edges}, person=ENROLLMENTS[p.person];
+  return heading(t().slotsHead,t().slotsIntro) +
+    "<p class='stage-label'>"+esc(t().stageBuild)+"</p><p>"+esc(t().planningExplain)+"</p><div class='workspace'>" +
+    graphCard(graph,{},{
+      selectedNodes:p.pair,action:"planning-vertex",exams:true,
+      adjacent:person ? person.subjects : [],legendRelated:t().sharedSubjects,legendCurrent:t().selectedSubjects
+    }) +
+    "<section class='worksheet'><h3>"+esc(t().studentsHeading)+"</h3>"+enrollmentTable(true) +
+    "<p class='hint-grid person-hint'>"+esc(person ? t().personHint(person.name,person.subjects.join(", ")) : t().choosePerson)+"</p>" +
+    "<p>"+esc(t().pairPrompt)+"</p><div class='vertex-choices' role='group' aria-label='"+esc(t().vertices)+"'>" +
+    GRAPHS.exams.nodes.map(v=>button(v+" · "+t().subjects[v],"planning-vertex",{
+      value:v,id:"planning-vertex-"+v,pressed:p.pair.includes(v),class:"vertex-choice"
+    })).join("")+"</div><p class='eyebrow'>"+esc(t().pairLabel(p.pair.join(" + ")))+"</p>" +
+    "<div class='actions'>"+button(t().addEdge,"planning-add",{class:"primary"}) +
+    button(t().edgeUndo,"planning-undo",{class:"secondary",disabled:!p.edges.length})+"</div>" +
+    planningFeedback()+"<p class='note'>"+esc(t().edgeProgress(p.edges.length,GRAPHS.exams.edges.length))+"</p>" +
+    "<div class='actions'>"+button(t().checkEdges,"planning-continue",{class:"primary"})+"</div></section></div>";
+}
+function handlePlanning(action,value,target) {
+  if (!action.startsWith("planning-")) return false;
+  const p=state.exams, sub=action.slice(9);
+  if (sub==="back") {
+    p.phase="build";p.checked=false;p.pair=[];p.buildFeedback=null;p.feedback=null;
+    render("screen-title");return true;
+  }
+  if (p.phase!=="build") return true;
+  if (sub==="person") {
+    const index=Number(value);
+    if(Number.isInteger(index)&&ENROLLMENTS[index])p.person=index;
+    p.pair=[];p.buildFeedback=null;render(target.id);return true;
+  }
+  if (sub==="vertex" && GRAPHS.exams.nodes.includes(value)) {
+    if(p.pair.includes(value))p.pair=p.pair.filter(v=>v!==value);
+    else if(p.pair.length===2)p.pair=[value];
+    else p.pair.push(value);
+    p.buildFeedback=null;render("planning-vertex-"+value);return true;
+  }
+  if (sub==="undo") {
+    if(p.edges.length)p.edges.pop();
+    p.pair=[];p.checked=false;p.buildFeedback=null;render(target.id);return true;
+  }
+  if (sub==="add") {
+    if(p.pair.length!==2)p.buildFeedback={type:"pair"};
+    else {
+      const [a,b]=[...p.pair].sort(), people=edgeWitnesses(a,b);
+      if(!people.length)p.buildFeedback={type:"wrong",a,b};
+      else if(p.edges.some(pair=>edgeKey(pair)===edgeKey([a,b])))p.buildFeedback={type:"duplicate",a,b,people};
+      else {
+        p.edges.push([a,b]);p.pair=[];p.checked=false;
+        p.buildFeedback={type:"added",a,b,people};
+      }
+    }
+    render("feedback");announce($("feedback").textContent);return true;
+  }
+  if(sub==="continue") {
+    if(!planningComplete()) {
+      const have=new Set(p.edges.map(edgeKey));
+      p.buildFeedback={type:"missing",count:GRAPHS.exams.edges.filter(pair=>!have.has(edgeKey(pair))).length};
+      render("feedback");announce($("feedback").textContent);
+    } else {
+      p.phase="color";p.buildFeedback=null;checkPainter(p,GRAPHS.exams);
+      render("screen-title");
+    }
+    return true;
+  }
+  return true;
+}
+
+function initialPainter(selected) {
+  return { colors: {}, selected, undo: [], checked: false, feedback: null };
+}
+function initialRun(order) {
+  return { order: [...order], completed: 0, phase: "color", choice: null, feedback: null };
+}
+const state = {
+  screen: 0,
+  info: { concept:0, factorialSize:2, bonusBetter:false },
+  demo: { example: 0, steps: DEMONSTRATIONS.map(()=>0), orders: DEMONSTRATIONS.map(()=>0) },
+  free: initialPainter("A"),
+  guide: initialRun(GUIDE_ORDER),
+  guideExercise: 0,
+  guideHouse: initialRun(HOUSE_ORDER),
+  houseImprovement: null,
+  autonomous: { ...initialRun(CHALLENGE_ORDER), constructing: false, draftOrder: [], attempts: [] },
+  exams: initialPlanning(),
+  quiz: [null, null, null, null],
+  disclosures: new Set(),
+  fullscreenError: false
+};
+let lang = "fr";
+try {
+  const cookie = document.cookie.split("; ").find(s => s.startsWith("fj-lang="));
+  const saved = cookie ? decodeURIComponent(cookie.slice(8)) : null;
+  if (saved === "fr" || saved === "en") lang = saved;
+  else {
+    const local = localStorage.getItem("fj-lang");
+    if (local === "fr" || local === "en") lang = local;
+  }
+} catch (_) {
+  try {
+    const local = localStorage.getItem("fj-lang");
+    if (local === "fr" || local === "en") lang = local;
+  } catch (_) {}
+}
+const $ = id => document.getElementById(id);
+const t = () => I18N[lang];
+const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function button(label, action, options = {}) {
+  const id = options.id || action + (options.value !== undefined ? "-" + String(options.value).replace(/[^a-zA-Z0-9-]/g,"-") : "");
+  return "<button type='button' data-act='" + action + "'" +
+    (options.value !== undefined ? " data-value='" + esc(options.value) + "'" : "") +
+    " id='" + id + "'" +
+    (options.class ? " class='" + options.class + "'" : "") +
+    (options.disabled ? " disabled" : "") +
+    (options.pressed !== undefined ? " aria-pressed='" + options.pressed + "'" : "") +
+    (options.label ? " aria-label='" + esc(options.label) + "'" : "") +
+    ">" + esc(label) + "</button>";
+}
+function disclosure(id, label, body) {
+  return "<details data-disclosure='" + id + "'" + (state.disclosures.has(id) ? " open" : "") +
+    "><summary>" + esc(label) + "</summary>" + body + "</details>";
+}
+function chip(color) {
+  return "<span class='color-chip c" + color + "'>C" + color + "</span>";
+}
+function colorList(colors) {
+  return colors.length ? colors.map(chip).join(" ") : esc(t().noNeighbor);
+}
+function sequence(order, active) {
+  return "<ol class='sequence' aria-label='" + esc(t().order) + "'>" +
+    order.map(v => "<li><span" + (v === active ? " class='current'" : "") + ">" + esc(v) + "</span></li>").join("") + "</ol>";
+}
+function notice(text, error = false, id = "feedback") {
+  return "<div id='" + id + "' class='feedback" + (error ? " error" : "") + "' tabindex='-1'>" + esc(text) + "</div>";
+}
+function announce(text) {
+  $("announcement").textContent = "";
+  requestAnimationFrame(() => { $("announcement").textContent = text; });
+}
+function heading(title, intro, restart = true) {
+  return "<div class='screen-heading'><div><h2 id='screen-title' tabindex='-1'>" + esc(title) +
+    "</h2><p>" + esc(intro) + "</p></div>" +
+    (restart ? button(t().restart, "restart", { class: "secondary" }) : "") + "</div>";
+}
+function name(vertex, exams) {
+  return exams ? t().subjects[vertex] : vertex;
+}
+function graphCard(graph, colors, options = {}) {
+  const invalid = options.conflicts || conflicts(graph, colors);
+  const badEdges = new Set(invalid.map(([a,b]) => [a,b].sort().join("-")));
+  const neighborSet = new Set(options.adjacent || []);
+  const selectedSet = new Set(options.selectedNodes || []);
+  const titleId = options.id || "graph-title";
+  const lines = graph.edges.map(([a,b]) => {
+    const [x1,y1] = graph.positions[a], [x2,y2] = graph.positions[b];
+    return "<line x1='" + x1 + "' y1='" + y1 + "' x2='" + x2 + "' y2='" + y2 +
+      "' class='edge" + (badEdges.has([a,b].sort().join("-")) ? " conflict-edge" : "") + "'/>";
+  }).join("");
+  const nodes = graph.nodes.map(v => {
+    const [x,y] = graph.positions[v], c = colors[v] || 0;
+    const active = v === options.current || selectedSet.has(v), related = neighborSet.has(v);
+    const disabled = options.disabledNodes && options.disabledNodes.includes(v);
+    const classes = "vertex c" + c + (active ? " current" : "") + (related ? " related" : "") + (disabled ? " disabled-vertex" : "");
+    const label = t().vertexLabel(name(v, options.exams), c ? (options.exams ? t().slot(c) : t().color(c)) : t().noColor);
+    return "<g transform='translate(" + x + " " + y + ")' class='" + classes + "'" +
+      (options.action ? " role='button' tabindex='" + (disabled ? "-1" : "0") + "'" + (disabled ? " aria-disabled='true'" : "") + " data-act='" + options.action + "' data-value='" + v +
+        "' aria-pressed='" + active + "'" : " role='img'") +
+      " aria-label='" + esc(label) + "'><circle class='hit-area' r='49'/>" +
+      (active || related ? "<circle class='node-halo' r='40'/>" : "") +
+      "<circle class='node-shape' r='32'/><text class='vertex-name' y='-6' aria-hidden='true'>" + v +
+      "</text><text class='vertex-color' y='19' aria-hidden='true'>" + (c ? "C" + c : "—") + "</text></g>";
+  }).join("");
+  const legend = (options.current || selectedSet.size ? "<li><i class='key selected'></i>" + esc(options.legendCurrent || (options.action ? t().selected : t().current)) + "</li>" : "") +
+    (neighborSet.size ? "<li><i class='key related'></i>" + esc(options.legendRelated || t().related) + "</li>" : "") +
+    (invalid.length ? "<li><i class='key conflict-key'></i>" + esc(t().conflict) + "</li>" : "");
+  return "<section class='graph-card' aria-labelledby='" + titleId + "'><h3 id='" + titleId + "'>" + esc(t().graph) +
+    "</h3><p class='note'>" + esc(t().graphNote) + "</p><svg viewBox='0 0 600 " + graph.height +
+    "' role='group' aria-label='" + esc(t().graph) + "'>" + lines + nodes +
+    "</svg>" + (legend ? "<ul class='legend'>" + legend + "</ul>" : "") + "</section>";
+}
+function history(graph, trace, count, pending, showHints) {
+  if (!count && !pending) return "<h3>" + esc(t().historyTitle) + "</h3><p class='note'>" + esc(t().initialHistory) + "</p>";
+  const rows = trace.slice(0, count).map((step, i) => {
+    const previous = i ? trace[i-1].colors : {};
+    return "<tr" + (i === count-1 ? " class='latest'" : "") + "><th scope='row'>" + step.vertex + "</th><td>" +
+      (step.adjacent.length ? step.adjacent.map(v => esc(v) + " " + chip(previous[v])).join(", ") : esc(t().noNeighbor)) +
+      "</td><td>" + colorList(step.forbidden) + "</td><td>" + chip(step.color) + "</td></tr>";
+  }).join("");
+  const next = pending && trace[count];
+  const previous = count ? trace[count-1].colors : {};
+  const pendingRow = next ? "<tr class='draft'><th scope='row'>" + next.vertex + "</th><td>" +
+    (showHints ? (next.adjacent.length ? next.adjacent.map(v => v + " " + chip(previous[v])).join(", ") : esc(t().noNeighbor)) : "…") +
+    "</td><td>" + (showHints ? colorList(next.forbidden) : "…") + "</td><td>?</td></tr>" : "";
+  return "<h3>" + esc(t().historyTitle) + "</h3><p class='note'>" + esc(t().historyNote) + "</p>" +
+    disclosure("history-help-"+state.screen,t().historyHelpTitle,"<p>"+esc(t().historyHelp)+"</p>") +
+    "<div class='table-wrap' role='region' tabindex='0' aria-label='" +
+    esc(t().historyTitle) + "'><table class='history'><thead><tr>" +
+    t().historyHeaders.map(s => "<th scope='col'>" + esc(s) + "</th>").join("") +
+    "</tr></thead><tbody>" + rows + pendingRow + "</tbody></table></div>";
+}
+function stepExplanation(trace, index) {
+  const step = trace[index], previous = index ? trace[index-1].colors : {};
+  if (!step.adjacent.length) return t().explainNone;
+  return t().explainStep(step.adjacent.map(v => v + " (C" + previous[v] + ")").join(", "),
+    step.forbidden.map(c => "C" + c).join(", "), step.color);
+}
+function palette(size, chosen, action, exams = false) {
+  return "<div class='palette' role='group' aria-label='" + esc(exams ? t().slotsGoal : t().pick) + "'>" +
+    Array.from({length: size}, (_, i) => i+1).map(c =>
+      "<button type='button' data-act='" + action + "' data-value='" + c + "' id='palette-" + c +
+      "' aria-pressed='" + (chosen === c) + "' class='color-button" + (chosen === c ? " chosen" : "") + "'>" +
+      "<span class='swatch c" + c + "' aria-hidden='true'>C" + c + "</span>" +
+      "<span>" + esc(exams ? t().slot(c) : t().color(c)) + "</span></button>").join("") + "</div>";
+}
+function infoScreen() {
+  const d = state.demo, demo = DEMONSTRATIONS[d.example], graph = GRAPHS[demo.graph];
+  const order = demo.orders[d.orders[d.example]], better = d.orders[d.example] === 1;
+  const trace = greedy(graph, order), count = d.steps[d.example], step = trace[count-1];
+  const colors = step ? step.colors : {};
+  let body = heading(t().introHead, t().intro, false) +
+    "<div class='use-cases'>" + t().useCases.map(item=>"<article class='use-case'><h3>"+esc(item.title)+"</h3><p>"+esc(item.text)+"</p></article>").join("") +
+    "</div>" +
+    "<ul class='definitions'>" + t().definitions.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" +
+    disclosure("concepts",t().conceptsTitle,conceptBlock()) +
+    disclosure("rules", t().rulesHead, "<ol class='rules'>" + t().rules.map(x => "<li>" + esc(x) + "</li>").join("") +
+      "</ol><p class='note'>" + esc(t().rulesNote) + "</p>") +
+    "<div class='demo-heading'><h2>" + esc(t().demoHead) + "</h2><div class='actions'>" +
+    DEMONSTRATIONS.map((item,i)=>button(t()[item.title],"demo-example",{value:i,pressed:d.example === i})).join("") + "</div></div>";
+  if (demo.orderLabels) body += "<div class='actions demo-orders'>" +
+    demo.orderLabels.map((key,i)=>button(t()[key],"demo-order",{value:i,pressed:d.orders[d.example] === i})).join("") + "</div>";
+  if (demo.graph === "path" || demo.graph === "star") body += "<p class='demo-intro'>" +
+    esc(demo.graph === "path" ? t().chainIntro : t().starIntro) + "</p>";
+  body += "<div class='workspace'>" + graphCard(graph, colors, {current:step && step.vertex, adjacent:step && step.adjacent}) +
+    "<section class='worksheet'>" + (demo.graph === "path" ? meetingTable(colors) : "") +
+    "<p class='eyebrow'>" + esc(t().order) + "</p>" + sequence(order, step && step.vertex) +
+    "<div class='demo-control'>" +
+    button(t().previous, "demo-prev", {id:"demo-prev",disabled:!count}) +
+    "<span class='step-indicator'>" + esc(t().step(count, order.length)) + "</span>" +
+    button(t().nextStep, "demo-next", {id:"demo-next",class:"primary",disabled:count === order.length}) + "</div>" +
+    "<div class='explanation' id='demo-explanation' aria-live='polite'><h3>" +
+    esc(step ? t().coloredDemo(step.vertex, step.color) : t().start) + "</h3><p>" +
+    esc(step ? stepExplanation(trace, count-1) : t().initialDemo) + "</p></div>" +
+    history(graph, trace, count, false, true);
+  if (count === order.length) {
+    body += notice(t().demoSuccess(usedColors(colors).length), false, "demo-result");
+    if (demo.graph === "triangle") body += "<div class='proof'><h3>" + esc(t().minimumHead) + "</h3><p>" + esc(t().triangleProof("A","B","C",3)) + "</p></div>";
+    if (demo.graph === "seven") body += "<div class='proof'><p>" + esc(t().orderLesson) + "</p><p>" +
+      esc(better ? t().triangleProof("E","F","G",3) : t().sevenLowerProof) + "</p></div>";
+    if (demo.graph === "path") body += "<div class='proof'><p>" + esc(t().roomResult(usedColors(colors).length)) +
+      "</p><p>" + esc(t().chainLesson) + "</p><p>" + esc(better ? t().edgeProof(...graph.bound) : t().chainLowerProof) + "</p></div>";
+    if (demo.graph === "star") body += "<div class='proof'><p>" + esc(t().starLesson) +
+      "</p><p>" + esc(t().edgeProof(...graph.bound)) + "</p></div>";
+  }
+  return body + "</section></div>" + infoExtras();
+}
+function painterFeedback(painter, graph, exams) {
+  const bad = conflicts(graph, painter.colors);
+  if (bad.length) return notice(bad.map(([a,b]) => exams ?
+    t().slotConflict(name(a,true), name(b,true), painter.colors[a]) :
+    t().conflictDetail(a,b,painter.colors[a])).join(" "), true);
+  if (painter.feedback === "incomplete") return notice(exams ? t().slotsIncomplete : t().incomplete, true);
+  if (!painter.checked) return "<p class='note' id='feedback'>" + esc(t().noConflict) + "</p>";
+  const count = usedColors(painter.colors).length, min = MINIMUM[exams ? "exams" : "cycle"].count;
+  return notice(exams ? (count === min ? t().slotsSuccess(count) : t().scheduleValid + " " + t().slotsMore(count,min)) :
+    t().valid + " " + (count === min ? t().optimal(count) : t().validMore(count,min)));
+}
+function vertexChoices(graph, painter, action, exams) {
+  return "<div class='vertex-choices' role='group' aria-label='" + esc(t().vertices) + "'>" + graph.nodes.map(v =>
+    button(exams ? v + " · " + name(v,true) : v, action, {value:v,id:"vertex-"+v,pressed:painter.selected === v,class:"vertex-choice"})).join("") + "</div>";
+}
+function schedule(colors, id) {
+  const slots = usedColors(colors);
+  if (!slots.length) return "<p class='note'>" + esc(t().noSchedule) + "</p>";
+  const badVertices = new Set(conflicts(GRAPHS.exams, colors).flat());
+  const unplaced = GRAPHS.exams.nodes.filter(v => !colors[v]);
+  return "<div class='table-wrap' role='region' tabindex='0' aria-label='" + esc(t().scheduleHead) + "'><table class='schedule'><thead><tr>" +
+    t().scheduleHeaders.map(x => "<th scope='col'>" + esc(x) + "</th>").join("") +
+    "</tr></thead><tbody>" + slots.map(c => {
+      const exams = GRAPHS.exams.nodes.filter(v => colors[v] === c);
+      return "<tr><th scope='row'>" + chip(c) + " " + esc(t().slot(c)) + "</th><td>" +
+        exams.map(v => "<span" + (badVertices.has(v) ? " class='conflicting-subject'" : "") + ">" + esc(name(v,true)) +
+          (badVertices.has(v) ? " (" + esc(t().conflict) + ")" : "") + "</span>").join(", ") + "</td></tr>";
+    }).join("") + (unplaced.length ? "<tr><th scope='row'>" + esc(t().noSlot) + "</th><td>" +
+      unplaced.map(v => esc(name(v,true))).join(", ") + "</td></tr>" : "") + "</tbody></table></div>";
+}
+function painterScreen(exams) {
+  if(exams && state.exams.phase==="build")return planningScreen();
+  const p = exams ? state.exams : state.free, graph = exams ? GRAPHS.exams : GRAPHS.cycle;
+  const prefix = exams ? "exam" : "free", n = Object.keys(p.colors).length;
+  let body = heading(exams ? t().slotsHead : t().freeHead, exams ? t().slotsColorIntro : t().freeIntro) +
+    (exams ? "<p class='stage-label'>"+esc(t().stageColor)+"</p><div class='actions'>"+
+      button(t().backConstraints,"planning-back",{class:"secondary"})+"</div>"+
+      disclosure("enrolments-review",t().reviewEnrollments,enrollmentTable(false)) : "") +
+    "<div class='workspace'>" + graphCard(graph,p.colors,{current:p.selected, action:prefix+"-vertex",exams}) +
+    "<section class='worksheet'><p>" + esc(exams ? t().slotsGoal : t().freeGoal) + "</p>" +
+    "<p class='note'>" + esc(t().automaticPainting) + "</p>" +
+    "<p class='note'>" + esc(exams ? t().examProgress(n,graph.nodes.length) : t().progress(n,graph.nodes.length)) + " · " + esc(exams ? t().countSlots(usedColors(p.colors).length) : t().countColors(usedColors(p.colors).length)) + "</p>" +
+    vertexChoices(graph,p,prefix+"-vertex",exams) +
+    "<h3>" + esc(exams ? t().assignSlot(name(p.selected,true)) : t().coloring(p.selected)) + "</h3>" +
+    palette(graph.nodes.length,p.colors[p.selected],prefix+"-color",exams) +
+    "<div class='actions'>" +
+    button(t().erase,prefix+"-erase",{disabled:!p.colors[p.selected],class:"secondary"}) +
+    button(t().undo,prefix+"-undo",{disabled:!p.undo.length,class:"secondary"}) + "</div>" +
+    painterFeedback(p,graph,exams);
+  if (exams) body += "<h3>" + esc(t().scheduleHead) + "</h3>" + schedule(p.colors,"current");
+  if (p.checked && !conflicts(graph,p.colors).length) {
+    const min = MINIMUM[exams ? "exams" : "cycle"];
+    if (exams) body += "<p class='proof'>" + esc(usedColors(p.colors).length === min.count ? t().scheduleProof : t().scheduleLowerBound) + "</p>" +
+      disclosure("minimum-schedule",t().scheduleSolution,schedule(min.colors,"minimum"));
+    else body += "<p class='proof'>" + esc(t().freeProof) + "</p>" +
+      "<div class='minimum-assignment' aria-label='" + esc(t().minimumHead) + "'>" +
+      graph.nodes.map(v => "<span>" + v + " " + chip(min.colors[v]) + "</span>").join(" ") + "</div>";
+  }
+  return body + "</section></div>";
+}
+function runFeedback(run, trace, graph) {
+  const f = run.feedback;
+  if (!f) return "";
+  if (f.type === "missing") return notice(t().choiceMissing,true);
+  if (f.type === "conflict") return notice(t().conflictDetail(trace[run.completed].vertex,f.neighbor,f.color),true);
+  if (f.type === "later") return notice(t().notFirst(f.color,trace[run.completed].color),true);
+  if (f.type === "order") return notice(t().orderMissing,true);
+  return "";
+}
+function attemptsTable(run) {
+  return "<h3>" + esc(t().attempts) + "</h3>" + (!run.attempts.length ? "<p class='note'>" + esc(t().noAttempts) + "</p>" :
+    "<div class='table-wrap'><table class='attempts'><thead><tr>" + t().attemptsHeaders.map(s=>"<th scope='col'>"+esc(s)+"</th>").join("") +
+    "</tr></thead><tbody>" + run.attempts.map(a=>"<tr><th scope='row'>"+esc(a.order.join(", "))+"</th><td>"+a.count+"</td></tr>").join("") + "</tbody></table></div>");
+}
+function selectedGuideRun() {
+  return state.guideExercise ? state.guideHouse : state.guide;
+}
+function selectedGuideGraph() {
+  return state.guideExercise ? GRAPHS.house : GRAPHS.prism;
+}
+function houseImproved() {
+  const p = state.houseImprovement;
+  return !!p && p.checked && isComplete(GRAPHS.house,p.colors) &&
+    !conflicts(GRAPHS.house,p.colors).length && usedColors(p.colors).length < p.initialCount;
+}
+function guideExerciseChoices() {
+  const completed = [state.guide.completed === GUIDE_ORDER.length,houseImproved()];
+  return "<div class='actions guide-exercises' role='group' aria-label='" + esc(t().guideExerciseLabel) + "'>" +
+    t().guideExercises.map((label,i)=>button(label + (completed[i] ? " · ✓ " + t().done : ""),"guide-exercise",{
+      value:i,pressed:state.guideExercise === i
+    })).join("") + "</div>";
+}
+function houseImprovementFeedback() {
+  const p = state.houseImprovement, bad = conflicts(GRAPHS.house,p.colors);
+  if (bad.length) return notice(bad.map(([a,b])=>t().conflictDetail(a,b,p.colors[a])).join(" "),true);
+  if (!p.checked) return "<p class='note' id='feedback'>" + esc(t().incomplete + " " + t().noConflict) + "</p>";
+  const count = usedColors(p.colors).length;
+  return notice(count < p.initialCount ? t().houseImproved(p.initialCount,count) : t().houseMore(count));
+}
+function houseImprovementScreen() {
+  const p = state.houseImprovement, graph = GRAPHS.house;
+  let body = "<p class='stage-label'>" + esc(t().houseImproveStage) + "</p><div class='workspace'>" +
+    graphCard(graph,p.colors,{current:p.selected,action:"improve-vertex"}) +
+    "<section class='worksheet'><h3 id='improve-heading' tabindex='-1'>" + esc(t().houseImproveHead) + "</h3>" +
+    "<p>" + esc(t().houseTask) + "</p><p class='note'>" + esc(t().houseFreedom) + "</p><p class='eyebrow'>" +
+    esc(t().houseComparison(p.initialCount,usedColors(p.colors).length)) + "</p><p class='note'>" + esc(t().pick) + "</p>" +
+    vertexChoices(graph,p,"improve-vertex",false) +
+    "<h3>" + esc(t().coloring(p.selected)) + "</h3>" + palette(graph.paletteSize,p.colors[p.selected],"improve-color") +
+    "<div class='actions'>" + button(t().erase,"improve-erase",{disabled:!p.colors[p.selected],class:"secondary"}) +
+    button(t().undo,"improve-undo",{disabled:!p.undo.length,class:"secondary"}) + "</div>" + houseImprovementFeedback();
+  if (houseImproved()) body += "<p class='proof'>" + esc(t().triangleProof(...graph.bound,MINIMUM.house.count)) +
+    "</p><p>" + esc(t().houseLesson) + "</p>";
+  else body += disclosure("house-hint",t().houseHintTitle,"<p>" + esc(t().houseHint) + "</p>");
+  return body + "<div class='actions'>" + button(t().houseReset,"improve-reset",{class:"secondary"}) + "</div>" +
+    disclosure("house-history",t().houseHistory,history(graph,greedy(graph,HOUSE_ORDER),HOUSE_ORDER.length,false,true)) +
+    "</section></div>";
+}
+function runScreen(independent) {
+  const run = independent ? state.autonomous : selectedGuideRun(), graph = independent ? GRAPHS.cube : selectedGuideGraph();
+  const house = !independent && state.guideExercise === 1;
+  const prefix = independent ? "order" : "guide", trace = greedy(graph,run.order);
+  const complete = run.completed === run.order.length, reviewing = run.phase === "review";
+  const index = reviewing ? run.completed-1 : run.completed;
+  const step = trace[index], colors = run.completed ? trace[run.completed-1].colors : {};
+  let body = heading(independent ? t().orderHead : t().guideHead,independent ? t().orderIntro : house ?
+    (state.houseImprovement ? t().houseImproveIntro : t().houseIntro) : t().guideIntro);
+  if (!independent) body += guideExerciseChoices();
+  if (house && state.houseImprovement) return body + houseImprovementScreen();
+  if (house) body += "<p class='stage-label'>" + esc(t().houseGreedyStage) + "</p>";
+  if (independent && run.constructing) {
+    return body + "<div class='workspace'>" + graphCard(graph,{}, {current:run.draftOrder.at(-1),action:"order-add",disabledNodes:run.draftOrder}) +
+      "<section class='worksheet'><h3>" + esc(t().buildOrder) + "</h3><p>" + esc(t().orderHint) + "</p>" +
+      sequence(run.draftOrder) + "<div class='actions'>" + graph.nodes.map(v=>button(v,"order-add",{
+        value:v,id:"order-add-"+v,disabled:run.draftOrder.includes(v),class:"vertex-choice"})).join("") + "</div>" +
+      "<div class='actions'>" + button(t().undo,"order-remove",{disabled:!run.draftOrder.length,class:"secondary"}) +
+      button(t().applyOrder,"order-apply",{class:"primary"}) + "</div>" + runFeedback(run,trace,graph) +
+      attemptsTable(run) + "</section></div>";
+  }
+  const attemptedConflicts = run.feedback && run.feedback.type === "conflict" ? [[step.vertex,run.feedback.neighbor]] : [];
+  const previewColors = !reviewing && run.choice ? {...colors,[step.vertex]:run.choice} : colors;
+  body += "<div class='workspace'>" + graphCard(graph,previewColors,{
+    current:step && step.vertex, adjacent:(!independent || reviewing) && step ? step.adjacent : [],conflicts:attemptedConflicts
+  }) + "<section class='worksheet'><p class='eyebrow'>" + esc(t().order) + "</p>" + sequence(run.order,step && step.vertex) +
+    "<p class='step-indicator'>" + esc(t().step(run.completed,run.order.length)) + "</p>";
+  if (reviewing) {
+    body += "<div class='explanation'><h3>" + esc(t().coloredDemo(step.vertex,step.color)) +
+      "</h3><p>" + esc(stepExplanation(trace,index)) + "</p></div>";
+    if (!complete) body += "<p>" + esc(t().review(step.vertex)) + "</p><div class='actions'>" +
+      button(t().nextVertex,prefix+"-next",{id:"run-next",class:"primary"}) + "</div>";
+  } else {
+    body += "<h3 id='turn-heading' tabindex='-1'>" + esc(t().turn(step.vertex)) + "</h3>";
+    if (!independent) body += "<div class='hint-grid'><div><p class='eyebrow'>" + esc(t().neighborHeading) + "</p><p>" +
+      (step.adjacent.length ? step.adjacent.map(v=>v+" "+chip(colors[v])).join(", ") : esc(t().noNeighbor)) +
+      "</p></div><div><p class='eyebrow'>" + esc(t().forbiddenHeading) + "</p><p>" + colorList(step.forbidden) + "</p></div></div>";
+    else body += "<p class='note'>" + esc(t().independent) + "</p>";
+    body += "<p class='note'>" + esc(t().automaticColor) + "</p>" +
+      palette(graph.paletteSize || graph.nodes.length,run.choice,prefix+"-color") +
+      (run.choice ? "<p class='note'>" + esc(t().attemptColor(step.vertex,run.choice)) + "</p>" : "") + runFeedback(run,trace,graph);
+  }
+  if (complete) {
+    const count = usedColors(colors).length;
+    body += notice(independent ? (count === 2 ? t().orderSuccess : t().fewer(count)) : t().guideSuccess(run.order.length,count));
+    if (independent) body += "<p class='proof'>" + esc(count === 2 ? t().edgeProof(...graph.bound) : t().edgeLowerBound(...graph.bound)) + "</p><div class='actions'>" +
+      button(t().tryAnother,"order-build",{class:"primary"}) + "</div>";
+    else if (house) body += "<p>" + esc(t().houseObservation) + "</p><div class='actions'>" +
+      button(t().houseStart,"guide-improve",{class:"primary"}) + "</div>";
+    else body += "<p class='proof'>" + esc(t().triangleProof(...graph.bound,MINIMUM.prism.count)) + "</p><div class='actions'>" +
+      button(t().guideNextExercise,"guide-exercise",{value:1,id:"guide-next-exercise",class:"primary"}) + "</div>";
+  }
+  body += "<div class='actions'>" + button(t().undo,prefix+"-undo",{disabled:!run.completed,class:"secondary"}) + "</div>" +
+    history(graph,trace,run.completed,!reviewing,!independent);
+  if (independent) body += attemptsTable(run);
+  return body + "</section></div>";
+}
+function quizScreen() {
+  return heading(t().quizHead,t().quizIntro) + "<div class='quiz-grid'>" + t().quiz.map((q,i)=>{
+    const answer = state.quiz[i], correct = answer === q.answer;
+    return "<section class='quiz-card' aria-labelledby='quiz-"+i+"'><h3 id='quiz-"+i+"'>"+(i+1)+". "+esc(q.statement)+"</h3>" +
+      "<div class='actions' role='group' aria-labelledby='quiz-"+i+"'>" +
+      button(t().yes,"quiz",{value:i+":true",id:"quiz-"+i+"-true",pressed:answer === true}) +
+      button(t().no,"quiz",{value:i+":false",id:"quiz-"+i+"-false",pressed:answer === false}) + "</div>" +
+      (answer === null ? "" : notice((correct ? t().correct : t().incorrect)+" "+q.explanation,!correct,"quiz-feedback-"+i)) + "</section>";
+  }).join("") + "</div>";
+}
+function achievements() {
+  const valid = (p,g) => p.checked && isComplete(g,p.colors) && !conflicts(g,p.colors).length;
+  const a = state.autonomous, last = greedy(GRAPHS.cube,a.order).at(-1).colors;
+  return [false,valid(state.free,GRAPHS.cycle),
+    state.guide.completed === GRAPHS.prism.nodes.length && houseImproved(),
+    !a.constructing && a.completed === GRAPHS.cube.nodes.length && usedColors(last).length === MINIMUM.cube.count,
+    state.exams.phase==="color" && planningComplete() && valid(state.exams,GRAPHS.exams) && usedColors(state.exams.colors).length === MINIMUM.exams.count,
+    state.quiz.every((answer,i)=>answer === t().quiz[i].answer)];
+}
+function render(focusId) {
+  const done = achievements();
+  $("navigation").innerHTML = t().sections.map((label,i)=>
+    "<button type='button' data-act='nav' data-value='"+i+"'"+(state.screen === i ? " aria-current='page' class='active'" : "")+">"+
+    (i ? i+". " : "")+esc(label)+(done[i] ? "<span class='badge'>✓ "+esc(t().done)+"</span>" : "")+"</button>").join("");
+  const screens = [infoScreen,()=>painterScreen(false),()=>runScreen(false),()=>runScreen(true),()=>painterScreen(true),quizScreen];
+  $("activity").innerHTML = "<section class='screen'>"+screens[state.screen]()+"</section>";
+  if (focusId && $(focusId)) $(focusId).focus({preventScroll:true});
+}
+function fullscreenActive() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function updateFullscreen() {
+  $("fullscreen").textContent = fullscreenActive() ? t().exitFullscreen : t().fullscreen;
+  $("fullscreen-message").hidden = !state.fullscreenError;
+  $("fullscreen-message").textContent = t().fullscreenUnavailable;
+}
+function applyLang(focusId) {
+  $("announcement").textContent = "";
+  document.documentElement.lang = lang;
+  document.title = t().title+" · Gymnase — Frédéric Jaccard";
+  document.querySelector('meta[name="description"]').content = t().description;
+  $("kicker").textContent = t().kicker;
+  $("title").textContent = t().title;
+  $("instruction").textContent = t().instruction;
+  $("backLink").textContent = t().backList;
+  $("navigation").setAttribute("aria-label",t().navigation);
+  $("language").textContent = lang === "fr" ? "English" : "Français";
+  $("language").lang = lang === "fr" ? "en" : "fr";
+  updateFullscreen();
+  render(focusId);
+}
+function saveLanguage() {
+  try {
+    localStorage.setItem("fj-lang",lang);
+    document.cookie = "fj-lang="+lang+";domain=.fredericjaccard.com;path=/;max-age=31536000;SameSite=Lax";
+  } catch (_) {}
+}
+async function toggleFullscreen() {
+  state.fullscreenError = false;
+  try {
+    if (fullscreenActive()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (!exit) throw new Error("unavailable");
+      await exit.call(document);
+    } else {
+      const enter = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+      if (!enter) throw new Error("unavailable");
+      await enter.call(document.documentElement);
+    }
+  } catch (_) { state.fullscreenError = true; announce(t().fullscreenUnavailable); }
+  updateFullscreen();
+}
+function updatePainter(p,vertex,color) {
+  const old = p.colors[vertex] || 0;
+  if (old === color) return;
+  p.undo.push({vertex,color:old});
+  if (color) p.colors[vertex] = color;
+  else delete p.colors[vertex];
+  p.checked = false;
+  p.feedback = null;
+}
+function checkPainter(p,graph) {
+  p.checked = isComplete(graph,p.colors) && !conflicts(graph,p.colors).length;
+  p.feedback = null;
+}
+function validateRun(run, graph, independent) {
+  if (run.phase !== "color") return;
+  const trace = greedy(graph,run.order), step = trace[run.completed];
+  if (!Number.isInteger(run.choice)) run.feedback = {type:"missing"};
+  else if (step.forbidden.includes(run.choice)) {
+    const previous = run.completed ? trace[run.completed-1].colors : {};
+    run.feedback = {type:"conflict",color:run.choice,neighbor:step.adjacent.find(v=>previous[v] === run.choice)};
+  } else if (run.choice !== step.color) run.feedback = {type:"later",color:run.choice};
+  else {
+    run.completed++;
+    run.phase = "review";
+    run.feedback = null;
+    if (independent && run.completed === run.order.length) {
+      const result = {order:[...run.order],count:usedColors(step.colors).length};
+      if (!run.attempts.some(a=>a.order.join() === result.order.join())) run.attempts.push(result);
+    }
+    render(run.completed === run.order.length ? "feedback" : "run-next");
+    announce(t().validated+" "+t().coloredDemo(step.vertex,step.color));
+    return;
+  }
+  render("feedback");
+  announce($("feedback").textContent);
+}
+function handleHouseImprovement(action,value,target) {
+  if (!action.startsWith("improve-")) return false;
+  const p = state.houseImprovement, graph = GRAPHS.house, sub = action.split("-")[1];
+  if (state.screen !== 2 || state.guideExercise !== 1 || !p) return true;
+  if (sub === "vertex" && graph.nodes.includes(value)) p.selected = value;
+  if (sub === "color" && Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= graph.paletteSize) {
+    updatePainter(p,p.selected,Number(value));
+  }
+  if (sub === "erase") updatePainter(p,p.selected,0);
+  if (sub === "undo" && p.undo.length) {
+    const old = p.undo.pop(); p.selected = old.vertex;
+    if (old.color) p.colors[old.vertex] = old.color; else delete p.colors[old.vertex];
+    p.checked = false; p.feedback = null;
+  }
+  if (sub === "reset") {
+    state.houseImprovement = {...initialPainter("F"),colors:{...greedy(graph,HOUSE_ORDER).at(-1).colors},initialCount:p.initialCount};
+    checkPainter(state.houseImprovement,graph);
+    render("improve-heading"); announce($("feedback").textContent); return true;
+  }
+  if (["color","erase","undo"].includes(sub)) checkPainter(p,graph);
+  render(sub === "vertex" ? "vertex-" + p.selected : target.id);
+  if (["color","erase","undo"].includes(sub)) announce($("feedback").textContent);
+  return true;
+}
+function handleAction(action, value, target) {
+  if (action === "nav") { state.screen = Number(value); $("announcement").textContent=""; render("screen-title"); return; }
+  if (handlePlanning(action,value,target)) return;
+  if (handleHouseImprovement(action,value,target)) return;
+  if (action === "guide-exercise") {
+    if (![0,1].includes(Number(value))) return;
+    state.guideExercise = Number(value); $("announcement").textContent=""; render("screen-title"); return;
+  }
+  if (action === "guide-improve") {
+    if (state.guideExercise !== 1 || state.guideHouse.completed !== HOUSE_ORDER.length) return;
+    if (!state.houseImprovement) {
+      const colors = greedy(GRAPHS.house,HOUSE_ORDER).at(-1).colors;
+      state.houseImprovement = {...initialPainter("F"),colors:{...colors},initialCount:usedColors(colors).length};
+      checkPainter(state.houseImprovement,GRAPHS.house);
+    }
+    render("improve-heading"); announce(t().houseTask); return;
+  }
+  if(action==="concept") {
+    const mode=Number(value);
+    if([0,1,2].includes(mode))state.info.concept=mode;
+    render(target.id);return;
+  }
+  if(action==="factorial") {
+    const size=Number(value);
+    if(FACTORIAL_SIZES.includes(size))state.info.factorialSize=size;
+    render(target.id);return;
+  }
+  if(action==="bonus") {
+    state.info.bonusBetter=value==="1";render(target.id);return;
+  }
+  if (action === "restart") {
+    if (state.screen === 1) state.free = initialPainter("A");
+    if (state.screen === 2) {
+      if (state.guideExercise) { state.guideHouse = initialRun(HOUSE_ORDER); state.houseImprovement = null; }
+      else state.guide = initialRun(GUIDE_ORDER);
+    }
+    if (state.screen === 3) state.autonomous = {...initialRun(CHALLENGE_ORDER),constructing:false,draftOrder:[],attempts:[]};
+    if (state.screen === 4) state.exams = initialPlanning();
+    if (state.screen === 5) state.quiz = [null,null,null,null];
+    render("screen-title"); return;
+  }
+  if (action.startsWith("demo-")) {
+    if (action === "demo-example") {
+      const example = Number(value);
+      if (!Number.isInteger(example) || !DEMONSTRATIONS[example]) return;
+      state.demo.example = example;
+    }
+    if (action === "demo-order") {
+      const orderIndex = Number(value);
+      if (!Number.isInteger(orderIndex) || !DEMONSTRATIONS[state.demo.example].orders[orderIndex]) return;
+      state.demo.orders[state.demo.example] = orderIndex; state.demo.steps[state.demo.example] = 0;
+    }
+    const index = state.demo.example, total = GRAPHS[DEMONSTRATIONS[index].graph].nodes.length;
+    if (action === "demo-prev") state.demo.steps[index] = Math.max(0,state.demo.steps[index]-1);
+    if (action === "demo-next") state.demo.steps[index] = Math.min(total,state.demo.steps[index]+1);
+    render(action === "demo-next" && state.demo.steps[index] === total ? "demo-prev" :
+      action === "demo-prev" && !state.demo.steps[index] ? "demo-next" : target.id);
+    return;
+  }
+  if (action.startsWith("free-") || action.startsWith("exam-")) {
+    const exams = action.startsWith("exam-"), p = exams ? state.exams : state.free;
+    if(exams && (p.phase!=="color" || !planningComplete()))return;
+    const graph = exams ? GRAPHS.exams : GRAPHS.cycle, sub = action.split("-")[1];
+    if (sub === "vertex" && graph.nodes.includes(value)) p.selected = value;
+    if (sub === "color") updatePainter(p,p.selected,Number(value));
+    if (sub === "erase") updatePainter(p,p.selected,0);
+    if (sub === "undo" && p.undo.length) {
+      const old = p.undo.pop(); p.selected = old.vertex;
+      if (old.color) p.colors[old.vertex] = old.color; else delete p.colors[old.vertex];
+      p.checked = false; p.feedback = null;
+    }
+    if (["color","erase","undo"].includes(sub)) checkPainter(p,graph);
+    render(sub === "vertex" ? "vertex-"+p.selected : target.id);
+    if (sub === "color" || sub === "erase" || sub === "undo") announce($("feedback").textContent);
+    return;
+  }
+  if (action === "order-build") {
+    state.autonomous.constructing = true; state.autonomous.draftOrder = []; state.autonomous.feedback = null;
+    render("screen-title"); return;
+  }
+  if (action === "order-add") {
+    const run = state.autonomous;
+    if (!run.draftOrder.includes(value) && GRAPHS.cube.nodes.includes(value)) run.draftOrder.push(value);
+    run.feedback = null;
+    const next = GRAPHS.cube.nodes.find(v=>!run.draftOrder.includes(v));
+    render(next ? "order-add-"+next : "order-apply"); return;
+  }
+  if (action === "order-remove") {
+    const removed = state.autonomous.draftOrder.pop(); state.autonomous.feedback = null;
+    render(removed ? "order-add-"+removed : "order-apply"); return;
+  }
+  if (action === "order-apply") {
+    const a = state.autonomous;
+    const nodes = GRAPHS.cube.nodes;
+    if (a.draftOrder.length !== nodes.length || new Set(a.draftOrder).size !== nodes.length || !a.draftOrder.every(v=>nodes.includes(v))) {
+      a.feedback = {type:"order"}; render("feedback"); announce(t().orderMissing); return;
+    }
+    Object.assign(a,initialRun(a.draftOrder),{constructing:false});
+    render("turn-heading"); return;
+  }
+  if (action.startsWith("guide-") || action.startsWith("order-")) {
+    const independent = action.startsWith("order-"), run = independent ? state.autonomous : selectedGuideRun();
+    const graph = independent ? GRAPHS.cube : selectedGuideGraph(), sub = action.split("-")[1];
+    if (!independent && state.guideExercise && state.houseImprovement) return;
+    if (sub === "color" && run.phase === "color") {
+      const color = Number(value);
+      if (!Number.isInteger(color) || color < 1 || color > (graph.paletteSize || graph.nodes.length)) return;
+      run.choice = color; run.feedback = null; validateRun(run,graph,independent);
+    }
+    if (sub === "next" && run.phase === "review" && run.completed < run.order.length) {
+      run.phase = "color"; run.choice = null; run.feedback = null; render("turn-heading");
+    }
+    if (sub === "undo" && run.completed) {
+      run.completed--; run.phase = "color"; run.choice = null; run.feedback = null; render("turn-heading");
+    }
+    return;
+  }
+  if (action === "quiz") {
+    const [index,answer] = value.split(":"); state.quiz[Number(index)] = answer === "true";
+    render(target.id); announce($("quiz-feedback-"+index).textContent);
+  }
+}
+document.addEventListener("click",event=>{
+  const target = event.target.closest("[data-act]");
+  if (!target || target.disabled) return;
+  if (event.detail > 1 && /-(next|check|apply|add|continue)$/.test(target.dataset.act)) return;
+  handleAction(target.dataset.act,target.dataset.value,target);
+});
+document.addEventListener("keydown",event=>{
+  if (event.repeat && event.key === "Enter") { event.preventDefault(); return; }
+  const target = event.target.closest("svg [role='button']");
+  if (!target || (event.key !== "Enter" && event.key !== " ")) return;
+  event.preventDefault();
+  if (!event.repeat) handleAction(target.dataset.act,target.dataset.value,target);
+});
+document.addEventListener("toggle",event=>{
+  const id = event.target.dataset && event.target.dataset.disclosure;
+  if (!id) return;
+  if (event.target.open) state.disclosures.add(id); else state.disclosures.delete(id);
+},true);
+$("language").addEventListener("click",()=>{lang = lang === "fr" ? "en" : "fr";saveLanguage();applyLang("language");});
+$("fullscreen").addEventListener("click",toggleFullscreen);
+document.addEventListener("fullscreenchange",updateFullscreen);
+document.addEventListener("webkitfullscreenchange",updateFullscreen);
+applyLang();
+
+</script>
+</body>
+</html>
